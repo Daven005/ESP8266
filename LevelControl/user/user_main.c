@@ -17,17 +17,21 @@
 #define sleepms(x) os_delay_us(x*1000);
 
 LOCAL os_timer_t switch_timer;
-LOCAL os_timer_t flash_timer;
+LOCAL os_timer_t smartConfigFlashTimer;
+LOCAL os_timer_t pumpOverrideFlashTimer;
 LOCAL os_timer_t process_timer;
 LOCAL os_timer_t transmit_timer;
 
 MQTT_Client mqttClient;
 uint8 mqttConnected;
 uint16 currentPressure;
+enum {TANK_UNKNOWN, TANK_LOW, TANK_OK} tankStatus = TANK_UNKNOWN;
+enum {PUMP_AUTO, PUMP_OFF, PUMP_ON} pumpOverride = PUMP_AUTO;
 
 #define LED 5
+#define LED2 3
 #define PUMP 4
-#define Switch 0 // GPIO 00
+#define SWITCH 0 // GPIO 00
 static unsigned int switchCount;
 
 // sysCfg.settings
@@ -57,20 +61,36 @@ int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[]) {
 	return idx;
 }
 
-void ICACHE_FLASH_ATTR flash_cb(void) {
+void ICACHE_FLASH_ATTR smartConfigFlash_cb(void) {
 	easygpio_outputSet(LED, !easygpio_inputGet(LED));
 }
 
-void ICACHE_FLASH_ATTR startFlash(int t, int repeat) {
+void ICACHE_FLASH_ATTR startSmartConfigFlash(int t, int repeat) {
 	easygpio_outputSet(LED, 1);
-	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *)flash_cb, (void *)0);
-	os_timer_arm(&flash_timer, t, repeat);
+	os_timer_disarm(&smartConfigFlashTimer);
+	os_timer_setfn(&smartConfigFlashTimer, (os_timer_func_t *)smartConfigFlash_cb, (void *)0);
+	os_timer_arm(&smartConfigFlashTimer, t, repeat);
 }
 
-void ICACHE_FLASH_ATTR stopFlash(void) {
+void ICACHE_FLASH_ATTR stopSmartConfigFlash(void) {
 	easygpio_outputSet(LED, 0);
-	os_timer_disarm(&flash_timer);
+	os_timer_disarm(&smartConfigFlashTimer);
+}
+
+void ICACHE_FLASH_ATTR pumpOverrideFlash_cb(void) {
+	easygpio_outputSet(LED2, !easygpio_inputGet(LED2));
+}
+
+void ICACHE_FLASH_ATTR startPumpOverrideFlash(int t, int repeat) {
+	easygpio_outputSet(LED2, 1);
+	os_timer_disarm(&pumpOverrideFlashTimer);
+	os_timer_setfn(&pumpOverrideFlashTimer, (os_timer_func_t *)pumpOverrideFlash_cb, (void *)0);
+	os_timer_arm(&pumpOverrideFlashTimer, t, repeat);
+}
+
+void ICACHE_FLASH_ATTR stopPumpOverrideFlash(void) {
+	easygpio_outputSet(LED2, 0);
+	os_timer_disarm(&pumpOverrideFlashTimer);
 }
 
 void ICACHE_FLASH_ATTR publishError(uint8 err, uint8 info) {
@@ -81,25 +101,39 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, uint8 info) {
 	MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, 0);
 }
 
-void process_cb(void) { // Every 100mS
+void ICACHE_FLASH_ATTR process_cb(void) { // Every 100mS
 	static uint32 pumpOnCount = 0;
 
 	currentPressure = system_adc_read();
-	if (currentPressure < sysCfg.settings[SET_PUMP_ON]) {
-		easygpio_outputSet(PUMP, 1);
-		easygpio_outputSet(LED, 1);
-		pumpOnCount++;
-		if (pumpOnCount == MAX_PUMP_ON_WARNING) {
-			publishError(1, 0);
-		} else if (pumpOnCount == MAX_PUMP_ON_ERROR) {
-			publishError(1, 1);
-		} else if (pumpOnCount >= MAX_PUMP_ON_ERROR) {
-			pumpOnCount = MAX_PUMP_ON_ERROR;
+	switch (pumpOverride) {
+	case PUMP_AUTO:
+		if (currentPressure < sysCfg.settings[SET_PUMP_ON]) {
+			easygpio_outputSet(PUMP, 1);
+			easygpio_outputSet(LED, 1);
+			pumpOnCount++;
+			if (pumpOnCount == MAX_PUMP_ON_WARNING) { // 1 minute
+				publishError(1, 0);
+			} else if (pumpOnCount == MAX_PUMP_ON_ERROR) { // 5 minutes
+				publishError(2, tankStatus);
+			} else if (pumpOnCount >= MAX_PUMP_ON_ERROR) {
+				pumpOnCount = MAX_PUMP_ON_ERROR;
+			}
+		} else if (currentPressure > sysCfg.settings[SET_PUMP_OFF]) {
+			easygpio_outputSet(PUMP, 0);
+			easygpio_outputSet(LED, 0);
+			pumpOnCount = 0;
 		}
-	} else if (currentPressure > sysCfg.settings[SET_PUMP_OFF]) {
+		break;
+	case PUMP_OFF:
 		easygpio_outputSet(PUMP, 0);
 		easygpio_outputSet(LED, 0);
 		pumpOnCount = 0;
+		break;
+	case PUMP_ON:
+		easygpio_outputSet(PUMP, 1);
+		easygpio_outputSet(LED, 1);
+		pumpOnCount = 0;
+		break;
 	}
 }
 
@@ -144,6 +178,51 @@ void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	os_timer_disarm(&process_timer);
 }
 
+void ICACHE_FLASH_ATTR checkAppMsg(MQTT_Client* client, int tokenCount, char *tokens[], char *dataBuf) {
+	if (tokenCount == 3 && strcmp("rainwater", tokens[1] )== 0 && strcmp("level", tokens[2] )== 0) {
+		if (strcmp("low", dataBuf) == 0) {
+			tankStatus = TANK_LOW;
+		} else if (strcmp("OK", dataBuf) == 0 || strcmp("high", dataBuf) == 0 ) {
+			tankStatus = TANK_OK;
+		} else {
+			tankStatus = TANK_UNKNOWN;
+		}
+	}
+}
+
+void ICACHE_FLASH_ATTR checkRawMsg(MQTT_Client* client, int tokenCount, char *tokens[], char *dataBuf) {
+	if (tokenCount == 4 && strcmp(sysCfg.device_id, tokens[1] )== 0 && strcmp("set", tokens[2] )== 0) {
+		if (strlen(dataBuf) < NAME_SIZE-1) {
+			if (strcmp("name", tokens[3]) == 0) {
+				strcpy(sysCfg.deviceName, dataBuf);
+			} else if (strcmp("location", tokens[3]) == 0){
+				strcpy(sysCfg.deviceLocation, dataBuf);
+			} else if (strcmp("updates", tokens[3]) == 0){
+				sysCfg.updates = atoi(dataBuf);
+				os_timer_disarm(&transmit_timer);
+				os_timer_arm(&transmit_timer, sysCfg.updates*1000, true);
+			}
+			publishDeviceInfo(client);
+			CFG_Save();
+		}
+	} else if (tokenCount == 5 && strcmp(sysCfg.device_id, tokens[1] )== 0) {
+		if (strcmp("set", tokens[3] )== 0) {
+			int value = atoi(dataBuf);
+			int id = atoi(tokens[2]);
+			if (strcmp("setting", tokens[4]) == 0) {
+				if (0 <= id && id < SETTINGS_SIZE) {
+					if (SET_MINIMUM <= value && value <= SET_MAXIMUM) {
+						sysCfg.settings[id] = value;
+						CFG_Save();
+						os_printf("Setting %d = %d\n", id, sysCfg.settings[id]);
+						publishDeviceInfo(client);
+					}
+				}
+			}
+		}
+	}
+}
+
 void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len)
 {
 	char *topicBuf = (char*)os_zalloc(topic_len+1),
@@ -159,54 +238,45 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 	os_printf("Receive topic: %s, data: %s \r\n", topicBuf, dataBuf);
 
 	int tokenCount = splitString((char *)topicBuf, '/', tokens);
-//	int i;
-//	for (i=0; i<tokenCount; i++) {
-//		os_printf("T[%d] = %s\n", i, tokens[i]);
-//	}
-	if (tokenCount > 0 && strcmp("Raw", tokens[0])== 0) {
-		if (tokenCount == 4 && strcmp(sysCfg.device_id, tokens[1] )== 0 && strcmp("set", tokens[2] )== 0) {
-			if (strlen(dataBuf) < NAME_SIZE-1) {
-				if (strcmp("name", tokens[3]) == 0) {
-					strcpy(sysCfg.deviceName, dataBuf);
-				} else if (strcmp("location", tokens[3]) == 0){
-					strcpy(sysCfg.deviceLocation, dataBuf);
-				} else if (strcmp("updates", tokens[3]) == 0){
-					sysCfg.updates = atoi(dataBuf);
-					os_timer_disarm(&transmit_timer);
-					os_timer_arm(&transmit_timer, sysCfg.updates*1000, true);
-				}
-				publishDeviceInfo(client);
-				CFG_Save();
-			}
-		} else if (tokenCount == 5 && strcmp(sysCfg.device_id, tokens[1] )== 0) {
-			if (strcmp("set", tokens[3] )== 0) {
-				int value = atoi(dataBuf);
-				int id = atoi(tokens[2]);
-				if (strcmp("setting", tokens[4]) == 0) {
-					if (0 <= id && id < SETTINGS_SIZE) {
-						if (SET_MINIMUM <= value && value <= SET_MAXIMUM) {
-							sysCfg.settings[id] = value;
-							CFG_Save();
-							os_printf("Setting %d = %d\n", id, sysCfg.settings[id]);
-							publishDeviceInfo(client);
-						}
-					}
-				}
-			}
+
+	if (tokenCount > 0) {
+		if(strcmp("Raw", tokens[0])== 0) {
+			checkRawMsg(client, tokenCount, tokens, dataBuf);
+		} else if(strcmp("App", tokens[0])== 0) {
+			checkAppMsg(client, tokenCount, tokens, dataBuf);
 		}
 	}
 	os_free(topicBuf);
 	os_free(dataBuf);
 }
 
+void ICACHE_FLASH_ATTR checkPumpOverride(void) {
+	switch (pumpOverride) {
+	case PUMP_AUTO:
+		pumpOverride = PUMP_OFF;
+		startPumpOverrideFlash(200, true);
+		break;
+	case PUMP_OFF:
+		pumpOverride = PUMP_ON;
+		startPumpOverrideFlash(500, true);
+		break;
+	case PUMP_ON:
+		pumpOverride = PUMP_AUTO;
+		stopPumpOverrideFlash();
+		break;
+	}
+	os_printf("PO=%d\n", pumpOverride);
+}
+
 void ICACHE_FLASH_ATTR switchAction(void) {
 	publishData(&mqttClient);
+	checkPumpOverride();
 }
 
 void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
 	const swMax = 100;
 
-	if (!easygpio_inputGet(Switch)) { // Switch is active LOW
+	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
 		switchCount++;
 		if (switchCount > swMax) switchCount = swMax;
 		if (switchCount > 20) {
@@ -238,6 +308,8 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	os_printf("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
 
+	MQTT_Subscribe(client, "/App/rainwater/level", 0);
+
 	publishDeviceInfo(client);
 
 	os_timer_disarm(&switch_timer);
@@ -264,7 +336,6 @@ LOCAL void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 		MQTT_Disconnect(&mqttClient);
 	}
 }
-
 
 LOCAL void ICACHE_FLASH_ATTR mqtt_start_cb(void) {
 	os_printf("\nLevelControl V0.1.0\n");
@@ -318,19 +389,19 @@ int ICACHE_FLASH_ATTR checkSmartConfig(int action) {
 		break;
 	case 1:
 		os_printf("finished smartConfig\n");
-		stopFlash();
+		stopSmartConfigFlash();
 		doingSmartConfig = false;
 		break;
 	case 2:
 		if (doingSmartConfig) {
 			os_printf("Stop smartConfig\n");
-			stopFlash();
+			stopSmartConfigFlash();
 			smartconfig_stop();
 			doingSmartConfig = false;
 		} else {
 			os_printf("Start smartConfig\n");
 			wifi_station_disconnect();
-			startFlash(100, true);
+			startSmartConfigFlash(100, true);
 			smartconfig_start(SC_TYPE_ESPTOUCH, smartConfig_done, false);
 			doingSmartConfig = true;
 		}
@@ -339,46 +410,15 @@ int ICACHE_FLASH_ATTR checkSmartConfig(int action) {
 	return doingSmartConfig;
 }
 
-static void scan_done_cb(void *arg, STATUS status) {
-	static const char *ciphers[] = {
-		[AUTH_OPEN]         = "OPEN",
-		[AUTH_WEP]          = "WEP",
-		[AUTH_WPA_PSK]      = "WPA_PSK",
-		[AUTH_WPA2_PSK]     = "WPA2_PSK",
-		[AUTH_WPA_WPA2_PSK] = "WPA_WPA2_PSK",
-	};
-	scaninfo *c = arg;
-	struct bss_info *inf;
-	if (!c->pbss) {
-		os_printf("WiFi scan failed\n");
-		return;
-	}
-	STAILQ_FOREACH(inf, c->pbss, next) {
-		os_printf("BSSID %02x:%02x:%02x:%02x:%02x:%02x channel %02d rssi %02d auth %-12s %s\n",
-				MAC2STR(inf->bssid),
-				inf->channel,
-				inf->rssi,
-				ciphers[inf->authmode],
-				inf->ssid
-			);
-	}
-	mqtt_start_cb();
-}
-
-static void do_scan(void) {
-	if (wifi_get_opmode() == SOFTAP_MODE) {
-		os_printf("Can't scan, while in softap mode\n");
-	}
-	wifi_station_scan(NULL, &scan_done_cb);
-}
-
-void user_init(void) {
+void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
 	wifi_station_set_auto_connect(false);
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_pinMode(LED2, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_pinMode(PUMP, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);
+	easygpio_outputSet(LED2, 0);
 	easygpio_outputSet(PUMP, 0);
-	system_init_done_cb(&do_scan);
+	system_init_done_cb(&mqtt_start_cb);
 }
