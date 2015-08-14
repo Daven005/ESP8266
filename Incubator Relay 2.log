@@ -1,0 +1,22 @@
+Circuit: * C:\Documents and Settings\Administrator\My Documents\ESP8266\Incubator Relay 2.asc
+
+Direct Newton iteration for .op point succeeded.
+
+Date: Thu Jul 09 14:11:38 2015
+Total elapsed time: 0.297 seconds.
+
+tnom = 27
+temp = 27
+method = modified trap
+totiter = 22057
+traniter = 22040
+tranpoints = 10731
+accept = 7860
+rejected = 2871
+matrix size = 13
+fillins = 7
+solver = Normal
+Matrix Compiler1: 1.69 KB object code size  2.3/2.2/[1.7]
+Matrix Compiler2: off  [1.8]/1.9/3.0
+
+

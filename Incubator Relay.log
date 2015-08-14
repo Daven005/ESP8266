@@ -1,0 +1,23 @@
+Circuit: * C:\Documents and Settings\Administrator\My Documents\ESP8266\Incubator Relay.asc
+
+WARNING: Less than two connections to node NC_01.  This node is used by V3.
+Direct Newton iteration for .op point succeeded.
+
+Date: Thu Jul 09 15:21:56 2015
+Total elapsed time: 0.063 seconds.
+
+tnom = 27
+temp = 27
+method = modified trap
+totiter = 2518
+traniter = 2500
+tranpoints = 1251
+accept = 1206
+rejected = 45
+matrix size = 15
+fillins = 12
+solver = Normal
+Matrix Compiler1: 1.81 KB object code size  2.8/2.8/[2.1]
+Matrix Compiler2: off  [2.2]/2.4/3.2
+
+
