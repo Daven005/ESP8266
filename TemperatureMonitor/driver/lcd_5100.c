@@ -1,6 +1,6 @@
-#include "LCD.h"
 #include "easygpio.h"
 #include "osapi.h"
+#include "LCD.h"
 
 static const uint8 ASCII[][5] = {
   // First 32 characters (0x00-0x19) are ignored. These are
@@ -111,7 +111,9 @@ void ICACHE_FLASH_ATTR spi(uint8 c) {
 	for (i=7; i>=0; i--) {
 		easygpio_outputSet(LCD_Data, (c >> i) & 1);
 		easygpio_outputSet(LCD_clk, 1);
+		os_delay_us(1);
 		easygpio_outputSet(LCD_clk, 0);
+		os_delay_us(1);
 	}
 }
 
@@ -121,7 +123,6 @@ void ICACHE_FLASH_ATTR clearLcd() {
 	easygpio_outputSet(LCD_D_C, 1);
 	for(res=0; res<504; res++) {
 		spi(0x00);
-		wdt_feed();
 	}
 	easygpio_outputSet(LCD_SCE, 1);
 }
@@ -132,7 +133,6 @@ void ICACHE_FLASH_ATTR blackLcd() {
 	easygpio_outputSet(LCD_D_C, 1);
 	for(res=0;res<504;res++) {
 		spi(0xFF);
-		wdt_feed();
 	}
 	easygpio_outputSet(LCD_SCE, 1);
 }
@@ -155,7 +155,6 @@ void ICACHE_FLASH_ATTR showChar(const unsigned char *c,  uint8 charCol, uint8 ch
 	gotoXY(charCol*(w+1), charRow);
 	for (pxCol=0; pxCol<w; pxCol++) {
 		spi(ASCII[(int)(*c - ' ')][pxCol]);
-		wdt_feed();
 	}
 	spi(0);
 	easygpio_outputSet(LCD_SCE, 1);

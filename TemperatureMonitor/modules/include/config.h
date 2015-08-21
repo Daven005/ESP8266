@@ -49,6 +49,11 @@ typedef struct{
 
 	uint8_t mapping[MAP_SIZE];
 	uint8_t settings[SETTINGS_SIZE];
+	char deviceName[NAME_SIZE];
+	char deviceLocation[NAME_SIZE];
+	uint16 updates;
+	uint8 inputs;
+	char filters[FILTER_COUNT][128];
 
 } SYSCFG;
 

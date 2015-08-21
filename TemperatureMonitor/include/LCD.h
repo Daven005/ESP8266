@@ -5,7 +5,9 @@
 #define LCD_D_C 13
 #define LCD_RST 2
 
-#define Switch 0
+#define SWITCH 0
 
 extern void clearLcd(void);
-
+extern uint8 showString(uint8 xPosn, uint8 yPosn, char *s);
+extern void lcdInit(void);
+extern void lcdReset(void);
