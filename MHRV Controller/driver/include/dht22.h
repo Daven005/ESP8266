@@ -34,6 +34,9 @@ enum DHTType{
 struct dht_sensor_data {
 	float temperature;
 	float humidity;
+	float avgTemperature;
+	float avgHumidity;
+	int count;
 	BOOL success;
 	enum DHTType sensorType;
 	uint8 id;

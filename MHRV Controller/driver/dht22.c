@@ -1,23 +1,23 @@
 /*
-    Driver for the temperature and humidity sensor DHT11 and DHT22
-    Official repository: https://github.com/CHERTS/esp8266-dht11_22
+ Driver for the temperature and humidity sensor DHT11 and DHT22
+ Official repository: https://github.com/CHERTS/esp8266-dht11_22
 
-    Copyright (C) 2014 Mikhail Grigorev (CHERTS)
+ Copyright (C) 2014 Mikhail Grigorev (CHERTS)
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
 #include "ets_sys.h"
 #include "osapi.h"
@@ -26,7 +26,6 @@
 #include "gpio.h"
 #include "dht22.h"
 #include "debug.h"
-
 
 static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading);
 
@@ -53,8 +52,8 @@ static inline float scale_temperature(struct dht_sensor_data *reading, int *data
 	}
 }
 
-static struct dht_sensor_data reading1 = { .success = 0 };
-static struct dht_sensor_data reading2 = { .success = 0 };
+static struct dht_sensor_data reading1 = { .success = 0, .count = 0 };
+static struct dht_sensor_data reading2 = { .success = 0, .count = 0 };
 
 struct dht_sensor_data *ICACHE_FLASH_ATTR dht1Read(void) {
 	return &reading1;
@@ -65,7 +64,7 @@ struct dht_sensor_data *ICACHE_FLASH_ATTR dht2Read(void) {
 }
 
 static void ICACHE_FLASH_ATTR dht_Start_Cb(struct dht_sensor_data *reading) {
-	easygpio_outputEnable(reading->pin, 0);// Set as output and Hold low for 20ms
+	easygpio_outputEnable(reading->pin, 0); // Set as output and Hold low for 20ms
 	os_timer_disarm(&reading->wakeTimer);
 	os_timer_setfn(&reading->wakeTimer, dht_Cb, reading);
 	os_timer_arm(&reading->wakeTimer, 20, false);
@@ -82,7 +81,7 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 
 	easygpio_outputSet(reading->pin, 1);
 	os_delay_us(40);
-	easygpio_outputDisable(reading->pin);// Set DHT_PIN pin as an input
+	easygpio_outputDisable(reading->pin); // Set DHT_PIN pin as an input
 
 	// wait for pin to drop?
 	while (easygpio_inputGet(reading->pin) == 1 && i < DHT_MAXCOUNT) {
@@ -90,7 +89,7 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 		i++;
 	}
 
-	if(i == DHT_MAXCOUNT) {
+	if (i == DHT_MAXCOUNT) {
 		reading->success = 0;
 		// os_printf("Failed to get reading, dying\r\n");
 		easygpio_outputSet(reading->pin, 1);
@@ -108,11 +107,11 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 		if (counter >= 1000)
 			break;
 		// store data after 3 reads
-		if ((i>3) && (i%2 == 0)) {
+		if ((i > 3) && (i % 2 == 0)) {
 			// shove each bit into the storage bytes
-			data[j/8] <<= 1;
+			data[j / 8] <<= 1;
 			if (counter > DHT_BREAKTIME)
-				data[j/8] |= 1;
+				data[j / 8] |= 1;
 			j++;
 		}
 	}
@@ -124,11 +123,21 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 			// checksum is valid
 			reading->temperature = scale_temperature(reading, data);
 			reading->humidity = scale_humidity(reading, data);
-			os_printf("DHT %d Temperature =  %d*C, Humidity = %d%%\n", reading->id, (int)(reading->temperature), (int)(reading->humidity));
-			reading->success = 1;
+			if (reading->count == 0) {
+				reading->avgTemperature = reading->temperature;
+				reading->avgHumidity = reading->humidity;
+				reading->count = 1;
+			} else {
+				reading->avgTemperature = (reading->avgTemperature * 4 + reading->temperature) / 5;
+				reading->avgHumidity = (reading->avgHumidity * 4 + reading->humidity) / 5;
+			}
+			INFO("DHT %d Average Temperature =  %d*C, Humidity = %d%%\n", reading->id,
+					(int) (reading->avgTemperature), (int) (reading->avgHumidity));
+			reading->success = true;
 		} else {
-			INFO("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j, data[4], checksum);
-			reading->success = 0;
+			INFO("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j, data[4],
+					checksum);
+			reading->success = false;
 		}
 	} else {
 		INFO("Got too few bits: %d should be at least 40\r\n", j);
