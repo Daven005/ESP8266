@@ -13,6 +13,8 @@
 #include "smartconfig.h"
 #include "user_config.h"
 
+#include "version.h"
+
 #define sleepms(x) os_delay_us(x*1000);
 
 LOCAL os_timer_t switch_timer;
@@ -95,8 +97,8 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 		int idx;
 		os_sprintf(topic, "/Raw/%10s/info", sysCfg.device_id);
 		os_sprintf(data,
-				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
-				sysCfg.deviceName, sysCfg.deviceLocation, sysCfg.updates, sysCfg.inputs);
+				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
+				sysCfg.deviceName, sysCfg.deviceLocation, version, sysCfg.updates, sysCfg.inputs);
 		for (idx = 0; idx < SETTINGS_SIZE; idx++) {
 			if (idx != 0)
 				os_sprintf(data + strlen(data), ", ");
@@ -127,6 +129,9 @@ void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
 		os_printf("SC_STATUS_LINK\n");
 		struct station_config *sta_conf = pdata;
 		wifi_station_set_config(sta_conf);
+		INFO("Connected to %s (%s) %d", sta_conf->ssid, sta_conf->password, sta_conf->bssid_set);
+		strcpy(sysCfg.sta_ssid, sta_conf->ssid);
+		strcpy(sysCfg.sta_pwd, sta_conf->password);
 		wifi_station_disconnect();
 		wifi_station_connect();
 		break;
@@ -325,7 +330,7 @@ void user_init(void) {
 	stdout_init();
 	gpio_init();
 	wifi_station_set_auto_connect(false);
-	wifi_station_set_reconnect_policy(false);
+	wifi_station_set_reconnect_policy(true);
 
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);

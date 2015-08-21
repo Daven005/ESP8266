@@ -88,9 +88,22 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean newversion newbuild newrevision
 
 all: checkdirs $(TARGET_OUT)
+
+newversion:
+	incVersion 0
+	touch user/user_main.c
+	
+newbuild:
+	incVersion 3
+	touch user/user_main.c
+
+newrevision:
+	incVersion 2
+	touch user/user_main.c
+
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"  -L$(SDK_LIBDIR) $(LD_SCRIPT)
