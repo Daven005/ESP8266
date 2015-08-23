@@ -19,49 +19,72 @@
 #include "wifi.h"
 #include "debug.h"
 #include "mqtt.h"
+#include "smartconfig.h"
 
-#define sleepms(x) os_delay_us(x*1000);
+#include "version.h"
 
 static struct Temperature temperature[MAX_SENSOR];
 static int sensors;
-static macString[20];
 
+enum SmartConfigAction {
+	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
+};
 LOCAL os_timer_t switch_timer;
 LOCAL os_timer_t ipScanTimer;
 LOCAL os_timer_t mqtt_timer;
-LOCAL os_timer_t mqtt_start_timer;
+LOCAL os_timer_t flash_timer;
 bool ICACHE_FLASH_ATTR getTemperature(int i, struct Temperature **t);
 void ICACHE_FLASH_ATTR checkControl(void);
 void ICACHE_FLASH_ATTR publishError(uint8 err, uint8 info);
 
-static void switchAction(void);
-#define Switch 0 // GPIO 00
+#define SWITCH 0 // GPI00
+#define LED 5 // NB same as an output
+
 static unsigned int switchCount;
 
 #define INPUT_SENSOR_ID_START 10
 const uint8 inputsGPIO[] = { 13, 12, 14, 16 };
-const uint8 outputsGPIO[MAX_OUTPUT] = { 4, 5 };
+const uint8 outputMap[MAX_OUTPUT] = { 4, 5 };
 uint8 currentInputs[4];
 bool currentOutputs[MAX_OUTPUT];
 bool outputOverrides[MAX_OUTPUT];
+bool checkSmartConfig(enum SmartConfigAction action);
 
 uint8 mqttConnected;
 
 MQTT_Client mqttClient;
 
+user_rf_pre_init(void) {}
+
 bool ICACHE_FLASH_ATTR checkSetOutput(uint8 op, uint8 set) {
 	if (op < MAX_OUTPUT) {
 		if (!outputOverrides[op]) {
 			if (set != 0) { // NB High == OFF
-				easygpio_outputSet(outputsGPIO[op], currentOutputs[op] = false);
+				easygpio_outputSet(outputMap[op], currentOutputs[op] = false);
 			} else {
-				easygpio_outputSet(outputsGPIO[op], currentOutputs[op] = true);
+				easygpio_outputSet(outputMap[op], currentOutputs[op] = true);
 			}
 			return currentOutputs[op];
 		}
 	}
 	publishError(2, op);
 	return false;
+}
+
+void ICACHE_FLASH_ATTR smartConfigFlash_cb(void) {
+	easygpio_outputSet(LED, !easygpio_inputGet(LED));
+}
+
+void ICACHE_FLASH_ATTR startSmartConfigFlash(int t, int repeat) {
+	easygpio_outputSet(LED, 1);
+	os_timer_disarm(&flash_timer);
+	os_timer_setfn(&flash_timer, (os_timer_func_t *) smartConfigFlash_cb, (void *) 0);
+	os_timer_arm(&flash_timer, t, repeat);
+}
+
+void ICACHE_FLASH_ATTR stopSmartConfigFlash(void) {
+	easygpio_outputSet(LED, 0);
+	os_timer_disarm(&flash_timer);
 }
 
 int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[]) {
@@ -155,7 +178,70 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	}
 }
 
-void ICACHE_FLASH_ATTR switchAction(void) {
+void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
+	switch (status) {
+	case SC_STATUS_WAIT:
+		os_printf("SC_STATUS_WAIT\n");
+		break;
+	case SC_STATUS_FIND_CHANNEL:
+		os_printf("SC_STATUS_FIND_CHANNEL\n");
+		break;
+	case SC_STATUS_GETTING_SSID_PSWD:
+		os_printf("SC_STATUS_GETTING_SSID_PSWD\n");
+		break;
+	case SC_STATUS_LINK:
+		os_printf("SC_STATUS_LINK\n");
+		struct station_config *sta_conf = pdata;
+		wifi_station_set_config(sta_conf);
+		INFO("Connected to %s (%s) %d", sta_conf->ssid, sta_conf->password, sta_conf->bssid_set);
+		strcpy(sysCfg.sta_ssid, sta_conf->ssid);
+		strcpy(sysCfg.sta_pwd, sta_conf->password);
+		wifi_station_disconnect();
+		wifi_station_connect();
+		break;
+	case SC_STATUS_LINK_OVER:
+		os_printf("SC_STATUS_LINK_OVER\n");
+		smartconfig_stop();
+		checkSmartConfig(SC_HAS_STOPPED);
+		break;
+	}
+}
+
+bool ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction action) {
+	static doingSmartConfig = false;
+
+	switch (action) {
+	case SC_CHECK:
+		break;
+	case SC_HAS_STOPPED:
+		os_printf("Finished smartConfig\n");
+		stopSmartConfigFlash();
+		doingSmartConfig = false;
+		MQTT_Connect(&mqttClient);
+		break;
+	case SC_TOGGLE:
+		if (doingSmartConfig) {
+			os_printf("Stop smartConfig\n");
+			stopSmartConfigFlash();
+			smartconfig_stop();
+			doingSmartConfig = false;
+			wifi_station_disconnect();
+			wifi_station_connect();
+			MQTT_Connect(&mqttClient);
+		} else {
+			os_printf("Start smartConfig\n");
+			MQTT_Disconnect(&mqttClient);
+			mqttConnected = false;
+			startSmartConfigFlash(100, true);
+			doingSmartConfig = true;
+			smartconfig_start(smartConfig_done, true);
+		}
+		break;
+	}
+	return doingSmartConfig;
+}
+
+void ICACHE_FLASH_ATTR printAll(void) {
 	int idx;
 
 	os_printf("Mapping: ");
@@ -165,7 +251,7 @@ void ICACHE_FLASH_ATTR switchAction(void) {
 	os_printf("\n");
 	os_printf("Outputs: ");
 	for (idx=0; idx< MAX_OUTPUT; idx++) {
-		os_printf("%d->%d (%d) ", idx, outputsGPIO[idx], currentOutputs[idx]);
+		os_printf("%d->%d (%d) ", idx, outputMap[idx], currentOutputs[idx]);
 	}
 	os_printf("\n");
 	os_printf("Settings: ");
@@ -176,22 +262,69 @@ void ICACHE_FLASH_ATTR switchAction(void) {
 
 }
 
+void ICACHE_FLASH_ATTR switchAction(int action) {
+	switch (action) {
+	case 1:
+		printAll();
+		break;
+	case 2:
+		break;
+	case 3:
+		break;
+	case 4:
+	case 5:
+		checkSmartConfig(SC_TOGGLE);
+		break;
+	}
+}
+
 void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
-	const swMax = 10;
+	const swOnMax = 100;
+	const swOffMax = 5;
+	static int switchPulseCount;
+	static enum {
+		IDLE, ON, OFF
+	} switchState = IDLE;
 
-	if (!easygpio_inputGet(Switch)) { // Switch is active LOW
-		switchCount++;
-		if (switchCount > swMax) switchCount = swMax;
-		if (switchCount > 5) {
-
+	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
+		switch (switchState) {
+		case IDLE:
+			switchState = ON;
+			switchCount++;
+			switchPulseCount = 1;
+			break;
+		case ON:
+			if (++switchCount > swOnMax)
+				switchCount = swOnMax;
+			break;
+		case OFF:
+			switchState = ON;
+			switchCount = 0;
+			switchPulseCount++;
+			break;
+		default:
+			switchState = IDLE;
+			break;
 		}
 	} else {
-		if (0 < switchCount && switchCount < 5) {
-			switchAction();
-		} else {
-
+		switch (switchState) {
+		case IDLE:
+			break;
+		case ON:
+			switchCount = 0;
+			switchState = OFF;
+			break;
+		case OFF:
+			if (++switchCount > swOffMax) {
+				switchState = IDLE;
+				switchAction(switchPulseCount);
+				switchPulseCount = 0;
+			}
+			break;
+		default:
+			switchState = IDLE;
+			break;
 		}
-		switchCount = 0;
 	}
 }
 
@@ -201,8 +334,9 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 		char data[200];
 		int idx;
 		os_sprintf(topic, "/Raw/%10s/info", sysCfg.device_id);
-		os_sprintf(data, "{\"Name\":\"%s\", \"Location\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
-			sysCfg.deviceName, sysCfg.deviceLocation, sysCfg.updates, sysCfg.inputs);
+		os_sprintf(data,
+				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
+				sysCfg.deviceName, sysCfg.deviceLocation, version, sysCfg.updates, sysCfg.inputs);
 		for (idx = 0; idx< SETTINGS_SIZE; idx++) {
 			if (idx != 0) os_sprintf(data+strlen(data), ", ");
 			os_sprintf(data+strlen(data), "%d", sysCfg.settings[idx]);
@@ -326,8 +460,8 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 							outputOverrides[id] = false;
 							break;
 						}
-						easygpio_outputSet(outputsGPIO[id], currentOutputs[id]);
-						os_printf("<%d> Output %d set to %d\n", id, outputsGPIO[id], currentOutputs[id]);
+						easygpio_outputSet(outputMap[id], currentOutputs[id]);
+						os_printf("<%d> Output %d set to %d\n", id, outputMap[id], currentOutputs[id]);
 					}
 				}
 			}
@@ -361,7 +495,7 @@ int ICACHE_FLASH_ATTR ds18b20() {
 
 	//750ms 1x, 375ms 0.5x, 188ms 0.25x, 94ms 0.12x
 	os_delay_us( 750*1000 );
-	wdt_feed();
+	//wdt_feed();
 
 	reset_search();
 	do {
@@ -434,50 +568,49 @@ void ICACHE_FLASH_ATTR ipScan_cb(void *arg) {
 	checkControl();
 }
 
-void ICACHE_FLASH_ATTR mqtt_start_cb(void *arg) {
-	os_printf("\r\nWiFi starting ...\r\n");
-
+LOCAL void ICACHE_FLASH_ATTR initDone_cb() {
 	CFG_Load();
+	os_printf("\n%s ( %s ) starting ...\n", sysCfg.deviceName, version);
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);
+	char temp[100];
+	os_sprintf(temp, "/Raw/%s/offline", sysCfg.device_id);
+	MQTT_InitLWT(&mqttClient, temp, "offline", 0, 0);
 
-	MQTT_InitLWT(&mqttClient, "/lwt", "offline", 0, 0);
 	MQTT_OnConnected(&mqttClient, mqttConnectedCb);
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
-	uint8_t macaddr[6];
-	wifi_get_macaddr(STATION_IF, macaddr);
-	os_sprintf(macString, MACSTR, MAC2STR(macaddr));
-	os_printf("MAC: %s\r\n", macString);
+	os_printf("SDK version is: %s\n", system_get_sdk_version());
+	os_printf("Smart-Config version is: %s\n", smartconfig_get_version());
+	system_print_meminfo();
+	os_printf("Flashsize map %d; id %lx\n", system_get_flash_size_map(), spi_flash_get_id());
 
-	easygpio_pinMode(Switch, EASYGPIO_PULLUP, EASYGPIO_INPUT);
-	easygpio_outputDisable(Switch);
+	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
+
+	easygpio_pinMode(SWITCH, EASYGPIO_PULLUP, EASYGPIO_INPUT);
+	easygpio_outputDisable(SWITCH);
 
 	uint8 idx;
 	for (idx=0; idx<sizeof(inputsGPIO); idx++) {
 		easygpio_pinMode(inputsGPIO[idx], EASYGPIO_PULLUP, EASYGPIO_INPUT);
 		easygpio_outputDisable(inputsGPIO[idx]);
 	}
-	for (idx=0; idx<sizeof(outputsGPIO); idx++) {
-		easygpio_pinMode(outputsGPIO[idx], EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
-		easygpio_outputSet(outputsGPIO[idx], (currentOutputs[idx] = 1)); // NB High == OFF
+	for (idx=0; idx<sizeof(outputMap); idx++) {
+		easygpio_pinMode(outputMap[idx], EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+		easygpio_outputSet(outputMap[idx], (currentOutputs[idx] = 1)); // NB High == OFF
 	}
-}
-
-void user_init(void) {
-	uart_init(BIT_RATE_115200, BIT_RATE_115200);
-	stdout_init();
-	gpio_init();
-	os_delay_us(1000000);
 
 	os_timer_disarm(&ipScanTimer);
 	os_timer_setfn(&ipScanTimer, (os_timer_func_t *)ipScan_cb, (void *)0);
 	os_timer_arm(&ipScanTimer, 11100, true);
-
-	os_timer_disarm(&mqtt_start_timer);
-	os_timer_setfn(&mqtt_start_timer, (os_timer_func_t *)mqtt_start_cb, (void *)0);
-	os_timer_arm(&mqtt_start_timer, 1000, false);
 }
 
+void user_init(void) {
+	stdout_init();
+	gpio_init();
+	wifi_station_set_auto_connect(false);
+	wifi_station_set_reconnect_policy(true);
+
+	system_init_done_cb(&initDone_cb);
+}

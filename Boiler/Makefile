@@ -18,7 +18,7 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.py
-ESPPORT		?= COM17
+ESPPORT		?= COM23
 
 # name for the target project
 TARGET		= app
@@ -28,13 +28,13 @@ MODULES		= user mqtt modules driver
 EXTRA_INCDIR    = include $(SDK_BASE)/include
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl 
+LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
-LDFLAGS		= -Wl,-M=boiler.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
+LDFLAGS		= -Wl,-M=Boiler.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
 # linker script used for the above linkier step
 LD_SCRIPT	= eagle.app.v6.ld
@@ -43,7 +43,6 @@ LD_SCRIPT	= eagle.app.v6.ld
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
 SDK_INCDIR	= include include/driver driver
-# include/json
 
 # select which tools to use as compiler, librarian and linker
 CC		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
@@ -83,18 +82,28 @@ endif
 
 vpath %.c $(SRC_DIR)
 
-user_main.o: include/user_config.h include/driver/ds18b20.h
-config.c: include/user_config.h
-
 define compile-objects
 $1/%.o: %.c
 	echo "CC $$< $(MODULE_INCDIR)"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean newversion newbuild newrevision
 
 all: checkdirs $(TARGET_OUT)
+
+newversion:
+	incVersion 0
+	touch user/user_main.c
+	
+newbuild:
+	incVersion 3
+	touch user/user_main.c
+
+newrevision:
+	incVersion 2
+	touch user/user_main.c
+
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"  -L$(SDK_LIBDIR) $(LD_SCRIPT)
@@ -121,6 +130,7 @@ $(APP_AR): $(OBJ)
 	$(Q) $(AR) cru $@ $^
 
 checkdirs: $(BUILD_DIR) $(FW_BASE)
+	@echo $(BUILD_DIR)
 
 $(BUILD_DIR):
 	$(Q) mkdir -p $@

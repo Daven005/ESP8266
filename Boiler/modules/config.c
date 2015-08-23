@@ -36,7 +36,7 @@
 #include <spi_flash.h>
 #include <user_interface.h>
 
-#include "../mqtt/include/debug.h"
+#include "debug.h"
 
 SYSCFG sysCfg;
 SAVE_FLAG saveFlag;
