@@ -316,10 +316,8 @@ LOCAL void ICACHE_FLASH_ATTR initDone_cb() {
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	os_printf("Hostname was: %s\n", wifi_station_get_hostname());
-	wifi_station_set_hostname(sysCfg.deviceName);
-	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
-	os_printf("Hostname is: %s\n", wifi_station_get_hostname());
+	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
+
 	os_printf("SDK version is: %s\n", system_get_sdk_version());
 	os_printf("Smart-Config version is: %s\n", smartconfig_get_version());
 	system_print_meminfo();
