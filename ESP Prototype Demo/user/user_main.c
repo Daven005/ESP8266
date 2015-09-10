@@ -3,38 +3,49 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
-#include "easygpio.h"
 #include "stdout.h"
 
+#include "easygpio.h"
 #include "config.h"
 #include "wifi.h"
 #include "debug.h"
 #include "mqtt.h"
 #include "smartconfig.h"
 #include "user_config.h"
-
 #include "version.h"
+#include "time.h"
+#include "ws2811.h"
+#include "webServer.h"
 
-#define sleepms(x) os_delay_us(x*1000);
-
-LOCAL os_timer_t switch_timer;
-LOCAL os_timer_t flash_timer;
-LOCAL os_timer_t transmit_timer;
-LOCAL os_timer_t date_timer;
+static os_timer_t switch_timer;
+static os_timer_t flash_timer;
+static os_timer_t transmit_timer;
+static os_timer_t date_timer;
+static os_timer_t WS2811_timer;
 
 MQTT_Client mqttClient;
 uint8 mqttConnected;
 
 #define LED 5
 #define SWITCH 0 // GPIO 00
+#define WS2811 13
 static unsigned int switchCount;
+
+static uint32 minHeap = 0xffffffff;
 
 enum SmartConfigAction {
 	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
 };
-bool ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction);
+bool checkSmartConfig(enum SmartConfigAction);
+void  user_webserver_init(uint32 port);
 
 void user_rf_pre_init() {
+}
+
+uint32 checkMinHeap(void) {
+	uint32 heap = system_get_free_heap_size();
+	if (heap < minHeap) minHeap = heap;
+	return minHeap;
 }
 
 int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[]) {
@@ -80,25 +91,28 @@ void ICACHE_FLASH_ATTR stopSmartConfigFlash(void) {
 
 void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
 	if (mqttConnected) {
-		char topic[100];
-		char data[100];
+		char *topic = (char *) os_zalloc(100);
+		char *data = (char *) os_zalloc(100);
 		os_sprintf(topic, (const char*) "/Raw/%s/0/info", sysCfg.device_id);
 		os_sprintf(data, (const char*) "{ \"Type\":\"Level\", \"Value\":%d, \"RSSI\": %d}",
 				system_adc_read(), wifi_station_get_rssi());
 		MQTT_Publish(client, topic, data, strlen(data), 0, false);
 		os_printf("%s=>%s\n", topic, data);
+		os_free(topic);
+		os_free(data);
 	}
 }
 
 void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 	if (mqttConnected) {
-		char topic[50];
-		char data[200];
+		char *topic = (char *) os_zalloc(50);
+		char *data = (char *) os_zalloc(200);
 		int idx;
+
 		os_sprintf(topic, "/Raw/%10s/info", sysCfg.device_id);
 		os_sprintf(data,
-				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
-				sysCfg.deviceName, sysCfg.deviceLocation, version, sysCfg.updates, sysCfg.inputs);
+			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
+			sysCfg.deviceName, sysCfg.deviceLocation, version, sysCfg.updates, sysCfg.inputs);
 		for (idx = 0; idx < SETTINGS_SIZE; idx++) {
 			if (idx != 0)
 				os_sprintf(data + strlen(data), ", ");
@@ -107,11 +121,28 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 		os_sprintf(data + strlen(data), "]}");
 		os_printf("%s=>%s\n", topic, data);
 		MQTT_Publish(client, topic, data, strlen(data), 0, true);
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
 	}
 }
 
-void ICACHE_FLASH_ATTR switchAction(void) {
-	publishData(&mqttClient);
+void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
+	if (mqttConnected) {
+		char *topic = (char *) os_zalloc(50);
+		char *data = (char *) os_zalloc(100);
+		int idx;
+
+		os_sprintf(topic, "/Raw/%10s/reset", sysCfg.device_id);
+		os_sprintf(data,
+			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":\"%d\"}",
+			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason);
+		os_printf("%s=>%s\n", topic, data);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
+	}
 }
 
 void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
@@ -179,27 +210,79 @@ void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
 	MQTT_Client* client = (MQTT_Client*) args;
 	if (!checkSmartConfig(SC_CHECK)) {
 		publishData(client);
+		checkMinHeap();
+	}
+}
+
+void ICACHE_FLASH_ATTR switchAction(int action) {
+	switch (action) {
+	case 1:
+		ws2811NextPlay();
+		break;
+	case 2:
+		ws2811Continuous();
+		break;
+	case 3:
+		break;
+	case 4:
+		ws2811Print();
+		os_printf("minHeap: %d\n", checkMinHeap());
+		break;
+	case 5:
+		checkSmartConfig(SC_TOGGLE);
+		break;
+	case 6:
+		break;
 	}
 }
 
 void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
-	const swMax = 100;
+	const swOnMax = 100;
+	const swOffMax = 5;
+	static int switchPulseCount;
+	static enum {
+		IDLE, ON, OFF
+	} switchState = IDLE;
 
 	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
-		switchCount++;
-		if (switchCount > swMax)
-			switchCount = swMax;
-		if (switchCount > 20) {
-			checkSmartConfig(SC_TOGGLE);
+		switch (switchState) {
+		case IDLE:
+			switchState = ON;
+			switchCount++;
+			switchPulseCount = 1;
+			break;
+		case ON:
+			if (++switchCount > swOnMax)
+				switchCount = swOnMax;
+			break;
+		case OFF:
+			switchState = ON;
 			switchCount = 0;
+			switchPulseCount++;
+			break;
+		default:
+			switchState = IDLE;
+			break;
 		}
 	} else {
-		if (0 < switchCount && switchCount < 5) {
-			switchAction();
-		} else {
-
+		switch (switchState) {
+		case IDLE:
+			break;
+		case ON:
+			switchCount = 0;
+			switchState = OFF;
+			break;
+		case OFF:
+			if (++switchCount > swOffMax) {
+				switchState = IDLE;
+				switchAction(switchPulseCount);
+				switchPulseCount = 0;
+			}
+			break;
+		default:
+			switchState = IDLE;
+			break;
 		}
-		switchCount = 0;
 	}
 }
 
@@ -207,6 +290,7 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	os_printf("WiFi status: %d\r\n", status);
 	if (status == STATION_GOT_IP) {
 		MQTT_Connect(&mqttClient);
+		 user_webserver_init(80);
 	} else {
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
@@ -219,7 +303,7 @@ void ICACHE_FLASH_ATTR dateTimerCb(void) {
 }
 
 void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
-	char topic[100];
+	char *topic = (char*) os_zalloc(100);
 
 	MQTT_Client* client = (MQTT_Client*) args;
 	mqttConnected = true;
@@ -230,7 +314,11 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	MQTT_Subscribe(client, topic, 0);
 
 	MQTT_Subscribe(client, "/App/date", 0);
+	MQTT_Subscribe(client, "/App/test", 0);
+	MQTT_Subscribe(client, "/App/pattern", 0);
+	MQTT_Subscribe(client, "/App/play", 0);
 
+	publishDeviceReset(client);
 	publishDeviceInfo(client);
 
 	os_timer_disarm(&switch_timer);
@@ -245,6 +333,10 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) client);
 	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
 	easygpio_outputSet(LED, 0); // Turn LED off when connected
+
+	checkMinHeap();
+	os_free(topic);
+	ws2811ResumePlay();
 }
 
 void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
@@ -253,6 +345,17 @@ void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	mqttConnected = false;
 	if (!checkSmartConfig(SC_CHECK)) {
 		MQTT_Connect(&mqttClient);
+	}
+}
+
+static void ICACHE_FLASH_ATTR ws2811TimerCb(uint32 count) {
+	static uint8 startIdx = 0;
+	if (count == 0) {
+		if (startIdx >= 45)
+			startIdx = 0;
+		ws2811TestPattern(startIdx++);
+	} else {
+		ws2811TestPattern(count);
 	}
 }
 
@@ -291,18 +394,45 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 			}
 		} else if (strcmp("App", tokens[0]) == 0) {
 			if (tokenCount >= 2 && strcmp("date", tokens[1]) == 0) {
+				ws2811SetTime((time_t) atol(dataBuf));
 				os_timer_disarm(&date_timer); // Restart it
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
+			} else if (tokenCount >= 2 && strcmp("test", tokens[1]) == 0) {
+				int count = atoi(dataBuf);
+				if (count >= 0) {
+					os_timer_disarm(&WS2811_timer);
+					os_timer_setfn(&WS2811_timer, (os_timer_func_t *) ws2811TimerCb, count);
+					os_timer_arm(&WS2811_timer, 50, true);
+				} else {
+					ws2811TestPattern(-count);
+				}
+			} else if (tokenCount >= 2 && strcmp("pattern", tokens[1]) == 0) {
+				patternSpec(dataBuf);
+			} else if (tokenCount >= 2 && strcmp("play", tokens[1]) == 0) {
+				playPatterns(dataBuf);
 			}
 		}
+		checkMinHeap();
+		os_free(topicBuf);
+		os_free(dataBuf);
 	}
-	os_free(topicBuf);
-	os_free(dataBuf);
 }
 
-LOCAL void ICACHE_FLASH_ATTR initDone_cb() {
+static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in BYTES
+  uint32_t id = spi_flash_get_id();
+  uint8_t mfgr_id = id & 0xff;
+  uint8_t type_id = (id >> 8) & 0xff; // not relevant for size calculation
+  uint8_t size_id = (id >> 16) & 0xff; // lucky for us, WinBond ID's their chips as a form that lets us calculate the size
+  if(mfgr_id != 0xEF) // 0xEF is WinBond; that's all we care about (for now)
+    return 0;
+  return 1 << size_id;
+}
+
+static void ICACHE_FLASH_ATTR initDone_cb() {
 	CFG_Load();
-	os_printf("\n%s starting ...\n", sysCfg.deviceName);
+	CFG_print();
+	ws2811Init();
+	os_printf("\n%s ( %s ) starting ...\n", sysCfg.deviceName, version);
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass,
@@ -321,10 +451,12 @@ LOCAL void ICACHE_FLASH_ATTR initDone_cb() {
 	os_printf("SDK version is: %s\n", system_get_sdk_version());
 	os_printf("Smart-Config version is: %s\n", smartconfig_get_version());
 	system_print_meminfo();
-	os_printf("Flashsize map %d; id %lx\n", system_get_flash_size_map(), spi_flash_get_id());
+	int sz = fs_size();
+	os_printf("Flashsize map %d; id %lx (%lx - %d bytes)\n", system_get_flash_size_map(), spi_flash_get_id(), sz, sz/8);
+	os_printf("Boot mode: %d, version %d. Userbin %lx\n", system_get_boot_mode(), system_get_boot_version(), system_get_userbin_addr());
 }
 
-void user_init(void) {
+void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
 	wifi_station_set_auto_connect(false);
@@ -332,5 +464,9 @@ void user_init(void) {
 
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);
+	easygpio_pinMode(WS2811, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_outputSet(WS2811, 0);
+	easygpio_pinMode(12, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_outputSet(12, 0);
 	system_init_done_cb(&initDone_cb);
 }

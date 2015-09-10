@@ -8,7 +8,9 @@
 #ifndef USER_DEBUG_H_
 #define USER_DEBUG_H_
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #ifndef INFO
 #define INFO if (DEBUG>=1) os_printf
 #endif

@@ -110,5 +110,10 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 
 		CFG_Save();
 	}
+}
 
+void ICACHE_FLASH_ATTR CFG_print(void) {
+	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
+	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
 }

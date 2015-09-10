@@ -63,7 +63,7 @@ typedef struct {
 
 void ICACHE_FLASH_ATTR CFG_Save();
 void ICACHE_FLASH_ATTR CFG_Load();
-
+void CFG_print(void);
 extern SYSCFG sysCfg;
 
 #endif /* USER_CONFIG_H_ */

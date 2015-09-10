@@ -13,12 +13,14 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_1_3
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.py
 ESPPORT		?= COM23
+
+ROM0_ADDR   ?= 0x10000
 
 # name for the target project
 TARGET		= app
@@ -115,14 +117,16 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
 	$(vecho) "objcopy done"
 	$(vecho) "Run gen_appbin.exe"
+	$(OBJDUMP) test.out -h >test.log
+	cp $(TARGET_OUT) test.out
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
 #	$(Q) rm eagle.app.sym
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
+	$(vecho) "Generated eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
 	$(vecho) "eagle.flash.bin-------->0x00000"
-	$(vecho) "eagle.irom0text.bin---->0x40000"
+	$(vecho) "eagle.irom0text.bin---->$(ROM0_ADDR)"
 	$(vecho) "Done"
 
 $(APP_AR): $(OBJ)
@@ -144,7 +148,7 @@ flashonefile: all
 	$(OBJCOPY) --only-section .rodata -O binary $(TARGET_OUT) eagle.app.v6.rodata.bin
 	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET_OUT) eagle.app.v6.irom0text.bin
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
-	$(SDK_TOOLS)/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin 0x40000
+	$(SDK_TOOLS)/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin $(ROM0_ADDR)
 	rm -f eagle.app.v6.data.bin
 	rm -f eagle.app.v6.flash.bin
 	rm -f eagle.app.v6.irom0text.bin
@@ -158,7 +162,7 @@ flashonefile: all
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 115200 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 write_flash 0x00000 firmware/eagle.flash.bin $(ROM0_ADDR) firmware/eagle.irom0text.bin
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."
