@@ -13,8 +13,7 @@
 #include "mqtt.h"
 #include "user_config.h"
 #include "smartconfig.h"
-
-#define sleepms(x) os_delay_us(x*1000);
+#include "version.h"
 
 LOCAL os_timer_t switch_timer;
 LOCAL os_timer_t smartConfigFlashTimer;
@@ -27,7 +26,7 @@ uint8 mqttConnected;
 uint16 currentPressure;
 enum {TANK_UNKNOWN, TANK_LOW, TANK_OK} tankStatus = TANK_UNKNOWN;
 enum {PUMP_AUTO, PUMP_OFF, PUMP_ON} pumpOverride = PUMP_AUTO;
-
+enum SmartConfigAction {SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE};
 #define LED 5
 #define LED2 3
 #define PUMP 4
@@ -134,6 +133,23 @@ void ICACHE_FLASH_ATTR process_cb(void) { // Every 100mS
 		easygpio_outputSet(LED, 1);
 		pumpOnCount = 0;
 		break;
+	}
+}
+
+void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
+	if (mqttConnected) {
+		char *topic = (char *) os_zalloc(50);
+		char *data = (char *) os_zalloc(100);
+		int idx;
+
+		os_sprintf(topic, "/Raw/%10s/reset", sysCfg.device_id);
+		os_sprintf(data,
+			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":\"%d\"}",
+			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason);
+		os_printf("%s=>%s\n", topic, data);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		os_free(topic);
+		os_free(data);
 	}
 }
 
@@ -268,32 +284,77 @@ void ICACHE_FLASH_ATTR checkPumpOverride(void) {
 	os_printf("PO=%d\n", pumpOverride);
 }
 
-void ICACHE_FLASH_ATTR switchAction(void) {
-	publishData(&mqttClient);
-	checkPumpOverride();
-}
-
-void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
-	const swMax = 100;
-
-	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
-		switchCount++;
-		if (switchCount > swMax) switchCount = swMax;
-		if (switchCount > 20) {
-			checkSmartConfig(2);
-			switchCount = 0;
-		}
-	} else {
-		if (0 < switchCount && switchCount < 5) {
-			switchAction();
-		} else {
-
-		}
-		switchCount = 0;
+void ICACHE_FLASH_ATTR switchAction(int action) {
+	switch (action) {
+	case 1:
+		checkPumpOverride();
+		break;
+	case 2:
+		publishData(&mqttClient);
+		break;
+	case 3:
+		break;
+	case 4:
+		break;
+	case 5:
+		checkSmartConfig(SC_TOGGLE);
+		break;
+	case 6:
+		break;
 	}
 }
 
-void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
+void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
+	const swOnMax = 100;
+	const swOffMax = 5;
+	static int switchPulseCount;
+	static enum {
+		IDLE, ON, OFF
+	} switchState = IDLE;
+
+	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
+		switch (switchState) {
+		case IDLE:
+			switchState = ON;
+			switchCount++;
+			switchPulseCount = 1;
+			break;
+		case ON:
+			if (++switchCount > swOnMax)
+				switchCount = swOnMax;
+			break;
+		case OFF:
+			switchState = ON;
+			switchCount = 0;
+			switchPulseCount++;
+			break;
+		default:
+			switchState = IDLE;
+			break;
+		}
+	} else {
+		switch (switchState) {
+		case IDLE:
+			break;
+		case ON:
+			switchCount = 0;
+			switchState = OFF;
+			break;
+		case OFF:
+			if (++switchCount > swOffMax) {
+				switchState = IDLE;
+				switchAction(switchPulseCount);
+				switchPulseCount = 0;
+			}
+			break;
+		default:
+			switchState = IDLE;
+			break;
+		}
+	}
+}
+
+static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	char topic[100];
 
 	MQTT_Client* client = (MQTT_Client*)args;
@@ -310,6 +371,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 
 	MQTT_Subscribe(client, "/App/rainwater/level", 0);
 
+	publishDeviceReset(client);
 	publishDeviceInfo(client);
 
 	os_timer_disarm(&switch_timer);
@@ -327,7 +389,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	os_timer_arm(&process_timer, 100, true);
 }
 
-LOCAL void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
+static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	ets_uart_printf("WiFi status: %d\r\n", status);
 	if (status == STATION_GOT_IP){
 		MQTT_Connect(&mqttClient);
@@ -337,9 +399,30 @@ LOCAL void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	}
 }
 
-LOCAL void ICACHE_FLASH_ATTR mqtt_start_cb(void) {
-	os_printf("\nLevelControl V0.1.0\n");
+static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in BYTES
+  uint32_t id = spi_flash_get_id();
+  uint8_t mfgr_id = id & 0xff;
+  uint8_t type_id = (id >> 8) & 0xff; // not relevant for size calculation
+  uint8_t size_id = (id >> 16) & 0xff; // lucky for us, WinBond ID's their chips as a form that lets us calculate the size
+  if(mfgr_id != 0xEF) // 0xEF is WinBond; that's all we care about (for now)
+    return 0;
+  return 1 << size_id;
+}
+
+static void ICACHE_FLASH_ATTR showSysInfo() {
+	os_printf("SDK version is: %s\n", system_get_sdk_version());
+	os_printf("Smart-Config version is: %s\n", smartconfig_get_version());
+	system_print_meminfo();
+	int sz = fs_size();
+	os_printf("Flashsize map %d; id %lx (%lx - %d bytes)\n", system_get_flash_size_map(),
+			spi_flash_get_id(), sz, sz / 8);
+	os_printf("Boot mode: %d, version %d. Userbin %lx\n", system_get_boot_mode(),
+			system_get_boot_version(), system_get_userbin_addr());
+}
+
+LOCAL void ICACHE_FLASH_ATTR initDone_cb(void) {
 	CFG_Load();
+	os_printf("\n%s ( %s ) starting ...\n", sysCfg.deviceName, version);
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);
@@ -353,6 +436,8 @@ LOCAL void ICACHE_FLASH_ATTR mqtt_start_cb(void) {
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
 	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
+
+	showSysInfo();
 }
 
 void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
@@ -398,12 +483,14 @@ int ICACHE_FLASH_ATTR checkSmartConfig(int action) {
 			stopSmartConfigFlash();
 			smartconfig_stop();
 			doingSmartConfig = false;
+			MQTT_Connect(&mqttClient);
 		} else {
 			os_printf("Start smartConfig\n");
-			wifi_station_disconnect();
+			MQTT_Disconnect(&mqttClient);
+			mqttConnected = false;
 			startSmartConfigFlash(100, true);
-			smartconfig_start(SC_TYPE_ESPTOUCH, smartConfig_done, false);
 			doingSmartConfig = true;
+			smartconfig_start(smartConfig_done, true);
 		}
 		break;
 	}
@@ -420,5 +507,5 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	easygpio_outputSet(LED, 1);
 	easygpio_outputSet(LED2, 0);
 	easygpio_outputSet(PUMP, 0);
-	system_init_done_cb(&mqtt_start_cb);
+	system_init_done_cb(&initDone_cb);
 }

@@ -5,7 +5,7 @@
 #define LCD_D_C 13
 #define LCD_RST 2
 
-#define Switch 0
+#define SWITCH 0
 
 extern void clearLcd(void);
 

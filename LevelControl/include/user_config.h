@@ -1,8 +1,8 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A3	/* Change this value to load default configurations */
-#define CFG_LOCATION	0x3C	/* Please don't change or if you know what you doing */
+#define CFG_HOLDER	0x00FF55A4	/* Change this value to load default configurations */
+#define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
 /*DEFAULT CONFIGURATIONS*/
@@ -16,7 +16,7 @@
 #define MQTT_USER			""
 #define MQTT_PASS			""
 
-#define STA_SSID "Berry2"
+#define STA_SSID "EE-berry"
 #define STA_PASS "fog-phone-deep"
 #define STA_TYPE AUTH_WPA2_PSK
 
@@ -42,24 +42,10 @@
 #define MAX_PUMP_ON_WARNING 600 // 60 Sec
 #define MAX_PUMP_ON_ERROR 3000 // 5 Min
 
-#define SETTING_DHW_START_BOILER 0
-#define SETTING_DHW_STOP_BOILER 1
-#define SETTING_WB_IS_ON_TEMP 2
-#define SETTING_CH_START_BOILER 3
-#define SETTING_DHW_USE_ALL_HEAT 4
 
 #define SET_MINIMUM 20
 #define SET_MAXIMUM 1024
 
-#define MAP_TEMP_TS_TOP 0
-#define MAP_TEMP_TS_MIDDLE 1
-#define MAP_TEMP_TS_BOTTOM 2
-#define MAP_WB_FLOW_TEMP 3
-
-#define IP_CALL_FOR_HEAT 0
-
-#define OP_OB_CIRC_ON 0
-#define OP_WB_CIRC_ON 1
 
 #define UPDATES 60
 #define INPUTS 0
