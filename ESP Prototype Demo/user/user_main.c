@@ -428,6 +428,17 @@ static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in
   return 1 << size_id;
 }
 
+void ICACHE_FLASH_ATTR showSysInfo() {
+	os_printf("SDK version is: %s\n", system_get_sdk_version());
+	os_printf("Smart-Config version is: %s\n", smartconfig_get_version());
+	system_print_meminfo();
+	int sz = fs_size();
+	os_printf("Flashsize map %d; id %lx (%lx - %d bytes)\n", system_get_flash_size_map(),
+			spi_flash_get_id(), sz, sz / 8);
+	os_printf("Boot mode: %d, version %d. Userbin %lx\n", system_get_boot_mode(),
+			system_get_boot_version(), system_get_userbin_addr());
+}
+
 static void ICACHE_FLASH_ATTR initDone_cb() {
 	CFG_Load();
 	CFG_print();
@@ -448,12 +459,7 @@ static void ICACHE_FLASH_ATTR initDone_cb() {
 
 	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 
-	os_printf("SDK version is: %s\n", system_get_sdk_version());
-	os_printf("Smart-Config version is: %s\n", smartconfig_get_version());
-	system_print_meminfo();
-	int sz = fs_size();
-	os_printf("Flashsize map %d; id %lx (%lx - %d bytes)\n", system_get_flash_size_map(), spi_flash_get_id(), sz, sz/8);
-	os_printf("Boot mode: %d, version %d. Userbin %lx\n", system_get_boot_mode(), system_get_boot_version(), system_get_userbin_addr());
+	showSysInfo();
 }
 
 void ICACHE_FLASH_ATTR user_init(void) {
