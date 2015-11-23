@@ -4,6 +4,7 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
+#include "gpio.h"
 #include "easygpio.h"
 #include "stdout.h"
 
@@ -20,6 +21,7 @@ LOCAL os_timer_t smartConfigFlashTimer;
 LOCAL os_timer_t pumpOverrideFlashTimer;
 LOCAL os_timer_t process_timer;
 LOCAL os_timer_t transmit_timer;
+LOCAL os_timer_t flow_timer;
 
 MQTT_Client mqttClient;
 uint8 mqttConnected;
@@ -31,7 +33,14 @@ enum SmartConfigAction {SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE};
 #define LED2 3
 #define PUMP 4
 #define SWITCH 0 // GPIO 00
+#define FLOW_SENSOR 14
+
 static unsigned int switchCount;
+static int pumpOnCount = 0;
+static uint32 timedFlowCount;
+static uint32 flowCount;
+static uint16 flowTimes;
+static uint16 flowMax;
 
 // sysCfg.settings
 #define SET_PUMP_ON 0
@@ -101,9 +110,8 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, uint8 info) {
 }
 
 void ICACHE_FLASH_ATTR process_cb(void) { // Every 100mS
-	static uint32 pumpOnCount = 0;
-
-	currentPressure = system_adc_read();
+	uint16 newPressure = system_adc_read();
+	currentPressure = (currentPressure * 9 + newPressure)/10; // Average over 1 second
 	switch (pumpOverride) {
 	case PUMP_AUTO:
 		if (currentPressure < sysCfg.settings[SET_PUMP_ON]) {
@@ -111,11 +119,11 @@ void ICACHE_FLASH_ATTR process_cb(void) { // Every 100mS
 			easygpio_outputSet(LED, 1);
 			pumpOnCount++;
 			if (pumpOnCount == MAX_PUMP_ON_WARNING) { // 1 minute
-				publishError(1, 0);
+				publishError(1, pumpOnCount);
 			} else if (pumpOnCount == MAX_PUMP_ON_ERROR) { // 5 minutes
-				publishError(2, tankStatus);
-			} else if (pumpOnCount >= MAX_PUMP_ON_ERROR) {
-				pumpOnCount = MAX_PUMP_ON_ERROR;
+				publishError(2, pumpOnCount);
+			} else if (pumpOnCount > MAX_PUMP_ON_ERROR) {
+				pumpOnCount = MAX_PUMP_ON_ERROR+1;
 			}
 		} else if (currentPressure > sysCfg.settings[SET_PUMP_OFF]) {
 			easygpio_outputSet(PUMP, 0);
@@ -126,12 +134,12 @@ void ICACHE_FLASH_ATTR process_cb(void) { // Every 100mS
 	case PUMP_OFF:
 		easygpio_outputSet(PUMP, 0);
 		easygpio_outputSet(LED, 0);
-		pumpOnCount = 0;
+		pumpOnCount = -1;
 		break;
 	case PUMP_ON:
 		easygpio_outputSet(PUMP, 1);
 		easygpio_outputSet(LED, 1);
-		pumpOnCount = 0;
+		pumpOnCount++;
 		break;
 	}
 }
@@ -142,7 +150,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
 		char *data = (char *) os_zalloc(100);
 		int idx;
 
-		os_sprintf(topic, "/Raw/%10s/reset", sysCfg.device_id);
+		os_sprintf(topic, "/Raw/%s/reset", sysCfg.device_id);
 		os_sprintf(data,
 			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":\"%d\"}",
 			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason);
@@ -154,13 +162,44 @@ void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
 }
 
 void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
-	char topic[100];
-	char data[100];
+	if (mqttConnected) {
+		char *topic = (char *) os_zalloc(100);
+		char *data = (char *) os_zalloc(100);
+		uint32 flowCountPerLitre = sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]; // To convert to mL
 
-	os_sprintf(topic, (const char*) "/Raw/%s/0/info", sysCfg.device_id);
-	os_sprintf(data, (const char*) "{ \"Type\":\"Pressure\", \"Value\":%d}",  currentPressure);
-	MQTT_Publish(client, topic, data, strlen(data), 0, false);
-	os_printf("%s=>%s\n", topic, data);
+		os_printf("%s=>%s\n", topic, data);
+		os_sprintf(topic, (const char*) "/Raw/%s/0/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"Pressure\", \"Value\":%d}", currentPressure);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		os_printf("%s=>%s\n", topic, data);
+
+		os_sprintf(topic, (const char*) "/Raw/%s/1/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"Pump\", \"Value\":%d}", pumpOnCount);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		os_printf("%s=>%s\n", topic, data);
+
+		os_sprintf(topic, (const char*) "/Raw/%s/2/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"FlowMax\", \"Value\":%d}", (flowMax*1000)/flowCountPerLitre);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		os_printf("%s=>%s\n", topic, data);
+
+		os_sprintf(topic, (const char*) "/Raw/%s/3/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"FlowTimes\", \"Value\":%d}", flowTimes);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		os_printf("%s=>%s\n", topic, data);
+
+		os_sprintf(topic, (const char*) "/Raw/%s/4/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"Flow\", \"Value\":%d}", (timedFlowCount*1000)/flowCountPerLitre);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		os_printf("%s=>%s\n", topic, data);
+
+		timedFlowCount = 0;
+		flowTimes = 0;
+		flowMax = 0;
+
+		os_free(topic);
+		os_free(data);
+	}
 }
 
 void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
@@ -169,16 +208,14 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 		char data[200];
 		int idx;
 		os_sprintf(topic, "/Raw/%10s/info", sysCfg.device_id);
-		os_sprintf(data, "{\"Name\":\"%s\", \"Location\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
-			sysCfg.deviceName, sysCfg.deviceLocation, sysCfg.updates, sysCfg.inputs);
-		 pp_soft_wdt_stop();
+		os_sprintf(data, "{\"Name\":\"%s\", \"Location\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"RSSI\": %d, \"Settings\":[",
+			sysCfg.deviceName, sysCfg.deviceLocation, sysCfg.updates, sysCfg.inputs, wifi_station_get_rssi());
 		 for (idx = 0; idx< SETTINGS_SIZE; idx++) {
 			if (idx != 0) os_sprintf(data+strlen(data), ", ");
 			os_sprintf(data+strlen(data), "%d", sysCfg.settings[idx]);
 		}
 		os_sprintf(data+strlen(data), "]}");
 		os_printf("%s=>%s\n", topic, data);
-		pp_soft_wdt_restart();
 		MQTT_Publish(client, topic, data, strlen(data), 0, true);
 	}
 }
@@ -304,7 +341,7 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 	}
 }
 
-void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
+void switchTimerCb(uint32_t *args) {
 	const swOnMax = 100;
 	const swOffMax = 5;
 	static int switchPulseCount;
@@ -381,6 +418,7 @@ static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	os_timer_disarm(&transmit_timer);
 	os_timer_setfn(&transmit_timer, (os_timer_func_t *)transmitCb, (void *)client);
 	os_timer_arm(&transmit_timer, sysCfg.updates*1000, true);
+
 	easygpio_outputSet(LED, 0); // Turn LED off when connected
 
 	// Check pressure every 100mS
@@ -420,6 +458,23 @@ static void ICACHE_FLASH_ATTR showSysInfo() {
 			system_get_boot_version(), system_get_userbin_addr());
 }
 
+static void flowTimerCb(void) {
+	static uint32 lastFlowCount = 0;
+	uint32 thisFlowCount;
+
+	ETS_GPIO_INTR_DISABLE();
+	timedFlowCount += flowCount;
+	flowCount = 0;
+	ETS_GPIO_INTR_ENABLE();
+
+	flowTimes++;
+	thisFlowCount = timedFlowCount - lastFlowCount;
+	if (thisFlowCount > flowMax) {
+		flowMax = thisFlowCount;
+	}
+	lastFlowCount = timedFlowCount;
+}
+
 LOCAL void ICACHE_FLASH_ATTR initDone_cb(void) {
 	CFG_Load();
 	os_printf("\n%s ( %s ) starting ...\n", sysCfg.deviceName, version);
@@ -434,6 +489,10 @@ LOCAL void ICACHE_FLASH_ATTR initDone_cb(void) {
 	MQTT_OnConnected(&mqttClient, mqttConnectedCb);
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
+
+	os_timer_disarm(&flow_timer);
+	os_timer_setfn(&flow_timer, (os_timer_func_t *)flowTimerCb, NULL);
+	os_timer_arm(&flow_timer, sysCfg.settings[SET_FLOW_TIMER]*1000, true);
 
 	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
 
@@ -466,8 +525,8 @@ void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
 	}
 }
 
-int ICACHE_FLASH_ATTR checkSmartConfig(int action) {
-	static doingSmartConfig = false;
+int ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction action) {
+	static bool doingSmartConfig = false;
 
 	switch (action) {
 	case 0:
@@ -497,6 +556,15 @@ int ICACHE_FLASH_ATTR checkSmartConfig(int action) {
 	return doingSmartConfig;
 }
 
+static void flowIntrHandler(void *arg) {
+	uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+	if (gpio_status & BIT(FLOW_SENSOR)) {
+		// This interrupt was intended for us - clear interrupt status
+		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(FLOW_SENSOR));
+		flowCount++;
+	}
+}
+
 void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
@@ -504,6 +572,10 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_pinMode(LED2, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_pinMode(PUMP, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_pinMode(FLOW_SENSOR, EASYGPIO_NOPULL, EASYGPIO_INPUT);
+	easygpio_attachInterrupt(FLOW_SENSOR, EASYGPIO_NOPULL, flowIntrHandler, NULL);
+	gpio_pin_intr_state_set(GPIO_ID_PIN(FLOW_SENSOR), GPIO_PIN_INTR_NEGEDGE); // Enable
+
 	easygpio_outputSet(LED, 1);
 	easygpio_outputSet(LED2, 0);
 	easygpio_outputSet(PUMP, 0);

@@ -13,12 +13,12 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK_1_3
+SDK_BASE	?= c:/Espressif/ESP8266_SDK
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.py
-ESPPORT		?= COM23
+ESPPORT		?= COM3
 
 ROM0_ADDR   ?= 0x10000
 
@@ -33,7 +33,7 @@ EXTRA_INCDIR    = include $(SDK_BASE)/include
 LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -Wl,-M=LevelControl.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -167,6 +167,10 @@ flash: all
 flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+
+flashinitADC:
+	$(vecho) "Flash init data for ADC 3.5V default and blank data."
+	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_ADC_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 rebuild: clean all
 

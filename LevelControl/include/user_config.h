@@ -1,7 +1,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A4	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A3	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
@@ -35,15 +35,19 @@
 
 #define SET_PUMP_ON 0
 #define SET_PUMP_OFF 1
+#define SET_FLOW_TIMER 2
+#define SET_FLOW_COUNT_PER_LITRE 3
 
 #define DEFAULT_PUMP_ON 100
 #define DEFAULT_PUMP_OFF 200
+#define DEFAULT_FLOW_TIMER 10
+#define DEFAULT_FLOW_COUNT_PER_LITRE 450
 
 #define MAX_PUMP_ON_WARNING 600 // 60 Sec
 #define MAX_PUMP_ON_ERROR 3000 // 5 Min
 
 
-#define SET_MINIMUM 20
+#define SET_MINIMUM 0
 #define SET_MAXIMUM 1024
 
 

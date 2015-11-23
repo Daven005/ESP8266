@@ -106,10 +106,12 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		}
 		sysCfg.settings[SET_PUMP_ON] = DEFAULT_PUMP_ON;
 		sysCfg.settings[SET_PUMP_OFF] = DEFAULT_PUMP_OFF;
+		sysCfg.settings[SET_FLOW_TIMER] = DEFAULT_FLOW_TIMER;
+		sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] = DEFAULT_FLOW_COUNT_PER_LITRE;
 		sysCfg.updates = UPDATES;
 		sysCfg.inputs = INPUTS;
 
-		os_sprintf(sysCfg.deviceName, "Not Set");
+		os_sprintf(sysCfg.deviceName, "Pump Control");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
 		ets_uart_printf(" default configuration\r\n");
 
