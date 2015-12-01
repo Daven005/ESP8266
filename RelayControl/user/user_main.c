@@ -30,8 +30,8 @@ bool currentOutputs[MAX_OUTPUT];
 bool outputOverrides[MAX_OUTPUT];
 
 #define RELAY 0
-#define RELAY_ON 1
-#define RELAY_OFF 0
+#define RELAY_ON 0
+#define RELAY_OFF 1
 #define LED 3
 
 void user_rf_pre_init(){}
@@ -120,11 +120,9 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 
 void ICACHE_FLASH_ATTR processData(void) {
 	struct dht_sensor_data* r = DHTRead();
-	static int avgTemperature = 0;
 
-	avgTemperature = (avgTemperature * 4 + r->temperature)/5;
 	if (!outputOverrides[0]) {
-		if (avgTemperature < sysCfg.settings[SETTING_SET_POINT]) {
+		if (r->avgTemperature < sysCfg.settings[SETTING_SET_POINT]) {
 			//os_printf("+");
 			easygpio_outputSet(RELAY, RELAY_ON);
 		} else {
@@ -132,10 +130,10 @@ void ICACHE_FLASH_ATTR processData(void) {
 			easygpio_outputSet(RELAY, RELAY_OFF);
 		}
 	}
-	if (avgTemperature < sysCfg.settings[SETTING_MIN_ALARM]) {
-		publishError(0, avgTemperature);
-	} else if (avgTemperature > sysCfg.settings[SETTING_MAX_ALARM]) {
-		publishError(1, avgTemperature);
+	if (r->avgTemperature < sysCfg.settings[SETTING_MIN_ALARM]) {
+		publishError(0, r->avgTemperature);
+	} else if (r->avgTemperature > sysCfg.settings[SETTING_MAX_ALARM]) {
+		publishError(1, r->avgTemperature);
 	}
 }
 

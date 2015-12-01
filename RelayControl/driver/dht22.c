@@ -1,23 +1,23 @@
 /*
-    Driver for the temperature and humidity sensor DHT11 and DHT22
-    Official repository: https://github.com/CHERTS/esp8266-dht11_22
+ Driver for the temperature and humidity sensor DHT11 and DHT22
+ Official repository: https://github.com/CHERTS/esp8266-dht11_22
 
-    Copyright (C) 2014 Mikhail Grigorev (CHERTS)
+ Copyright (C) 2014 Mikhail Grigorev (CHERTS)
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-*/
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
 #include "ets_sys.h"
 #include "osapi.h"
@@ -28,13 +28,12 @@
 #include "debug.h"
 
 enum DHTType sensor_type;
-#define sleepms(x) os_delay_us(x*1000);
 static ETSTimer dhtTimer;
 static ETSTimer dhtWakeTimer;
 static void ICACHE_FLASH_ATTR DHT_Cb(void);
 
 static inline float scale_humidity(int *data) {
-	if(sensor_type == DHT11) {
+	if (sensor_type == DHT11) {
 		return data[0];
 	} else {
 		float humidity = data[0] * 256 + data[1];
@@ -43,7 +42,7 @@ static inline float scale_humidity(int *data) {
 }
 
 static inline float scale_temperature(int *data) {
-	if(sensor_type == DHT11) {
+	if (sensor_type == DHT11) {
 		return data[2];
 	} else {
 		float temperature = data[2] & 0x7f;
@@ -56,16 +55,14 @@ static inline float scale_temperature(int *data) {
 	}
 }
 
-static struct dht_sensor_data reading = {
-	.success = 0
-};
+static struct dht_sensor_data reading = { .success = 0, .count = 0 };
 
 struct dht_sensor_data *ICACHE_FLASH_ATTR DHTRead(void) {
 	return &reading;
 }
 
 static void ICACHE_FLASH_ATTR DHT_Start_Cb(void) {
-	GPIO_OUTPUT_SET(DHT_PIN, 0);// Hold low for 20ms
+	GPIO_OUTPUT_SET(DHT_PIN, 0); // Hold low for 20ms
 	os_timer_disarm(&dhtWakeTimer);
 	os_timer_setfn(&dhtWakeTimer, DHT_Cb, NULL);
 	os_timer_arm(&dhtWakeTimer, 20, false);
@@ -82,7 +79,7 @@ static void ICACHE_FLASH_ATTR DHT_Cb(void) {
 
 	GPIO_OUTPUT_SET(DHT_PIN, 1);
 	os_delay_us(40);
-	GPIO_DIS_OUTPUT(DHT_PIN);// Set DHT_PIN pin as an input
+	GPIO_DIS_OUTPUT(DHT_PIN); // Set DHT_PIN pin as an input
 
 	// wait for pin to drop?
 	while (GPIO_INPUT_GET(DHT_PIN) == 1 && i < DHT_MAXCOUNT) {
@@ -90,7 +87,7 @@ static void ICACHE_FLASH_ATTR DHT_Cb(void) {
 		i++;
 	}
 
-	if(i == DHT_MAXCOUNT) {
+	if (i == DHT_MAXCOUNT) {
 		reading.success = 0;
 		os_printf("Failed to get reading, dying\r\n");
 		GPIO_OUTPUT_SET(DHT_PIN, 1);
@@ -108,11 +105,11 @@ static void ICACHE_FLASH_ATTR DHT_Cb(void) {
 		if (counter >= 1000)
 			break;
 		// store data after 3 reads
-		if ((i>3) && (i%2 == 0)) {
+		if ((i > 3) && (i % 2 == 0)) {
 			// shove each bit into the storage bytes
-			data[j/8] <<= 1;
+			data[j / 8] <<= 1;
 			if (counter > DHT_BREAKTIME)
-				data[j/8] |= 1;
+				data[j / 8] |= 1;
 			j++;
 		}
 	}
@@ -120,15 +117,24 @@ static void ICACHE_FLASH_ATTR DHT_Cb(void) {
 	if (j >= 39) {
 		checksum = (data[0] + data[1] + data[2] + data[3]) & 0xFF;
 		//os_printf("DHT: %02x %02x %02x %02x [%02x] CS: %02x", data[0], data[1],data[2],data[3],data[4],checksum);
-		if (data[4] == checksum) {
-			// checksum is valid
+		if (data[4] == checksum) { // checksum is valid
 			reading.temperature = scale_temperature(data);
 			reading.humidity = scale_humidity(data);
-			INFO("Temperature =  %d *C, Humidity = %d %%\r\n", (int)(reading.temperature), (int)(reading.humidity));
-			reading.success = 1;
+			if (reading.count == 0) {
+				reading.avgTemperature = reading.temperature;
+				reading.avgHumidity = reading.humidity;
+				reading.count = 1;
+			} else {
+				reading.avgTemperature = (reading.avgTemperature * 4 + reading.temperature) / 5;
+				reading.avgHumidity = (reading.avgHumidity * 4 + reading.humidity) / 5;
+			}
+			INFO("Average Temperature =  %d *C, Average Humidity = %d %%\r\n",
+					(int) (reading.avgTemperature), (int) (reading.avgHumidity));
+			reading.success = true;
 		} else {
-			os_printf("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j, data[4], checksum);
-			reading.success = 0;
+			os_printf("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j,
+					data[4], checksum);
+			reading.success = false;
 		}
 	} else {
 		os_printf("Got too few bits: %d should be at least 40\r\n", j);
