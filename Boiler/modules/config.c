@@ -29,7 +29,7 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "include/config.h"
+#include "config.h"
 
 #include <c_types.h>
 #include <osapi.h>
@@ -67,8 +67,7 @@ CFG_Save()
 }
 
 void ICACHE_FLASH_ATTR CFG_Load() {
-
-	ets_uart_printf("\r\nload ...\r\n");
+	os_printf("\nload (%x/%x)...\n", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 				   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	if (saveFlag.flag == 0) {
@@ -98,20 +97,30 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		sysCfg.mqtt_keepalive = MQTT_KEEPALIVE;
 
 		int idx;
-		for (idx=0; idx<MAP_SIZE; idx++) {
+		for (idx=0; idx < MAP_TEMP_SIZE; idx++) {
 			sysCfg.mapping[idx] = idx;
 		}
-		for (idx=0; idx<SETTINGS_SIZE; idx++) {
-			sysCfg.settings[idx] = SET_MINIMUM;
-		}
-		sysCfg.updates = UPDATES;
-		sysCfg.inputs = INPUTS;
+		sysCfg.settings[SETTING_DHW_SET_POINT] = DEFAULT_DHW_SET_POINT;
+		sysCfg.settings[SETTING_UFH_SET_POINT] = DEFAULT_UFH_SET_POINT;
+		sysCfg.settings[SETTING_RADS_SET_POINT] = DEFAULT_RADS_SET_POINT;
+		sysCfg.settings[SETTING_SET_POINT_DIFFERENTIAL] = DEFAULT_SET_POINT_DIFFERENTIAL;
+		sysCfg.settings[SETTING_WB_IS_ON_TEMP] = DEFAULT_WB_IS_ON_TEMP;
+		sysCfg.settings[SETTING_DHW_USE_ALL_HEAT] = DEFAULT_DHW_USE_ALL_HEAT;
+		sysCfg.settings[SETTING_OUTSIDE_TEMP_COMP] = DEFAULT_OUTSIDE_TEMP_COMP;
+		sysCfg.settings[SETTING_BOOST_TIME] = DEFAULT_BOOST_TIME;
+		sysCfg.settings[SETTING_BOOST_AMOUNT] = DEFAULT_BOOST_AMOUNT;
+		sysCfg.settings[SETTING_EMERGENCY_DUMP_TEMP] = DEFAULT_EMERGENCY_DUMP_TEMP;
+		sysCfg.settings[SETTING_OB_PUMP_DELAY] = DEFAULT_OB_PUMP_DELAY;
 
-		os_sprintf(sysCfg.deviceName, "Not Set");
+		sysCfg.settings[SETTING_DHW_ON_HOUR] = DEFAULT_DHW_ON_HOUR;
+		sysCfg.settings[SETTING_DHW_OFF_HOUR] = DEFAULT_DHW_OFF_HOUR;
+
+		sysCfg.updates = UPDATES;
+		sysCfg.inputs = MAX_INPUT;
+
+		os_sprintf(sysCfg.deviceName, "Boiler Control");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
-		ets_uart_printf(" default configuration\r\n");
 
 		CFG_Save();
 	}
-
 }
