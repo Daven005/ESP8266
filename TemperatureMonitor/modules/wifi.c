@@ -30,16 +30,16 @@ static void ICACHE_FLASH_ATTR wifi_check_ip(void *arg) {
 		os_timer_arm(&WiFiLinker, 2000, 0);
 	} else {
 		if (wifi_station_get_connect_status() == STATION_WRONG_PASSWORD) {
-			INFO("STATION_WRONG_PASSWORD\n");
+			INFOP("STATION_WRONG_PASSWORD\n");
 			wifi_station_connect();
 		} else if (wifi_station_get_connect_status() == STATION_NO_AP_FOUND) {
-			INFO("STATION_NO_AP_FOUND\n");
+			INFOP("STATION_NO_AP_FOUND\n");
 			wifi_station_connect();
 		} else if (wifi_station_get_connect_status() == STATION_CONNECT_FAIL) {
-			INFO("STATION_CONNECT_FAIL\n");
+			INFOP("STATION_CONNECT_FAIL\n");
 			wifi_station_connect();
 		} else {
-			INFO("STATION_IDLE\n");
+			INFOP("STATION_IDLE\n");
 		}
 		os_timer_setfn(&WiFiLinker, (os_timer_func_t *) wifi_check_ip, NULL);
 		os_timer_arm(&WiFiLinker, 500, 0);
@@ -54,7 +54,7 @@ static void ICACHE_FLASH_ATTR wifi_check_ip(void *arg) {
 void ICACHE_FLASH_ATTR WIFI_Connect(uint8_t* ssid, uint8_t* pass, uint8_t* deviceName, WifiCallback cb) {
 	struct station_config stationConf;
 
-	INFO("WIFI_INIT\r\n");
+	INFOP("WIFI_INIT\r\n");
 	wifi_set_opmode(STATION_MODE);
 	wifi_station_set_auto_connect(FALSE);
 	wifiCb = cb;
@@ -65,7 +65,7 @@ void ICACHE_FLASH_ATTR WIFI_Connect(uint8_t* ssid, uint8_t* pass, uint8_t* devic
 	os_sprintf(stationConf.password, "%s", pass);
 
 	wifi_station_set_config(&stationConf);
-	INFO("Hostname was: %s\n", wifi_station_get_hostname());
+	INFOP("Hostname was: %s\n", wifi_station_get_hostname());
 	wifi_station_set_hostname(deviceName);
 
 	os_timer_disarm(&WiFiLinker);

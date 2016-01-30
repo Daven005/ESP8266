@@ -70,12 +70,12 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.mingw.exe.release.1610200810." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.mingw.exe.release.972014652" name="MinGW GCC" superClass="cdt.managedbuild.toolchain.gnu.mingw.exe.release">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.mingw.exe.release.627094591" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.mingw.exe.release"/>
-							<builder buildPath="${workspace_loc:/TemperatureMonitor}/Release" id="cdt.managedbuild.tool.gnu.builder.mingw.base.171170352" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base"/>
+							<builder buildPath="${workspace_loc:/Boiler}/Release" id="cdt.managedbuild.tool.gnu.builder.mingw.base.171170352" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="cdt.managedbuild.tool.gnu.builder.mingw.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.mingw.exe.release.118903349" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.mingw.exe.release">
 								<option id="gnu.both.asm.option.include.paths.385282378" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\TemperatureMonitor\mqtt\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\Boiler\mqtt\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\TemperatureMonitor\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\Boiler\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1408067009" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -88,9 +88,9 @@
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.mingw.exe.release.option.optimization.level.1209626404" name="Optimization Level" superClass="gnu.c.compiler.mingw.exe.release.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.mingw.exe.release.option.debugging.level.22066382" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1567566765" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\TemperatureMonitor\mqtt\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\Boiler\mqtt\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\TemperatureMonitor\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Documents and Settings\Administrator\My Documents\ESP8266\Boiler\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.988460034" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -111,23 +111,23 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="TemperatureMonitor.cdt.managedbuild.target.gnu.cross.exe.1694798238" name="Executable" projectType="cdt.managedbuild.target.gnu.cross.exe"/>
 	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.mingw.exe.debug.746307618;cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.;cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.debug.1410535075;cdt.managedbuild.tool.gnu.c.compiler.input.184155796">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.mingw.exe.release.1610200810;cdt.managedbuild.config.gnu.mingw.exe.release.1610200810.;cdt.managedbuild.tool.gnu.c.compiler.mingw.exe.release.1924136263;cdt.managedbuild.tool.gnu.c.compiler.input.988460034">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/TemperatureMonitor"/>
 		</configuration>
 		<configuration configurationName="Release">
-			<resource resourceType="PROJECT" workspacePath="/TemperatureMonitor"/>
+			<resource resourceType="PROJECT" workspacePath="/Boiler"/>
 		</configuration>
-	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.release.389567773;cdt.managedbuild.config.gnu.cross.exe.release.389567773.;cdt.managedbuild.tool.gnu.cross.c.compiler.809459621;cdt.managedbuild.tool.gnu.c.compiler.input.1302452158">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1502281853;cdt.managedbuild.config.gnu.cross.exe.debug.1502281853.;cdt.managedbuild.tool.gnu.cross.c.compiler.1104820448;cdt.managedbuild.tool.gnu.c.compiler.input.1179717165">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
 		<buildTargets>
@@ -136,23 +136,31 @@
 				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
 				<buildTarget>all</buildTarget>
 				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
+				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 			<target name="clean" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>mingw32-make.exe</buildCommand>
-				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
+				<buildArguments>-f "${ProjDirPath}/Makefile" -C "${ProjDirPath}"</buildArguments>
 				<buildTarget>clean</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="flash" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
+				<buildTarget>flash</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="flash" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="flashinit" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>mingw32-make.exe</buildCommand>
 				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
-				<buildTarget>flash</buildTarget>
+				<buildTarget>flashinit</buildTarget>
 				<stopOnError>true</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
+				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 			<target name="newbuild" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
@@ -163,6 +171,13 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
+			<target name="// No CH" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>// No CH</buildCommand>
+				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
 			<target name="newrevision" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>mingw32-make.exe</buildCommand>
 				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
@@ -171,14 +186,7 @@
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="newversion" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>mingw32-make.exe</buildCommand>
-				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
-				<buildTarget>newversion</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
 		</buildTargets>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

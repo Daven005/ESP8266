@@ -10,3 +10,4 @@
  */
 
 void stdout_init(void);
+extern int os_printf_plus(const char * format, ...);

@@ -1,12 +1,4 @@
 eclipse.preferences.version=1
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/CWD/delimiter=;
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/CWD/operation=replace
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/CWD/value=C\:\\Documents and Settings\\Administrator\\My Documents\\ESP8266\\TemperatureMonitor
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/PWD/delimiter=;
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/PWD/operation=replace
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/PWD/value=C\:\\Documents and Settings\\Administrator\\My Documents\\ESP8266\\TemperatureMonitor
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/append=true
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/appendContributed=true
 indexer/indexAllFiles=true
 indexer/indexAllHeaderVersions=false
 indexer/indexAllVersionsSpecificHeaders=
