@@ -5,16 +5,14 @@
 #include <user_interface.h>
 #include "easygpio.h"
 #include "stdout.h"
-
+//#include "espmissingincludes.h"
 #include "config.h"
 #include "wifi.h"
 #include "debug.h"
 #include "mqtt.h"
 #include "smartconfig.h"
 #include "user_config.h"
-#include "dht22.h"
-
-#define sleepms(x) os_delay_us(x*1000);
+#include "version.h"
 
 LOCAL os_timer_t transmit_timer;
 LOCAL os_timer_t process_timer;
@@ -25,14 +23,18 @@ LOCAL os_timer_t date_timer;
 MQTT_Client mqttClient;
 uint8 mqttConnected;
 const uint8 outputMap[MAX_OUTPUT] = { 0 };
+static uint8 wifiChannel = 255;
+bool setupMode = false;
+static int flashCount;
+static char bestSSID[33];
 
 bool currentOutputs[MAX_OUTPUT];
 bool outputOverrides[MAX_OUTPUT];
 
-#define RELAY 0
+#define RELAY 2
 #define RELAY_ON 0
 #define RELAY_OFF 1
-#define LED 3
+#define LED 14
 
 void user_rf_pre_init(){}
 
@@ -61,14 +63,14 @@ void ICACHE_FLASH_ATTR smartConfigFlash_cb(void) {
 	easygpio_outputSet(LED, !easygpio_inputGet(LED));
 }
 
-void ICACHE_FLASH_ATTR startSmartConfigFlash(int t, int repeat) {
+void ICACHE_FLASH_ATTR startFlash(int t, int repeat) {
 	easygpio_outputSet(LED, 1);
 	os_timer_disarm(&flash_timer);
 	os_timer_setfn(&flash_timer, (os_timer_func_t *) smartConfigFlash_cb, (void *) 0);
 	os_timer_arm(&flash_timer, t, repeat);
 }
 
-void ICACHE_FLASH_ATTR stopSmartConfigFlash(void) {
+void ICACHE_FLASH_ATTR stopFlash(void) {
 	easygpio_outputSet(LED, 0);
 	os_timer_disarm(&flash_timer);
 }
@@ -76,13 +78,10 @@ void ICACHE_FLASH_ATTR stopSmartConfigFlash(void) {
 void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
 	char topic[100];
 	char data[100];
-	struct dht_sensor_data* r = DHTRead();
 
 	os_sprintf(topic, (const char*) "/Raw/%s/0/info", sysCfg.device_id);
-	os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":%d}",  (int) r->temperature);
 	MQTT_Publish(client, topic, data, strlen(data), 0, false);
 	os_sprintf(topic, (const char*) "/Raw/%s/1/info", sysCfg.device_id);
-	os_sprintf(data, (const char*) "{ \"Type\":\"Hum\", \"Value\":%d}",  (int) r->humidity);
 	MQTT_Publish(client, topic, data, strlen(data), 0, false);
 }
 
@@ -103,11 +102,20 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, uint8 info) {
 void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 	if (mqttConnected) {
 		char topic[50];
-		char data[200];
+		char data[300];
 		int idx;
+		struct ip_info ipConfig;
+
+		wifi_get_ip_info(STATION_IF, &ipConfig);
 		os_sprintf(topic, "/Raw/%10s/info", sysCfg.device_id);
-		os_sprintf(data, "{\"Name\":\"%s\", \"Location\":\"%s\", \"Updates\":%d, \"Inputs\":%d, \"Settings\":[",
-			sysCfg.deviceName, sysCfg.deviceLocation, sysCfg.updates, sysCfg.inputs);
+		os_sprintf(data,
+				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", "
+				"\"Updates\":%d, \"Inputs\":%d, \"RSSI\":%d, \"Channel\": %d, \"Attempts\": %d, ",
+				sysCfg.deviceName, sysCfg.deviceLocation, version, sysCfg.updates,
+				sysCfg.inputs, wifi_station_get_rssi(), wifiChannel, WIFI_Attempts());
+		os_sprintf(data + strlen(data), "\"IPaddress\":\"%d.%d.%d.%d\"", IP2STR(&ipConfig.ip.addr));
+		os_sprintf(data + strlen(data),", \"AP\":\"%s\"", bestSSID);
+		os_sprintf(data + strlen(data),", \"Settings\":[");
 		for (idx = 0; idx< SETTINGS_SIZE; idx++) {
 			if (idx != 0) os_sprintf(data+strlen(data), ", ");
 			os_sprintf(data+strlen(data), "%d", sysCfg.settings[idx]);
@@ -119,22 +127,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 }
 
 void ICACHE_FLASH_ATTR processData(void) {
-	struct dht_sensor_data* r = DHTRead();
 
-	if (!outputOverrides[0]) {
-		if (r->avgTemperature < sysCfg.settings[SETTING_SET_POINT]) {
-			//os_printf("+");
-			easygpio_outputSet(RELAY, RELAY_ON);
-		} else {
-			//os_printf("-");
-			easygpio_outputSet(RELAY, RELAY_OFF);
-		}
-	}
-	if (r->avgTemperature < sysCfg.settings[SETTING_MIN_ALARM]) {
-		publishError(0, r->avgTemperature);
-	} else if (r->avgTemperature > sysCfg.settings[SETTING_MAX_ALARM]) {
-		publishError(1, r->avgTemperature);
-	}
 }
 
 void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
@@ -144,9 +137,11 @@ void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
 }
 
 void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
-	INFO("WiFi status: %d\r\n", status);
+	INFOP("WiFi status: %d\r\n", status);
 	if (status == STATION_GOT_IP){
+		wifiChannel = wifi_get_channel();
 		MQTT_Connect(&mqttClient);
+		tcp_listen(80);
 	} else {
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
@@ -177,7 +172,6 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 
 	publishDeviceInfo(client);
 
-	DHTInit(DHT11, 2000);
 	os_timer_disarm(&transmit_timer);
 	os_timer_setfn(&transmit_timer, (os_timer_func_t *)transmitCb, (void *)client);
 	os_timer_arm(&transmit_timer, sysCfg.updates*1000, true);
@@ -277,7 +271,7 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 	os_free(dataBuf);
 }
 
-LOCAL void ICACHE_FLASH_ATTR initDone_cb() {
+LOCAL void ICACHE_FLASH_ATTR startUp() {
 	CFG_Load();
 	os_printf("\n%s starting ...\n", sysCfg.deviceName);
 
@@ -293,14 +287,44 @@ LOCAL void ICACHE_FLASH_ATTR initDone_cb() {
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	INFO("Hostname was: %s\n", wifi_station_get_hostname());
-	wifi_station_set_hostname(sysCfg.deviceName);
-	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
-	INFO("Hostname is: %s\n", wifi_station_get_hostname());
-	INFO("SDK version is: %s\n", system_get_sdk_version());
-	INFO("Smart-Config version is: %s\n", smartconfig_get_version());
-	system_print_meminfo();
-	INFO("Flashsize map %d; id %lx\n\n", system_get_flash_size_map(), spi_flash_get_id());
+	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
+	INFOP("Hostname is: %s\n", wifi_station_get_hostname());
+	INFOP("SDK version is: %s\n", system_get_sdk_version());
+	INFOP("Smart-Config version is: %s\n", smartconfig_get_version());
+	INFO(system_print_meminfo());
+	INFOP("Flashsize map %d; id %lx\n\n", system_get_flash_size_map(), spi_flash_get_id());
+}
+
+static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
+  uint8 ssid[33];
+  int8 bestRSSI = -100;
+
+  if (status == OK) {
+    struct bss_info *bss_link = (struct bss_info *)arg;
+
+    while (bss_link != NULL) {
+      os_memset(ssid, 0, 33);
+      if (os_strlen(bss_link->ssid) <= 32) {
+        os_memcpy(ssid, bss_link->ssid, os_strlen(bss_link->ssid));
+      } else {
+        os_memcpy(ssid, bss_link->ssid, 32);
+      }
+      if (bss_link->rssi > bestRSSI) {
+    	  strcpy(bestSSID, ssid);
+      }
+      TESTP("WiFi Scan: (%d,\"%s\",%d)\n", bss_link->authmode, ssid, bss_link->rssi);
+      bss_link = bss_link->next.stqe_next;
+    }
+  } else {
+	  os_printf("wifi_station_scan fail %d\n", status);
+  }
+  startUp();
+}
+
+static void ICACHE_FLASH_ATTR initDone_cb() {
+	TESTP("Start WiFi Scan\n");
+	wifi_set_opmode(STATION_MODE);
+	wifi_station_scan(NULL, wifi_station_scan_done);
 }
 
 void user_init(void) {

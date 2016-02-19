@@ -88,7 +88,8 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		os_sprintf(sysCfg.sta_pwd, "%s", STA_PASS);
 		sysCfg.sta_type = STA_TYPE;
 
-		os_sprintf(sysCfg.device_id, MQTT_CLIENT_ID, system_get_chip_id());
+		os_sprintf(sysCfg.deviceID_prefix, DEVICE_PREFIX);
+		os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
 		os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
 		sysCfg.mqtt_port = MQTT_PORT;
 		os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);
@@ -99,16 +100,13 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		sysCfg.mqtt_keepalive = MQTT_KEEPALIVE;
 
 		int idx;
-		for (idx=0; idx<MAP_SIZE; idx++) {
-			sysCfg.mapping[idx] = idx;
-		}
 		for (idx=0; idx<SETTINGS_SIZE; idx++) {
 			sysCfg.settings[idx] = SET_MINIMUM;
 		}
 		sysCfg.updates = UPDATES;
 		sysCfg.inputs = INPUTS;
 
-		os_sprintf(sysCfg.deviceName, "Not Set");
+		os_sprintf(sysCfg.deviceName, "RelayControl");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
 		ets_uart_printf(" default configuration\r\n");
 
