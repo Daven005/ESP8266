@@ -22,3 +22,4 @@ if ($i -le $fv.GetUpperBound(0)) {
     exit
 }
 'char *version = "' + [string]::Join(".", $fv) + '";' | Out-File $file -encoding utf8
+Get-Content $file | write-host 

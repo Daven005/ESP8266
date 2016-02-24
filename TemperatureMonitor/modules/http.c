@@ -8,7 +8,6 @@
 #include <mem.h>
 #include <os_type.h>
 #include <osapi.h>
-#include <uart.h>
 #include "ip_addr.h"
 #include "espconn.h"
 #include "debug.h"

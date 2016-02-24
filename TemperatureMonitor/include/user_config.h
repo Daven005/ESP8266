@@ -7,6 +7,8 @@
 
 /*DEFAULT CONFIGURATIONS*/
 
+#define SLEEP_MODE 1
+
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
 #define MQTT_BUF_SIZE		512

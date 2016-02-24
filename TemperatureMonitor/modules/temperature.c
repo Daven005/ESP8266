@@ -17,8 +17,6 @@
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 LOCAL os_timer_t ds18b20_timer;
 
-extern void extraPublishTemperatures(uint8);
-
 uint8 ICACHE_FLASH_ATTR temperatureSensorCount(void) {
 	uint8 idx, sensors = 0;
 	for (idx = 0; idx < MAX_DS18B20_SENSOR; idx++) {
@@ -67,7 +65,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(int idx, char* sensorID, int start)
 			if (!temperature[i].set) {
 				idx = i;
 				strcpy(temperature[idx].address, sensorID);
-				INFOP("New ");
+				TESTP("New ");
 				break;
 			}
 		}
@@ -77,7 +75,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(int idx, char* sensorID, int start)
 
 void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* sensorID) {
 	if (idx < MAX_TEMPERATURE_SENSOR) {
-		INFOP("Sensor[%d] %s = %d\n", idx, sensorID, val);
+		TESTP("Sensor[%d] %s = %d\n", idx, sensorID, val);
 		temperature[idx].set = true;
 		if (!temperature[idx].override) {
 			if (val < 0) {
@@ -143,14 +141,14 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 	do {
 		if (ds_search(addr)) {
 			if (crc8(addr, 7) != addr[7]) {
-				INFOP("CRC mismatch, crc=%xd, addr[7]=%xd\n", crc8(addr, 7), addr[7]);
+				TESTP("CRC mismatch, crc=%xd, addr[7]=%xd\n", crc8(addr, 7), addr[7]);
 			}
 			switch (addr[0]) {
 			case DS18B20:
-				INFOP( "Device is DS18B20 family.\n" );
+				TESTP( "Device is DS18B20 family.\n" );
 				break;
 			default:
-				INFOP("Device is unknown family.\n");
+				TESTP("Device is unknown family.\n");
 				return;
 			}
 		} else {
@@ -181,7 +179,9 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 		INFO(if (idx != 0xff) {printTemperature(idx); os_printf("\n");});
 	} while (true);
 
+#if SLEEP_MODE == 0
 	extraPublishTemperatures(0xff);
+#endif
 	return;
 }
 
