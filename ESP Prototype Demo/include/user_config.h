@@ -7,12 +7,15 @@
 
 /*DEFAULT CONFIGURATIONS*/
 
+#define SLEEP_MODE 0
+#undef USE_TEMPERATURE
+
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
 #define MQTT_BUF_SIZE		512
 #define MQTT_KEEPALIVE		120	 /*second*/
 
-#define MQTT_CLIENT_ID		"Hollies%lx"
+#define DEVICE_PREFIX		"Hollies"
 #define MQTT_USER			""
 #define MQTT_PASS			""
 
@@ -30,9 +33,11 @@
 
 #define NAME_SIZE 32
 #define MAP_SIZE 1
-#define SETTINGS_SIZE 4
+#define MAP_TEMP_SIZE 1
+#define SETTINGS_SIZE 20
 #define MAX_OUTPUT 2
-#define SET_MINIMUM 20
+#define SET_MINIMUM 0
+#define SET_MAXIMUM 95
 
 
 #define UPDATES 60

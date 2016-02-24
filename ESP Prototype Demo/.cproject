@@ -30,7 +30,6 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.mingw.exe.debug.option.optimization.level.269152199" name="Optimization Level" superClass="gnu.c.compiler.mingw.exe.debug.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option id="gnu.c.compiler.mingw.exe.debug.option.debugging.level.777983651" name="Debug Level" superClass="gnu.c.compiler.mingw.exe.debug.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1762864924" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK_1_3\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Espressif\ESP8266_SDK\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.533701207" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -125,6 +124,7 @@
 			<resource resourceType="PROJECT" workspacePath="/ESP Prototype Demo"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
 		<buildTargets>
 			<target name="all" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
@@ -183,7 +183,30 @@
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
+			<target name="modules" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>mingw32-make.exe</buildCommand>
+				<buildArguments>-f "${ProjDirPath}/modules/Makefile"</buildArguments>
+				<buildTarget>modules</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="Test" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>mingw32-make.exe</buildCommand>
+				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
+				<buildTarget>Test</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="build/libmodules.a" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>mingw32-make.exe</buildCommand>
+				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
+				<buildTarget>build/libmodules.a</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
 		</buildTargets>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

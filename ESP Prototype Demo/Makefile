@@ -13,12 +13,12 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK_1_3
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_151
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.py
-ESPPORT		?= COM23
+ESPPORT		?= COM3
 
 ROM0_ADDR   ?= 0x10000
 
@@ -26,19 +26,22 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user mqtt modules driver
+CC_MODULES		= user mqtt modules driver
+LIB_MODULES		= mqtt modules driver
+LINK_MODULES    = user
+
 EXTRA_INCDIR    = include $(SDK_BASE)/include
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
+LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto $(LIB_MODULES)
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -Wl,-M=Prototype.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
-# linker script used for the above linkier step
+# linker script used for the above linker step
 LD_SCRIPT	= eagle.app.v6.ld
 
 # various paths from the SDK used in this project
@@ -54,11 +57,13 @@ OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
 OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
 
 # no user configurable options below here
-SRC_DIR		:= $(MODULES)
-BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
+SRC_DIR		:= $(CC_MODULES)
+BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(CC_MODULES))
 
 SDK_LIBDIR	:= $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
+
+LIB_DIR     := $(foreach m, $(LIB_MODULES), $(addprefix $(BUILD_BASE)/,$(m)))
 
 SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
 OBJ		:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
@@ -86,30 +91,46 @@ vpath %.c $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	echo "CC $$< $(MODULE_INCDIR)"
+	$(vecho) "CC $$< $(MODULE_INCDIR)"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean newversion newbuild newrevision
+define archive-objects
+USER_LIBS	+= $(BUILD_BASE)/lib$1.a
+
+$(BUILD_BASE)/lib$1.a: $(wildcard $(BUILD_BASE)/$1/*.o)
+	$(vecho) "AR $$<"
+	$(Q) $(AR) cru $$@ $$+
+endef
+
+# Build rules for compiling all objects
+$(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
+
+#Build rules for making libraries
+$(foreach bdir,$(LIB_MODULES),$(eval $(call archive-objects,$(bdir))))
+
+.PHONY: all checkdirs clean newversion newbuild newrevision Test
 
 all: checkdirs $(TARGET_OUT)
 
+Test: $(info USER_LIBS is $(USER_LIBS)) $(USER_LIBS)
+	@echo $<
+
 newversion:
 	incVersion 0
+	touch user/user_main.c
+
+newrevision:
+	incVersion 2
 	touch user/user_main.c
 	
 newbuild:
 	incVersion 3
 	touch user/user_main.c
 
-newrevision:
-	incVersion 2
-	touch user/user_main.c
-
-
-$(TARGET_OUT): $(APP_AR)
-	$(vecho) "LD $@"  -L$(SDK_LIBDIR) $(LD_SCRIPT)
-	$(Q) $(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+$(TARGET_OUT): build/user/user_main.o $(USER_LIBS) 
+	$(vecho) "LD $@"  -L$(BUILD_BASE) -L$(SDK_LIBDIR) $(LD_SCRIPT)
+	$(Q) $(LD) -L$(BUILD_BASE) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $< -Wl,--end-group -o $@
 	$(vecho) "Run objcopy, please wait..."
 	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
@@ -117,8 +138,6 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
 	$(vecho) "objcopy done"
 	$(vecho) "Run gen_appbin.exe"
-	$(OBJDUMP) test.out -h >test.log
-	cp $(TARGET_OUT) test.out
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
@@ -134,7 +153,7 @@ $(APP_AR): $(OBJ)
 	$(Q) $(AR) cru $@ $^
 
 checkdirs: $(BUILD_DIR) $(FW_BASE)
-	@echo $(BUILD_DIR)
+	$(vecho) $(BUILD_DIR)
 
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
@@ -178,5 +197,3 @@ clean:
 	$(Q) rm -rf $(BUILD_DIR)
 	$(Q) rm -rf $(BUILD_BASE)
 	$(Q) rm -rf $(FW_BASE)
-
-$(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))

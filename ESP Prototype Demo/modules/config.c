@@ -66,8 +66,7 @@ CFG_Save() {
 }
 
 void ICACHE_FLASH_ATTR CFG_Load() {
-
-	ets_uart_printf("\r\nload ...\r\n");
+	os_printf("\nload (%x/%x)...\n", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE, (uint32 *) &saveFlag,
 			sizeof(SAVE_FLAG));
 	if (saveFlag.flag == 0) {
@@ -84,7 +83,8 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		os_sprintf(sysCfg.sta_pwd, "%s", STA_PASS);
 		sysCfg.sta_type = STA_TYPE;
 
-		os_sprintf(sysCfg.device_id, MQTT_CLIENT_ID, system_get_chip_id());
+		os_sprintf(sysCfg.deviceID_prefix, DEVICE_PREFIX);
+		os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
 		os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
 		sysCfg.mqtt_port = MQTT_PORT;
 		os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);
@@ -106,7 +106,6 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 
 		os_sprintf(sysCfg.deviceName, "Not Set");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
-		ets_uart_printf(" default configuration\r\n");
 
 		CFG_Save();
 	}
