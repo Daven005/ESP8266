@@ -45,20 +45,17 @@ enum {
 	INIT_DONE, MQTT_DATA_CB, MQTT_CONNECTED_CB, MQTT_DISCONNECTED_CB, SMART_CONFIG
 } lastAction __attribute__ ((section (".noinit")));
 MQTT_Client mqttClient;
-static uint32 minHeap = 0xffffffff;
 bool setupMode = false;
 static char bestSSID[33];
 
 static bool checkSmartConfig(enum SmartConfigAction action);
 void publishError(uint8 err, int info);
 
-#define SWITCH 0 // GPIO 00
-#define LED 5
-
 void checkCanSleep();
 void user_rf_pre_init(void) {}
 
 uint32 ICACHE_FLASH_ATTR checkMinHeap(void) {
+	static uint32 minHeap = 0xffffffff;
 	uint32 heap = system_get_free_heap_size();
 	if (heap < minHeap)
 		minHeap = heap;
@@ -100,6 +97,7 @@ static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in
   return 1 << size_id;
 }
 
+#ifdef LED
 void ICACHE_FLASH_ATTR stopFlash(void) {
 	easygpio_outputSet(LED, 0);
 	os_timer_disarm(&flash_timer);
@@ -129,6 +127,7 @@ void ICACHE_FLASH_ATTR startFlash(int t, int repeat) {
 	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
 	os_timer_arm(&flash_timer, t, true);
 }
+#endif
 
 void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	static uint8 last_err = 0xff;
@@ -221,6 +220,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
 	}
 }
 
+#ifdef USE_SMART_CONFIG
 void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
 	switch (status) {
 	case SC_STATUS_WAIT:
@@ -283,6 +283,7 @@ bool ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction action) {
 	}
 	return doingSmartConfig;
 }
+#endif
 
 void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
 	MQTT_Client* client = (MQTT_Client*) args;
@@ -296,6 +297,11 @@ void ICACHE_FLASH_ATTR processCb() {
 
 }
 
+void ICACHE_FLASH_ATTR printAll() {
+	os_printf("Test\n");
+}
+
+#ifdef USE_WEB_CONFIG
 void ICACHE_FLASH_ATTR setup_cb(void) {
 	setupMode = false;
 	stopFlash();
@@ -314,7 +320,9 @@ void ICACHE_FLASH_ATTR toggleSetupMode(void) {
 		checkCanSleep();
 	}
 }
+#endif
 
+#ifdef SWITCH
 void ICACHE_FLASH_ATTR switchAction(int action) {
 	startFlashCount(100, action);
 	switch (action) {
@@ -325,7 +333,7 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 	case 2:
 		break;
 	case 3:
-		// printAll();
+		printAll();
 		os_printf("minHeap: %d\n", checkMinHeap());
 		break;
 	case 4:
@@ -385,6 +393,8 @@ void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
 		}
 	}
 }
+#endif
+
 void ICACHE_FLASH_ATTR mqttPublishedCb(uint32_t *args) {
 	os_timer_disarm(&mqtt_timer);
 	os_timer_setfn(&mqtt_timer, (os_timer_func_t *) checkCanSleep, NULL);
@@ -407,6 +417,9 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	os_printf("WiFi status: %d\r\n", status);
 	if (status == STATION_GOT_IP) {
 		MQTT_Connect(&mqttClient);
+#ifdef WEB_CONFIG
+		tcp_listen(80);
+#endif
 	} else {
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
@@ -463,7 +476,9 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	checkMinHeap();
 	os_free(topic);
 	os_free(data);
+#ifdef LED
 	easygpio_outputSet(LED, 0);
+#endif
 	lastAction = MQTT_CONNECTED_CB;
 }
 
@@ -565,6 +580,7 @@ static void ICACHE_FLASH_ATTR startUp() {
 	lastAction = INIT_DONE;
 }
 
+#ifdef USE_WIFI_SCAN
 static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
   uint8 ssid[33];
   int8 bestRSSI = -100;
@@ -580,6 +596,7 @@ static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
         os_memcpy(ssid, bss_link->ssid, 32);
       }
       if (bss_link->rssi > bestRSSI) {
+    	  bestRSSI = bss_link->rssi;
     	  strcpy(bestSSID, ssid);
       }
       TESTP("WiFi Scan: (%d,\"%s\",%d)\n", bss_link->authmode, ssid, bss_link->rssi);
@@ -596,18 +613,25 @@ static void ICACHE_FLASH_ATTR initDone_cb() {
 	wifi_set_opmode(STATION_MODE);
 	wifi_station_scan(NULL, wifi_station_scan_done);
 }
+#endif
 
 void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
 
+#ifdef SWITCH
 	easygpio_pinMode(SWITCH, EASYGPIO_PULLUP, EASYGPIO_INPUT);
 	easygpio_outputDisable(SWITCH);
-
+#endif
+#ifdef LED
 	easygpio_pinMode(LED, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);
-
+#endif
 	wifi_station_set_auto_connect(false);
 	wifi_station_set_reconnect_policy(true);
+#ifdef USE_WIFI_SCAN
 	system_init_done_cb(&initDone_cb);
+#else
+	system_init_done_cb(&startUp);
+#endif
 }

@@ -9,6 +9,15 @@
 
 #define SLEEP_MODE 0
 #undef USE_TEMPERATURE
+#define USE_WIFI_SCAN
+#define LED 5
+#ifdef LED
+#define SWITCH 0 			// Switch requires LED (for feedback)
+#ifdef SWITCH
+#define USE_SMART_CONFIG 	// Requires Switch && LED
+#define USE_WEB_CONFIG		// Requires Switch && LED
+#endif
+#endif
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883

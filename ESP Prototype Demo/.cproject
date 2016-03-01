@@ -199,10 +199,10 @@
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="build/libmodules.a" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="build/libdriver.a" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>mingw32-make.exe</buildCommand>
 				<buildArguments>-f "${ProjDirPath}/Makefile"</buildArguments>
-				<buildTarget>build/libmodules.a</buildTarget>
+				<buildTarget>build/libdriver.a</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
