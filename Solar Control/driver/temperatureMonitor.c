@@ -25,7 +25,7 @@
 static os_timer_t ds18b20_timer;
 static uint16_t averagePT100Reading;
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
-static int sensors;
+static int sensors = 0;
 
 int temperatureSensorCount() {
 	return sensors;
@@ -80,6 +80,39 @@ int ICACHE_FLASH_ATTR mappedTemperature(uint8 name) {
 	return -100;
 }
 
+static ICACHE_FLASH_ATTR void setTemp(float t, struct Temperature* temp) {
+	if (t >= 0) {
+		temp->sign = '+';
+		temp->val = (int) t;
+		temp->fract = t - temp->val;
+	} else {
+		temp->sign = '-';
+		temp->val = -(int) t;
+		temp->fract = -(t - temp->val);
+	}
+}
+
+static double ICACHE_FLASH_ATTR atof(char *s) {
+	float rez = 0, fact = 1;
+	if (*s == '-') {
+		s++;
+		fact = -1;
+	};
+	for (int point_seen = 0; *s; s++) {
+		if (*s == '.') {
+			point_seen = 1;
+			continue;
+		};
+		int d = *s - '0';
+		if (d >= 0 && d <= 9) {
+			if (point_seen)
+				fact /= 10.0f;
+			rez = rez * 10.0f + (float) d;
+		};
+	};
+	return rez * fact;
+}
+
 void ICACHE_FLASH_ATTR readPT100(struct Temperature *temp) {
 	int rx = averagePT100();
 	if (sysCfg.settings[SET_T1_READING] == sysCfg.settings[SET_T0_READING]) {
@@ -90,24 +123,26 @@ void ICACHE_FLASH_ATTR readPT100(struct Temperature *temp) {
 			/(float)(sysCfg.settings[SET_T1_READING] - sysCfg.settings[SET_T0_READING]);
 	float c = sysCfg.settings[SET_T0] - sysCfg.settings[SET_T0_READING] * m;
 	float t = m * rx + c;
-	TESTP("rx=%d, m=%d, c=%d, temp=%d (%d)\n", rx, (int)(m*100), (int)(c*100), (int)t, mappedTemperature(1));
+	TESTP("rx=%d, m=%d, c=%d, temp=%d (%d)\n", rx, (int)(m*100), (int)(c*100), (int)t, mappedTemperature(2));
 	temp->set = true;
 	strcpy(temp->address, "0");
-	if (t >= 0) {
-		temp->sign =  '+';
-		temp->val = (int) t;
-		temp->fract = t - temp->val;
-	} else {
-		temp->sign =  '-';
-		temp->val = -(int) t;
-		temp->fract = -(t - temp->val);
-	}
+	setTemp(t, temp);
+	if (sensors == 0) sensors = 1;
+}
+
+void ICACHE_FLASH_ATTR saveTSbottom(char *t) {
+	float temp = atof(t);
+	temperature[1].set = true;
+	strcpy(temperature[1].address, "1");
+	setTemp(temp, &temperature[1]);
+	if (sensors < 2) sensors = 2;
+	TESTP("TSb: %c%d.%d (%s)\n", temperature[1].sign, temperature[1].val, temperature[1].fract, t);
 }
 
 static void ICACHE_FLASH_ATTR ds18b20TimerCb(void) {
 	uint8_t addr[8], data[12];
 	int r, i;
-	int idx = 1;
+	int idx = 2; // Allow for PTC sensor and /App/.../TS Bottom
 
 	INFOP("ds18b20TimerCb\n");
 	for (i = idx; i < MAX_TEMPERATURE_SENSOR; i++) {

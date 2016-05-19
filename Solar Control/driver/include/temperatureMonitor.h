@@ -20,5 +20,6 @@ void saveLowReading(void);
 void saveHighReading(void);
 void readPT100(struct Temperature *temp);
 void startReadTemperatures(void);
+void saveTSbottom(char *t);
 
 #endif /* DRIVER_INCLUDE_TEMPERATUREMONITOR_H_ */

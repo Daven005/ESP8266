@@ -21,6 +21,7 @@
 
 static os_timer_t switch_timer;
 static os_timer_t flash_timer;
+static os_timer_t flashA_timer;
 static os_timer_t transmit_timer;
 static os_timer_t date_timer;
 static os_timer_t process_timer;
@@ -30,8 +31,10 @@ uint8 mqttConnected;
 
 static unsigned int switchCount;
 static unsigned int flashCount;
+static unsigned int flashActionCount;
 static uint8 wifiChannel = 255;
 static char bestSSID[33];
+static bool toggleState;
 
 static uint32 minHeap = 0xffffffff;
 
@@ -97,6 +100,46 @@ void ICACHE_FLASH_ATTR startFlashCount(int t, int repeat, unsigned int f) {
 
 void ICACHE_FLASH_ATTR startFlash(int t, int repeat) {
 	startFlashCount(t, repeat, 0);
+}
+
+void ICACHE_FLASH_ATTR stopActionFlash(void) {
+	easygpio_outputSet(ACTION_LED, 0);
+	os_timer_disarm(&flashA_timer);
+}
+
+void ICACHE_FLASH_ATTR flashAction_cb(void) {
+	easygpio_outputSet(ACTION_LED, !easygpio_inputGet(ACTION_LED));
+	if (flashActionCount)
+		flashActionCount--;
+	if (flashActionCount == 0)
+		stopActionFlash();
+}
+
+void ICACHE_FLASH_ATTR startActionFlashCount(int t, int repeat, unsigned int f) {
+	easygpio_outputSet(ACTION_LED, 1);
+	flashActionCount = f * 2;
+	os_timer_disarm(&flashAction_cb);
+	os_timer_setfn(&flashAction_cb, (os_timer_func_t *) flashAction_cb, (void *) 0);
+	os_timer_arm(&flashAction_cb, t, repeat);
+}
+
+void ICACHE_FLASH_ATTR startActionFlash(int t, int repeat) {
+	startActionFlashCount(t, repeat, 0);
+}
+
+void ICACHE_FLASH_ATTR publishAlarm(uint8 err, int info) {
+	static uint8 last_err = 0xff;
+	static int last_info = -1;
+	if (err == last_err && info == last_info)
+		return; // Ignore repeated errors
+	char *topic = (char*) os_malloc(50), *data = (char*) os_malloc(100);
+	os_sprintf(topic, (const char*) "/Raw/%s/alarm", sysCfg.device_id);
+	os_sprintf(data, (const char*) "{ \"alarm\":%d, \"info\":%d}", err, info);
+	MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, 0);
+	TESTP("%s=>$s\n", topic, data);
+	checkMinHeap();
+	os_free(topic);
+	os_free(data);
 }
 
 void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
@@ -303,26 +346,39 @@ void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) { // Depends on Update period
 }
 
 void ICACHE_FLASH_ATTR switchAction(int action) {
-	startFlashCount(100, true, action);
-	switch (action) {
-	case 1:
-		break;
-	case 2:
-		saveLowReading();
-		break;
-	case 3:
-		saveHighReading();
-		break;
-	case 4:
-		publishDeviceInfo(&mqttClient);
-		publishData(&mqttClient);
-		os_printf("minHeap: %d\n", checkMinHeap());
-		break;
-	case 5:
-		checkSmartConfig(SC_TOGGLE);
-		break;
-	case 6:
-		break;
+	if (toggleState) {
+		startFlashCount(100, true, action);
+		switch (action) {
+		case 1:
+			break;
+		case 2:
+			saveLowReading();
+			break;
+		case 3:
+			saveHighReading();
+			break;
+		case 4:
+			break;
+		case 5:
+			checkSmartConfig(SC_TOGGLE);
+			break;
+		}
+	} else {
+		switch (action) {
+		case 1:
+			publishDeviceInfo(&mqttClient);
+			publishData(&mqttClient);
+			os_printf("minHeap: %d\n", checkMinHeap());
+			break;
+		case 2:
+			break;
+		case 3:
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		}
 	}
 }
 
@@ -334,6 +390,11 @@ void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
 		IDLE, ON, OFF
 	} switchState = IDLE;
 
+	if ((toggleState = easygpio_inputGet(TOGGLE))) {
+		easygpio_outputSet(ACTION_LED, 1);
+	} else {
+		easygpio_outputSet(ACTION_LED, 0);
+	}
 	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
 		switch (switchState) {
 		case IDLE:
@@ -400,11 +461,15 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
 
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
-	os_printf("Subscribe to: %s\n", topic);
+	TESTP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
 
 	os_sprintf(topic, "/Raw/%s/+/set/#", sysCfg.device_id);
-	os_printf("Subscribe to: %s\n", topic);
+	TESTP("Subscribe to: %s\n", topic);
+	MQTT_Subscribe(client, topic, 0);
+
+	os_sprintf(topic, "/App/+/+/TS Bottom/#");
+	TESTP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
 
 	MQTT_Subscribe(client, "/App/date", 0);
@@ -426,7 +491,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	easygpio_outputSet(LED, 0); // Turn LED off when connected
 	initFlowMonitor();
 	initTemperatureMonitor();
-	startPump();
+	initPump();
 
 	checkMinHeap();
 	os_free(topic);
@@ -493,9 +558,12 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 				}
 			}
 		} else if (strcmp("App", tokens[0]) == 0) {
-			if (tokenCount >= 2 && strcmp("date", tokens[1]) == 0) {
+			if (tokenCount == 2 && strcmp("date", tokens[1]) == 0) {
 				os_timer_disarm(&date_timer); // Restart it
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
+			}
+			if (tokenCount >= 5 && strcmp("TS Bottom", tokens[3]) == 0) {
+				saveTSbottom(dataBuf);
 			}
 		}
 		checkMinHeap();
@@ -599,6 +667,8 @@ void ICACHE_FLASH_ATTR user_init(void) {
 
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);
+	easygpio_pinMode(ACTION_LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_outputSet(LED, 0);
 	easygpio_pinMode(PUMP, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(PUMP, 1); // Inverted
 
@@ -609,6 +679,8 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	easygpio_outputDisable(FLOW_SENSOR);
 	easygpio_pinMode(SWITCH, EASYGPIO_PULLUP, EASYGPIO_INPUT);
 	easygpio_outputDisable(SWITCH);
+	easygpio_pinMode(TOGGLE, EASYGPIO_PULLUP, EASYGPIO_INPUT);
+	easygpio_outputDisable(TOGGLE);
 	wifi_station_set_auto_connect(false);
 	wifi_station_set_reconnect_policy(true);
 	system_init_done_cb(&initDone_cb);

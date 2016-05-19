@@ -17,7 +17,7 @@
 #include "config.h"
 #include "user_config.h"
 #include "IOdefs.h"
-#include "pwm2.h"
+#include "pwm.h"
 #include "eagle_soc.h"
 #include "debug.h"
 #include "flowMonitor.h"
@@ -26,7 +26,7 @@ static uint8 newDemand = 0;
 static uint8 currentDemand = 0;
 static int errorTntegral = 0;
 
-void ICACHE_FLASH_ATTR startPump() {
+void ICACHE_FLASH_ATTR initPump() {
 	uint32 io_info[][3] = { { PWM_0_OUT_IO_MUX, PWM_0_OUT_IO_FUNC, PWM_0_OUT_IO_NUM } };
 	uint32 duty[] = {0, 0, 0};
 

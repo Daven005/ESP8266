@@ -9,7 +9,10 @@
 #define INCLUDE_IODEFS_H_
 
 #define LED 5
+#define ACTION_LED 16
+
 #define SWITCH 0 // GPIO 00
+#define TOGGLE 14
 #define PUMP 13
 #define FLOW_SENSOR 4
 #define ANALOGUE_SELECT 12
