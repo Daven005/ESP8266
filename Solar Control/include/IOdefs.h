@@ -21,10 +21,6 @@
 #define DS18B20_FUNC	FUNC_GPIO2
 #define DS18B20_PIN		2
 
-#define PWM_0_OUT_IO_MUX PERIPHS_IO_MUX_MTCK_U
-#define PWM_0_OUT_IO_NUM PUMP
-#define PWM_0_OUT_IO_FUNC FUNC_GPIO13
-
 #define SELECT_PTC easygpio_outputSet(ANALOGUE_SELECT, 0);
 #define SELECT_PRESSURE easygpio_outputSet(ANALOGUE_SELECT, 1);
 

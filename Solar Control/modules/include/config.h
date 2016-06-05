@@ -47,10 +47,11 @@ typedef struct{
 	uint32_t mqtt_keepalive;
 	uint8_t security;
 
-	uint8_t mapping[MAP_SIZE];
 	uint16_t settings[SETTINGS_SIZE];
 	char deviceName[NAME_SIZE];
 	char deviceLocation[NAME_SIZE];
+	uint8_t mapping[MAP_TEMP_SIZE];
+	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
 	uint16 updates;
 	uint8 inputs;
 

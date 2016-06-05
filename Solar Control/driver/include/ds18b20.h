@@ -21,14 +21,6 @@
 #define DS18S20		0x10
 #define DS18B20 	0x28
 
-#define MAX_TEMPERATURE_SENSOR 5
-struct Temperature {
-	bool set;
-	char sign;
-	uint16_t val;
-	uint16_t fract;
-	char address[20];
-};
 
 static uint16_t oddparity[16] =
 		{ 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
