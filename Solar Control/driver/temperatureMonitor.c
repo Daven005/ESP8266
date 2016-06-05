@@ -27,6 +27,7 @@ static uint16_t averagePT100Reading;
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static bool publishTemperaturesSignal = false;
 
+#if USE_PT100
 uint16_t ICACHE_FLASH_ATTR averagePT100(void) {
 	uint32 sTime = system_get_rtc_time();
 	SELECT_PTC;
@@ -59,6 +60,7 @@ void ICACHE_FLASH_ATTR saveHighReading(void) {
 		CFG_Save();
 	}
 }
+#endif
 
 bool ICACHE_FLASH_ATTR getUnmappedTemperature(int i, struct Temperature **t) {
 	if (i >= MAX_TEMPERATURE_SENSOR)
@@ -183,6 +185,7 @@ static double ICACHE_FLASH_ATTR atof(char *s) {
 	return rez * fact;
 }
 
+#if USE_PT100
 void ICACHE_FLASH_ATTR readPT100(struct Temperature *temp) {
 	int rx = averagePT100();
 	if (sysCfg.settings[SET_T1_READING] == sysCfg.settings[SET_T0_READING]) {
@@ -199,6 +202,7 @@ void ICACHE_FLASH_ATTR readPT100(struct Temperature *temp) {
 	strcpy(temp->address, "0");
 	if (!temp->override) setTemp(t, temp);
 }
+#endif
 
 void ICACHE_FLASH_ATTR saveTSbottom(char *t) {
 	float temp = atof(t);
@@ -282,12 +286,16 @@ static void ICACHE_FLASH_ATTR ds18b20Start() {
 
 void ICACHE_FLASH_ATTR startReadTemperatures(void) {
 	ds18b20Start();
+#if USE_PT100
 	readPT100(&temperature[0]);
+#endif
 }
 
 void ICACHE_FLASH_ATTR initTemperatureMonitor(void) {
+#if USE_PT100
 	SELECT_PTC;
 	averagePT100Reading = system_adc_read();
+#endif
 }
 
 uint8 ICACHE_FLASH_ATTR setTemperatureOverride(char *sensorID, char *value) {
