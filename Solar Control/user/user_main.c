@@ -137,11 +137,11 @@ void ICACHE_FLASH_ATTR startActionFlash(int t, int repeat) {
 }
 
 void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
-	static uint8 last_alm = 0xff;
+	static uint8 last_alarm = 0xff;
 	static int last_info = -1;
-	if (alarm == last_alm && info == last_info)
+	if (alarm == last_alarm && info == last_info)
 		return; // Ignore repeated identical alarms
-	last_alm = alarm;
+	last_alarm = alarm;
 	last_info = info;
 	char *topic = (char*) os_malloc(50);
 	char *data = (char*) os_malloc(100);
@@ -149,6 +149,7 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	os_sprintf(data, (const char*) "{ \"alarm\":%d, \"info\":%d}", alarm, info);
 	MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, 0);
 	TESTP("********%s=>%s\n", topic, data);
+	startActionFlash(100, true);
 	checkMinHeap();
 	os_free(topic);
 	os_free(data);
@@ -405,26 +406,30 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 		switch (action) {
 		case 1:
 			break;
-		case 2:
+#if USE_PT100
+			case 2:
 			saveLowReading();
 			break;
 		case 3:
 			saveHighReading();
 			break;
+#endif
 		case 4:
 			break;
 		case 5:
 			checkSmartConfig(SC_TOGGLE);
 			break;
 		}
-	} else {
+	} else { // toggleState == false
 		uint8 idx;
+		TESTP("Action %d\n", action);
 		switch (action) {
 		case 1:
 			publishDeviceInfo(&mqttClient);
 			publishData(&mqttClient);
 			for (idx=0; idx<MAX_OUTPUT; idx++)
 				printOutput(idx);
+			os_printf("\n");
 			for (idx=0; idx<MAP_TEMP_SIZE; idx++)
 				printMappedTemperature(idx);
 			os_printf("minHeap: %d\n", checkMinHeap());
@@ -721,9 +726,9 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 }
 
 void flowCheck_cb(uint32_t *args) {
-	if (flowCurrentReading() <= 2 && outputState(OP_PUMP)) {
-		overrideSetOutput(OP_PUMP, 0);
-		publishAlarm(1, 0);
+	if (flowCurrentReading() == 0 && outputState(OP_PUMP) && getOverride(OP_PUMP) != OR_ON) {
+		stopPump(true);
+		publishAlarm(1, flowCurrentReading());
 	}
 }
 
@@ -732,14 +737,14 @@ void ICACHE_FLASH_ATTR readPressure(void) {
 	pressure =  system_adc_read();
 }
 
-void ICACHE_FLASH_ATTR startPump(bool or) {
-	if (!or && getOverride(OP_PUMP) == OR_ON) {
+void ICACHE_FLASH_ATTR startPump(bool override) {
+	if (!override && getOverride(OP_PUMP) == OR_OFF) {
 		return; // Leave off as overridden
 	}
-	if (!outputState(OP_PUMP)) TESTP("Start Pump\n");
+	if (!outputState(OP_PUMP)) TESTP("Start Pump (%d)\n", override);
 	os_timer_disarm(&flowCheck_timer);
 	os_timer_setfn(&flowCheck_timer, (os_timer_func_t *) flowCheck_cb, (void *) 0);
-	if (or) {
+	if (override) {
 		overrideSetOutput(OP_PUMP, 1);
 		os_timer_arm(&flowCheck_timer, 100000, 0); // Allow to run for 10S if override
 	} else {
@@ -752,7 +757,7 @@ void ICACHE_FLASH_ATTR startPump(bool or) {
 }
 
 void ICACHE_FLASH_ATTR stopPump(bool override) {
-	if (outputState(OP_PUMP)) TESTP("Stop Pump\n");
+	if (outputState(OP_PUMP)) TESTP("Stop Pump (%d)\n", override);
 	if (override) {
 		overrideSetOutput(OP_PUMP, 0);
 	} else {
@@ -764,6 +769,7 @@ void ICACHE_FLASH_ATTR stopPump(bool override) {
 }
 
 void ICACHE_FLASH_ATTR processPump(void) {
+	TESTP("Flow = %d (%d)\n", flowCurrentReading(), flowAverageReading());
 	if (mappedTemperature(MAP_TEMP_PANEL) > (mappedTemperature(MAP_TEMP_TS_BOTTOM) + 6)) {
 		startPump(false);
 	} else {
@@ -771,7 +777,7 @@ void ICACHE_FLASH_ATTR processPump(void) {
 	}
 }
 
-void ICACHE_FLASH_ATTR processTimerCb(void) {
+void ICACHE_FLASH_ATTR processTimerCb(void) { // 2 sec
 	startReadTemperatures();
 	readPressure();
 	processPump();

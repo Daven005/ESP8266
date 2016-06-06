@@ -21,8 +21,8 @@
 LOCAL os_timer_t flow_timer;
 static uint32 timedFlowCount;
 static int oneSecFlowCount;
-static int flowCount;
-static int flowTimes;
+static int flowCount; // Interrupt variable
+static int flowTimes; // Number of times flow read between transmissions (resetFlowReading)
 static int flowMax;
 static int flowAverage;
 
@@ -34,12 +34,12 @@ void ICACHE_FLASH_ATTR resetFlowReadings(void) {
 
 int ICACHE_FLASH_ATTR flowPerReading(void) {
 	if (sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0)
-		return (timedFlowCount*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
+		return ((uint32)timedFlowCount*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
 	return 0;
 }
 
 int ICACHE_FLASH_ATTR flowMaxReading(void) {
-	return (flowMax*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
+	return ((uint32)flowMax*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
 }
 
 int ICACHE_FLASH_ATTR flowTimesReading(void) {

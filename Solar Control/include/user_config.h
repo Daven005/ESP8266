@@ -28,6 +28,8 @@
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/
 
+#define USE_PT100 0
+
 #define NAME_SIZE 32
 #define MAP_SIZE 4
 #define SETTINGS_SIZE 15
