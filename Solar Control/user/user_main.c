@@ -29,14 +29,16 @@ static os_timer_t date_timer;
 static os_timer_t process_timer;
 static os_timer_t flowCheck_timer;
 
-#define PROCESS_REPEAT 2000
+#define PROCESS_REPEAT 5000
 
 MQTT_Client mqttClient;
 uint8 mqttConnected;
 
 static unsigned int switchCount;
 static unsigned int flashCount;
-static unsigned int flashActionCount;
+static int flashActionCount;
+static unsigned int flashActionOnTime;
+static unsigned int flashActionOffTime;
 static uint16 pressure = 0;
 static uint8 wifiChannel = 255;
 static char bestSSID[33];
@@ -48,8 +50,11 @@ enum SmartConfigAction {
 	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
 };
 bool checkSmartConfig(enum SmartConfigAction);
-void startPump(bool);
-void stopPump(bool);
+void startPumpNormal(void);
+void startPumpOverride(void);
+void stopPumpNormal(void);
+void stopPumpOverride(void);
+void turnOffOverride(void);
 
 void user_rf_pre_init() {
 }
@@ -102,7 +107,6 @@ void ICACHE_FLASH_ATTR startFlashCount(int t, int repeat, unsigned int f) {
 	easygpio_outputSet(LED, 1);
 	flashCount = f * 2;
 	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
 	os_timer_arm(&flash_timer, t, repeat);
 }
 
@@ -116,24 +120,30 @@ void ICACHE_FLASH_ATTR stopActionFlash(void) {
 }
 
 void ICACHE_FLASH_ATTR flashAction_cb(void) {
-	easygpio_outputSet(ACTION_LED, !easygpio_inputGet(ACTION_LED));
-	if (flashActionCount)
-		flashActionCount--;
-	if (flashActionCount == 0)
-		stopActionFlash();
-}
-
-void ICACHE_FLASH_ATTR startActionFlashCount(int t, int repeat, unsigned int f) {
-
-	easygpio_outputSet(ACTION_LED, 1);
-	flashActionCount = f * 2;
 	os_timer_disarm(&flashA_timer);
-	os_timer_setfn(&flashA_timer, (os_timer_func_t *) flashAction_cb, (void *) 0);
-	os_timer_arm(&flashA_timer, t, repeat);
+	if (easygpio_inputGet(ACTION_LED)) {
+		if (flashActionCount > 0)
+			flashActionCount--;
+		if (flashActionCount == 0) {
+			stopActionFlash();
+		} else {
+			easygpio_outputSet(ACTION_LED, 0);
+			os_timer_arm(&flashA_timer, flashActionOffTime, false);
+		}
+	} else {
+		easygpio_outputSet(ACTION_LED, 1);
+		os_timer_arm(&flashA_timer, flashActionOnTime, false);
+	}
 }
 
-void ICACHE_FLASH_ATTR startActionFlash(int t, int repeat) {
-	startActionFlashCount(t, repeat, 0);
+void ICACHE_FLASH_ATTR startActionFlash(int flashCount, unsigned int onTime, unsigned int offTime) {
+	TESTP("Start Flash %d %d/%d\n", flashCount, onTime, offTime);
+	easygpio_outputSet(ACTION_LED, 1);
+	flashActionCount = flashCount;
+	flashActionOnTime = offTime;
+	flashActionOffTime = onTime;
+	os_timer_disarm(&flashA_timer);
+	os_timer_arm(&flashA_timer, onTime, false);
 }
 
 void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
@@ -149,7 +159,7 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	os_sprintf(data, (const char*) "{ \"alarm\":%d, \"info\":%d}", alarm, info);
 	MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, 0);
 	TESTP("********%s=>%s\n", topic, data);
-	startActionFlash(100, true);
+	startActionFlash(-1, 200, 200);
 	checkMinHeap();
 	os_free(topic);
 	os_free(data);
@@ -207,7 +217,7 @@ void ICACHE_FLASH_ATTR publishTemperatures(MQTT_Client* client, int idx) {
 				if (getUnmappedTemperature(idx, &t)) {
 					os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id,
 							t->address);
-					os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%d\"}",
+					os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}",
 							t->sign, t->val, t->fract);
 					MQTT_Publish(client, topic, data, strlen(data), 0, 0);
 					TESTP("%s==>%s\n", topic, data);
@@ -216,7 +226,7 @@ void ICACHE_FLASH_ATTR publishTemperatures(MQTT_Client* client, int idx) {
 		} else {
 			if (getUnmappedTemperature(idx, &t)) {
 				os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id, t->address);
-				os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%d\"}",
+				os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}",
 						t->sign, t->val, t->fract);
 				MQTT_Publish(client, topic, data, strlen(data), 0, 0);
 				TESTP("%s==>%s\n", topic, data);
@@ -232,7 +242,7 @@ void ICACHE_FLASH_ATTR globalPublishTemperatures(void) {
 	publishTemperatures(&mqttClient, -1);
 }
 
-void ICACHE_FLASH_ATTR publishFlowPressure(MQTT_Client* client) {
+void ICACHE_FLASH_ATTR publishSensorData(MQTT_Client* client) {
 	if (mqttConnected) {
 		char *topic = (char *) os_zalloc(100);
 		char *data = (char *) os_zalloc(100);
@@ -243,11 +253,6 @@ void ICACHE_FLASH_ATTR publishFlowPressure(MQTT_Client* client) {
 
 		os_sprintf(topic, (const char*) "/Raw/%s/2/info", sysCfg.device_id);
 		os_sprintf(data, (const char*) "{ \"Type\":\"FlowMax\", \"Value\":%d}", flowMaxReading());
-		MQTT_Publish(client, topic, data, strlen(data), 0, false);
-		TESTP("%s=>%s\n", topic, data);
-
-		os_sprintf(topic, (const char*) "/Raw/%s/3/info", sysCfg.device_id);
-		os_sprintf(data, (const char*) "{ \"Type\":\"FlowTimes\", \"Value\":%d}", flowTimesReading());
 		MQTT_Publish(client, topic, data, strlen(data), 0, false);
 		TESTP("%s=>%s\n", topic, data);
 
@@ -272,7 +277,7 @@ void ICACHE_FLASH_ATTR publishFlowPressure(MQTT_Client* client) {
 void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
 	if (mqttConnected) {
 		publishTemperatures(client, -1); // All
-		publishFlowPressure(client);
+		publishSensorData(client);
 		publishOutput(OP_PUMP, outputState(OP_PUMP));
 	}
 }
@@ -435,13 +440,13 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 			os_printf("minHeap: %d\n", checkMinHeap());
 			break;
 		case 2:
-			stopPump(true);
+			stopPumpOverride();
 			break;
 		case 3:
-			startPump(true);
+			startPumpOverride();
 			break;
 		case 4:
-			overrideClearOutput(OP_PUMP);
+			turnOffOverride();
 			break;
 		case 5:
 			break;
@@ -725,59 +730,141 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 	}
 }
 
-void flowCheck_cb(uint32_t *args) {
-	if (flowCurrentReading() == 0 && outputState(OP_PUMP) && getOverride(OP_PUMP) != OR_ON) {
-		stopPump(true);
-		publishAlarm(1, flowCurrentReading());
-	}
-}
-
 void ICACHE_FLASH_ATTR readPressure(void) {
 	SELECT_PRESSURE;
 	pressure =  system_adc_read();
 }
 
-void ICACHE_FLASH_ATTR startPump(bool override) {
-	if (!override && getOverride(OP_PUMP) == OR_OFF) {
-		return; // Leave off as overridden
-	}
-	if (!outputState(OP_PUMP)) TESTP("Start Pump (%d)\n", override);
-	os_timer_disarm(&flowCheck_timer);
-	os_timer_setfn(&flowCheck_timer, (os_timer_func_t *) flowCheck_cb, (void *) 0);
-	if (override) {
-		overrideSetOutput(OP_PUMP, 1);
-		os_timer_arm(&flowCheck_timer, 100000, 0); // Allow to run for 10S if override
-	} else {
-		checkSetOutput(OP_PUMP, 1);
-		os_timer_arm(&flowCheck_timer, PROCESS_REPEAT-500, 0);
-	}
-	if (!toggleState) {
-		startActionFlash(PROCESS_REPEAT-200, 0);
+void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
+	TESTP("*");
+	if (flowAverageReading() <= 1) {
+		switch (pumpState()) {
+		case PUMP_OFF_NORMAL:
+		case PUMP_OFF_OVERRIDE:
+			break;
+		case PUMP_ON_NORMAL:
+			stopPumpOverride();
+			publishAlarm(1, flowCurrentReading());
+			break;
+		case PUMP_ON_OVERRIDE:
+			publishAlarm(2, flowCurrentReading());
+			break;
+		}
 	}
 }
 
-void ICACHE_FLASH_ATTR stopPump(bool override) {
-	if (outputState(OP_PUMP)) TESTP("Stop Pump (%d)\n", override);
-	if (override) {
-		overrideSetOutput(OP_PUMP, 0);
-	} else {
-		checkSetOutput(OP_PUMP, 0);
+void ICACHE_FLASH_ATTR turnOffOverride() {
+	clearPumpOverride();
+	switch (pumpState()) {
+	case PUMP_OFF_NORMAL:
+		startActionFlash(-1, 200, 800);
+		break;
+	case PUMP_ON_NORMAL:
+		startActionFlash(-1, 800, 200);
+		break;
+	case PUMP_OFF_OVERRIDE:
+	case PUMP_ON_OVERRIDE:
+		return;
 	}
+}
+
+void ICACHE_FLASH_ATTR startPumpNormal(void) {
+	switch (pumpState()) {
+	case PUMP_OFF_NORMAL:
+		TESTP("Start Pump\n");
+		checkSetOutput(OP_PUMP, 1);
+		break;
+	case PUMP_ON_NORMAL:
+		break;
+	case PUMP_OFF_OVERRIDE:
+	case PUMP_ON_OVERRIDE :
+		return;
+	}
+
+	os_timer_disarm(&flowCheck_timer);
+	os_timer_arm(&flowCheck_timer, PROCESS_REPEAT-500, 0);
+
 	if (!toggleState) {
-		startActionFlash(200, 0);
+		startActionFlash(-1, 700, 300);
+	}
+}
+
+void ICACHE_FLASH_ATTR startPumpOverride(void) {
+	switch (pumpState()) {
+	case PUMP_OFF_NORMAL:
+	case PUMP_OFF_OVERRIDE:
+	case PUMP_ON_NORMAL:
+		TESTP("Start Pump with override\n");
+		overrideSetOutput(OP_PUMP, 1);
+		break;
+	case PUMP_ON_OVERRIDE :
+		return;
+	}
+	os_timer_disarm(&flowCheck_timer);
+	os_timer_arm(&flowCheck_timer, 100000, 0); // Allow to run for 10S if override
+	if (!toggleState) {
+		startActionFlash(-1, 1700, 300);
+	}
+}
+
+void ICACHE_FLASH_ATTR stopPumpNormal(void) {
+	switch (pumpState()) {
+	case PUMP_OFF_NORMAL:
+	case PUMP_OFF_OVERRIDE:
+	case PUMP_ON_OVERRIDE :
+		return;
+	case PUMP_ON_NORMAL:
+		TESTP("Stop Pump\n");
+		checkSetOutput(OP_PUMP, 0);
+		break;
+	}
+	os_timer_disarm(&flowCheck_timer);
+	if (!toggleState) {
+		startActionFlash(-1, 200, 800);
+	}
+}
+
+void ICACHE_FLASH_ATTR stopPumpOverride(void) {
+	switch (pumpState()) {
+	case PUMP_OFF_NORMAL:
+	case PUMP_ON_OVERRIDE :
+	case PUMP_ON_NORMAL:
+		TESTP("Stop Pump with override\n");
+		overrideSetOutput(OP_PUMP, 1);
+		break;
+	case PUMP_OFF_OVERRIDE:
+		return;
+	}
+	os_timer_disarm(&flowCheck_timer);
+	overrideSetOutput(OP_PUMP, 0);
+	if (!toggleState) {
+		startActionFlash(-1, 200, 1800);
 	}
 }
 
 void ICACHE_FLASH_ATTR processPump(void) {
-	TESTP("Flow = %d (%d)\n", flowCurrentReading(), flowAverageReading());
-	if (mappedTemperature(MAP_TEMP_PANEL) > (mappedTemperature(MAP_TEMP_TS_BOTTOM) + 6)) {
-		startPump(false);
+	static pumpDelayOn = 0;
+	static pumpDelayOff = 0;
+
+	TESTP("Flow = %d (Av=%d, Mx=%d, Mn=%d)\n", flowCurrentReading(), flowAverageReading(), flowMaxReading(), flowMinReading());
+	if (mappedTemperature(MAP_TEMP_PANEL) > (mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP])) {
+		pumpDelayOff = 0;
+		if (pumpDelayOn < sysCfg.settings[SET_PUMP_DELAY]) {
+			pumpDelayOn++;
+		} else {
+			startPumpNormal();
+		}
 	} else {
-		stopPump(false);
+		pumpDelayOn = 0;
+		if (pumpDelayOff < sysCfg.settings[SET_PUMP_DELAY]) {
+			pumpDelayOff++;
+		} else {
+			stopPumpNormal();
+		}
 	}
 }
 
-void ICACHE_FLASH_ATTR processTimerCb(void) { // 2 sec
+void ICACHE_FLASH_ATTR processTimerCb(void) { // 5 sec
 	startReadTemperatures();
 	readPressure();
 	processPump();
@@ -785,13 +872,13 @@ void ICACHE_FLASH_ATTR processTimerCb(void) { // 2 sec
 }
 
 static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in BYTES
-  uint32_t id = spi_flash_get_id();
-  uint8_t mfgr_id = id & 0xff;
-  uint8_t type_id = (id >> 8) & 0xff; // not relevant for size calculation
-  uint8_t size_id = (id >> 16) & 0xff; // lucky for us, WinBond ID's their chips as a form that lets us calculate the size
-  if(mfgr_id != 0xEF) // 0xEF is WinBond; that's all we care about (for now)
-    return 0;
-  return 1 << size_id;
+	uint32_t id = spi_flash_get_id();
+	uint8_t mfgr_id = id & 0xff;
+	uint8_t type_id = (id >> 8) & 0xff; // not relevant for size calculation
+	uint8_t size_id = (id >> 16) & 0xff; // lucky for us, WinBond ID's their chips as a form that lets us calculate the size
+	if (mfgr_id != 0xEF) // 0xEF is WinBond; that's all we care about (for now)
+		return 0;
+	return 1 << size_id;
 }
 
 static void ICACHE_FLASH_ATTR showSysInfo() {
@@ -823,6 +910,16 @@ static void ICACHE_FLASH_ATTR startUp() {
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
 	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
+
+	os_timer_disarm(&flash_timer);
+	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
+
+	os_timer_disarm(&flashA_timer);
+	os_timer_setfn(&flashA_timer, (os_timer_func_t *) flashAction_cb, (void *) 0);
+
+	os_timer_disarm(&flowCheck_timer);
+	os_timer_setfn(&flowCheck_timer, (os_timer_func_t *) flowCheck_cb, (void *) 0);
+
 	os_timer_disarm(&process_timer);
 	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
 	os_timer_arm(&process_timer, PROCESS_REPEAT, true);

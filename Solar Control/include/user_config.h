@@ -1,7 +1,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A5	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A3	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
@@ -46,6 +46,8 @@
 #define SET_T1_READING 3
 #define SET_FLOW_TIMER 4
 #define SET_FLOW_COUNT_PER_LITRE 5
+#define SET_PUMP_DELAY 6
+#define SET_PANEL_TEMP 7
 
 #define DEFAULT_T0_READING 190
 #define DEFAULT_T1_READING 320
@@ -53,6 +55,8 @@
 #define DEFAULT_T1 100
 #define DEFAULT_FLOW_TIMER 10
 #define DEFAULT_FLOW_COUNT_PER_LITRE 450
+#define DEFAULT_PUMP_DELAY 12 // 1 minute
+#define DEFAULT_PANEL_TEMP 6
 
 #define MAP_TEMP_PANEL 0
 #define MAP_TEMP_TS_BOTTOM 1

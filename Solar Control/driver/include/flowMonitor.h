@@ -2,11 +2,12 @@
 #define __FLOWMONITOR_H__
 
 void resetFlowReadings(void);
-int flowPerReading(void);
-int flowMaxReading(void);
-int flowTimesReading(void);
-int flowAverageReading(void);
-int flowCurrentReading(void);
+uint16 flowPerReading(void);
+uint16 flowMaxReading(void);
+uint16 flowMinReading(void);
+uint16 flowPerReading(void);
+uint16 flowAverageReading(void);
+uint16 flowCurrentReading(void);
 void initFlowMonitor(void);
 
 #endif

@@ -104,6 +104,9 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		sysCfg.settings[SET_T1] = DEFAULT_T1;
 		sysCfg.settings[SET_FLOW_TIMER] = DEFAULT_FLOW_TIMER;
 		sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] = DEFAULT_FLOW_COUNT_PER_LITRE;
+		sysCfg.settings[SET_PUMP_DELAY] = DEFAULT_PUMP_DELAY;
+		sysCfg.settings[SET_PANEL_TEMP] = DEFAULT_PANEL_TEMP; // Amount panel temperature must be above TS_BOTTOM
+
 		for (idx = SET_FLOW_COUNT_PER_LITRE+1; idx < SETTINGS_SIZE; idx++) {
 			sysCfg.settings[idx] = SET_MINIMUM;
 		}

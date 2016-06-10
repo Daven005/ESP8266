@@ -17,40 +17,53 @@
 #include "user_config.h"
 #include "IOdefs.h"
 #include "debug.h"
+#include "flowMonitor.h"
 
 LOCAL os_timer_t flow_timer;
-static uint32 timedFlowCount;
-static int oneSecFlowCount;
-static int flowCount; // Interrupt variable
-static int flowTimes; // Number of times flow read between transmissions (resetFlowReading)
-static int flowMax;
-static int flowAverage;
+static uint16 oneSecFlowCount;
+static uint16 flowCount; // Interrupt variable
+static uint16 flowCountPerReading;
+static uint16 flowMax;
+static uint16 flowMin;
+static uint16 flowAverage;
 
 void ICACHE_FLASH_ATTR resetFlowReadings(void) {
-	timedFlowCount = 0;
-	flowTimes = 0;
+	flowCountPerReading = 0;
 	flowMax = 0;
+	flowMin = 60000;
 }
 
-int ICACHE_FLASH_ATTR flowPerReading(void) {
+static void ICACHE_FLASH_ATTR flowSetAverage(uint16 count) {
+	flowAverage = (flowAverage*4 + count*16)/5;
+}
+
+static uint16 ICACHE_FLASH_ATTR flowGetAverage(void) {
+	return flowAverage/16;
+}
+
+uint16 ICACHE_FLASH_ATTR flowMaxReading(void) {
 	if (sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0)
-		return ((uint32)timedFlowCount*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
+		return ((uint32)flowMax*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
 	return 0;
 }
 
-int ICACHE_FLASH_ATTR flowMaxReading(void) {
-	return ((uint32)flowMax*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
+uint16 ICACHE_FLASH_ATTR flowMinReading(void) {
+	if (sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0)
+		return ((uint32)flowMin*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
+	return 0;
 }
 
-int ICACHE_FLASH_ATTR flowTimesReading(void) {
-	return flowTimes;
+uint16 ICACHE_FLASH_ATTR flowPerReading(void) {
+	if (sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0)
+		return ((uint32)flowCountPerReading*1000)/sysCfg.settings[SET_FLOW_COUNT_PER_LITRE];
+	return 0;
 }
 
-int ICACHE_FLASH_ATTR flowAverageReading(void) {
-	return flowAverage;
+uint16 ICACHE_FLASH_ATTR flowAverageReading(void) {
+	return flowGetAverage();
 }
 
-int ICACHE_FLASH_ATTR flowCurrentReading(void) {
+uint16 ICACHE_FLASH_ATTR flowCurrentReading(void) {
 	return oneSecFlowCount;
 }
 
@@ -58,28 +71,31 @@ static void flowIntrHandler(void *arg) {
 	uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
 	if (gpio_status & BIT(FLOW_SENSOR)) {
 		// This interrupt was intended for us - clear interrupt status
-		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(FLOW_SENSOR));
 		flowCount++;
+		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(FLOW_SENSOR));
 	}
 }
 
 static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
-	static uint32 lastFlowCount = 0;
-	uint32 thisFlowCount;
 
 	ETS_GPIO_INTR_DISABLE();
 	oneSecFlowCount = flowCount;
 	flowCount = 0;
 	ETS_GPIO_INTR_ENABLE();
 
-	flowAverage = (flowAverage*9 + oneSecFlowCount)/10;
-	timedFlowCount += oneSecFlowCount;
-	flowTimes++;
-	thisFlowCount = timedFlowCount - lastFlowCount;
-	if (thisFlowCount > flowMax) {
-		flowMax = thisFlowCount;
+	flowSetAverage(oneSecFlowCount);
+	flowCountPerReading += oneSecFlowCount;
+	if (oneSecFlowCount < flowMin) {
+		flowMin = oneSecFlowCount;
 	}
-	lastFlowCount = timedFlowCount;
+	if (oneSecFlowCount > flowMax) {
+		flowMax = oneSecFlowCount;
+	}
+}
+
+void ICACHE_FLASH_ATTR printFlows(void) {
+	TESTP("o:%d x:%d n:%d, a:%d\n",
+			oneSecFlowCount, flowMax, flowMin, flowAverage);
 }
 
 void ICACHE_FLASH_ATTR initFlowMonitor(void) {
