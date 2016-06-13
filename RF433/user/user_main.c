@@ -324,16 +324,17 @@ void ICACHE_FLASH_ATTR toggleSetupMode(void) {
 
 #ifdef SWITCH
 void ICACHE_FLASH_ATTR switchAction(int action) {
+	static bool socketOn = false;
 	startFlashCount(100, action);
 	switch (action) {
 	case 1:
-		rf433_start();
+		setGate(1);
 		break;
 	case 2:
+		setSocket(3, socketOn = !socketOn);
 		break;
 	case 3:
 		printAll();
-		rf433_printTimings(0);
 		os_printf("minHeap: %d\n", checkMinHeap());
 		break;
 	case 4:
@@ -493,6 +494,46 @@ void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	}
 }
 
+static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_Client* client) {
+	if (strcmp("name", param) == 0) {
+		strcpy(sysCfg.deviceName, dataBuf);
+	} else if (strcmp("location", param) == 0) {
+		strcpy(sysCfg.deviceLocation, dataBuf);
+	} else if (strcmp("updates", param) == 0) {
+		sysCfg.updates = atoi(dataBuf);
+		os_timer_disarm(&mqtt_timer);
+		os_timer_arm(&mqtt_timer, sysCfg.updates * 1000, true);
+	} else if (strcmp("inputs", param) == 0) {
+		sysCfg.inputs = atoi(dataBuf);
+	}
+	publishDeviceInfo(client);
+	CFG_Save();
+}
+
+static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *param,
+		MQTT_Client* client) {
+	int id = atoi(idPtr);
+	int value = atoi(valPtr);
+	if (strcmp("setting", param) == 0) {
+		if (0 <= id && id < SETTINGS_SIZE) {
+			if (SET_MINIMUM <= value && value <= SET_MAXIMUM) {
+				sysCfg.settings[id] = value;
+				CFG_Save();
+				TESTP("Setting %d = %d\n", id, sysCfg.settings[id]);
+				publishDeviceInfo(client);
+			}
+		}
+	} else if (strcmp("socket", param) == 0) {
+		if (0 <= id && id < MAX_OUTPUT) {
+			setSocket(id, value);
+		}
+	} else if (strcmp("gate", param) == 0) {
+		if (0 <= id && id < MAX_OUTPUT) {
+			setGate(id);
+		}
+	}
+}
+
 void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
 		const char *data, uint32_t data_len) {
 	char *topicBuf = (char*) os_zalloc(topic_len + 1), *dataBuf = (char*) os_zalloc(data_len + 1);
@@ -513,17 +554,11 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 			if (tokenCount == 4 && strcmp(sysCfg.device_id, tokens[1]) == 0
 					&& strcmp("set", tokens[2]) == 0) {
 				if (strlen(dataBuf) < NAME_SIZE - 1) {
-					if (strcmp("name", tokens[3]) == 0) {
-						strcpy(sysCfg.deviceName, dataBuf);
-					} else if (strcmp("location", tokens[3]) == 0) {
-						strcpy(sysCfg.deviceLocation, dataBuf);
-					} else if (strcmp("updates", tokens[3]) == 0) {
-						sysCfg.updates = atoi(dataBuf);
-						os_timer_disarm(&transmit_timer);
-						os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
-					}
-					publishDeviceInfo(client);
-					CFG_Save();
+					decodeDeviceSet(tokens[3], dataBuf, client);
+				}
+			} else if (tokenCount == 5 && strcmp(sysCfg.device_id, tokens[1]) == 0) {
+				if (strcmp("set", tokens[3]) == 0) {
+					decodeSensorSet(dataBuf, tokens[2], tokens[4], client);
 				}
 			}
 		} else if (strcmp("App", tokens[0]) == 0) {
@@ -576,7 +611,6 @@ static void ICACHE_FLASH_ATTR startUp() {
 	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
 	os_timer_arm(&switch_timer, 100, true);
 
-	rf433_init();
 
 #ifdef USE_TEMPERATURE
 	ds18b20StartScan();
@@ -631,6 +665,8 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	easygpio_pinMode(LED, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);
 #endif
+	easygpio_pinMode(RF433_TX, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_outputSet(RF433_TX, 0);
 	wifi_station_set_auto_connect(false);
 	wifi_station_set_reconnect_policy(true);
 #ifdef USE_WIFI_SCAN

@@ -42,10 +42,10 @@ static os_timer_t xmit_timer;
 static int repeatCount;
 
 void xmitA(unsigned long code) {
-#define LENGTH 25
+#define LENGTH_A 25
 	easygpio_outputSet(RF433_TX, 0);
 	os_delay_us(A_SYNC_XMIT);
-	unsigned long mask = 1L << (LENGTH - 1);
+	unsigned long mask = 1L << (LENGTH_A - 1);
 	do {
 		if (code & mask) {
 			easygpio_outputSet(RF433_TX, 1);
@@ -66,13 +66,13 @@ void xmitA(unsigned long code) {
 }
 
 void xmitB(unsigned long code) {
-#define LENGTH 24
+#define LENGTH_B 24
 	easygpio_outputSet(RF433_TX, 0);
 	os_delay_us(B_SYNC_XMIT);
 	easygpio_outputSet(RF433_TX, 1);
 	os_delay_us(B_ZERO_XMIT);
 	easygpio_outputSet(RF433_TX, 0);
-	unsigned long mask = 1L << (LENGTH - 1);
+	unsigned long mask = 1L << (LENGTH_B - 1);
 	do {
 		if (code & mask) {
 			easygpio_outputSet(RF433_TX, 0);
@@ -96,7 +96,8 @@ void startXmit(xmitType t, uint32 code) {
 	easygpio_outputSet(RF433_TX, 1); // Get transmitter started
 	os_delay_us(500);
 	os_timer_disarm(&xmit_timer);
-	repeatCount = 20;
+	repeatCount = 50;
+	TESTP("xmit: %d %lx * %d\n", t, code, repeatCount);
 	switch (t) {
 	case TYPE_A:
 		os_timer_setfn(&xmit_timer, (os_timer_func_t *) xmitA, code);
