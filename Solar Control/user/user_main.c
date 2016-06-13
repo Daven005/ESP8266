@@ -60,6 +60,7 @@ void startPumpOverride(void);
 void stopPumpNormal(void);
 void stopPumpOverride(void);
 void turnOffOverride(void);
+void checkActionFlash(void);
 
 void user_rf_pre_init() {
 }
@@ -145,10 +146,33 @@ void ICACHE_FLASH_ATTR startActionFlash(int flashCount, unsigned int onTime, uns
 	TESTP("Start Flash %d %d/%d\n", flashCount, onTime, offTime);
 	easygpio_outputSet(ACTION_LED, 1);
 	flashActionCount = flashCount;
-	flashActionOnTime = offTime;
-	flashActionOffTime = onTime;
+	flashActionOnTime = onTime;
+	flashActionOffTime = offTime;
 	os_timer_disarm(&flashA_timer);
 	os_timer_arm(&flashA_timer, onTime, false);
+}
+
+void ICACHE_FLASH_ATTR checkActionFlash(void) {
+	static pumpState_t lastPumpState = PUMP_UNKNOWN;
+	pumpState_t thisPumpState = pumpState();
+
+	if (thisPumpState == lastPumpState) return; // Don't restart flash
+	lastPumpState = thisPumpState;
+	if (toggleState) return;
+	switch (thisPumpState) {
+	case PUMP_OFF_NORMAL:
+		startActionFlash(-1, 200, 1800);
+		break;
+	case PUMP_ON_NORMAL:
+		startActionFlash(-1, 1800, 200);
+		break;
+	case PUMP_OFF_OVERRIDE:
+		startActionFlash(-1, 500, 2500);
+		break;
+	case PUMP_ON_OVERRIDE :
+		startActionFlash(-1, 2500, 500);
+		break;
+	}
 }
 
 void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
@@ -470,7 +494,7 @@ void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
 	if ((toggleState = easygpio_inputGet(TOGGLE))) {
 		easygpio_outputSet(ACTION_LED, 1);
 	} else {
-		easygpio_outputSet(ACTION_LED, 0);
+		checkActionFlash();
 	}
 	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
 		switch (switchState) {
@@ -705,29 +729,6 @@ void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
 			publishAlarm(2, flowCurrentReading());
 			break;
 		}
-	}
-}
-
-void ICACHE_FLASH_ATTR checkActionFlash(void) {
-	static pumpState_t lastPumpState = PUMP_UNKNOWN;
-	pumpState_t thisPumpState = pumpState();
-
-	if (thisPumpState == lastPumpState) return; // Don't restart flash
-	lastPumpState = thisPumpState;
-	if (toggleState) return;
-	switch (thisPumpState) {
-	case PUMP_OFF_NORMAL:
-		startActionFlash(-1, 200, 1800);
-		break;
-	case PUMP_ON_OVERRIDE :
-		startActionFlash(-1, 1800, 200);
-		break;
-	case PUMP_ON_NORMAL:
-		startActionFlash(-1, 2800, 200);
-		break;
-	case PUMP_OFF_OVERRIDE:
-		startActionFlash(-1, 200, 2800);
-		break;
 	}
 }
 
