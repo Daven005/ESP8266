@@ -531,60 +531,6 @@ void ICACHE_FLASH_ATTR dateTimerCb(void) {
 	system_restart();
 }
 
-void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
-	char *topic = (char*) os_zalloc(100);
-
-	MQTT_Client* client = (MQTT_Client*) args;
-	lastAction = MQTT_CONNECTED_CB;
-	mqttConnected = true;
-	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
-
-	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
-	TESTP("Subscribe to: %s\n", topic);
-	MQTT_Subscribe(client, topic, 0);
-
-	os_sprintf(topic, "/Raw/%s/+/set/#", sysCfg.device_id);
-	TESTP("Subscribe to: %s\n", topic);
-	MQTT_Subscribe(client, topic, 0);
-
-	os_sprintf(topic, "/App/+/+/TS Bottom/#");
-	TESTP("Subscribe to: %s\n", topic);
-	MQTT_Subscribe(client, topic, 0);
-
-	MQTT_Subscribe(client, "/App/date", 0);
-
-	publishDeviceReset(client);
-	publishDeviceInfo(client);
-
-	os_timer_disarm(&switch_timer);
-	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
-	os_timer_arm(&switch_timer, 100, true);
-
-	os_timer_disarm(&date_timer);
-	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
-	os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
-
-	os_timer_disarm(&transmit_timer);
-	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) client);
-	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
-	easygpio_outputSet(LED, 0); // Turn LED off when connected
-	initFlowMonitor();
-	initTemperatureMonitor();
-
-	checkMinHeap();
-	os_free(topic);
-}
-
-void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
-//	MQTT_Client* client = (MQTT_Client*)args;
-	os_printf("MQTT Disconnected\n");
-	lastAction = MQTT_DISCONNECTED_CB;
-	mqttConnected = false;
-	if (!checkSmartConfig(SC_CHECK)) {
-		MQTT_Connect(&mqttClient);
-	}
-}
-
 static bool ICACHE_FLASH_ATTR jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start
 			&& strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
@@ -762,19 +708,32 @@ void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
 	}
 }
 
-void ICACHE_FLASH_ATTR turnOffOverride() {
-	clearPumpOverride();
-	switch (pumpState()) {
+void ICACHE_FLASH_ATTR checkActionFlash(void) {
+	static pumpState_t lastPumpState = PUMP_UNKNOWN;
+	pumpState_t thisPumpState = pumpState();
+
+	if (thisPumpState == lastPumpState) return; // Don't restart flash
+	lastPumpState = thisPumpState;
+	if (toggleState) return;
+	switch (thisPumpState) {
 	case PUMP_OFF_NORMAL:
-		startActionFlash(-1, 200, 800);
+		startActionFlash(-1, 200, 1800);
+		break;
+	case PUMP_ON_OVERRIDE :
+		startActionFlash(-1, 1800, 200);
 		break;
 	case PUMP_ON_NORMAL:
-		startActionFlash(-1, 800, 200);
+		startActionFlash(-1, 2800, 200);
 		break;
 	case PUMP_OFF_OVERRIDE:
-	case PUMP_ON_OVERRIDE:
-		return;
+		startActionFlash(-1, 200, 2800);
+		break;
 	}
+}
+
+void ICACHE_FLASH_ATTR turnOffOverride() {
+	clearPumpOverride();
+	checkActionFlash();
 }
 
 void ICACHE_FLASH_ATTR startPumpNormal(void) {
@@ -789,13 +748,8 @@ void ICACHE_FLASH_ATTR startPumpNormal(void) {
 	case PUMP_ON_OVERRIDE :
 		return;
 	}
-
 	os_timer_disarm(&flowCheck_timer);
 	os_timer_arm(&flowCheck_timer, PROCESS_REPEAT-500, 0);
-
-	if (!toggleState) {
-		startActionFlash(-1, 700, 300);
-	}
 }
 
 void ICACHE_FLASH_ATTR startPumpOverride(void) {
@@ -811,9 +765,6 @@ void ICACHE_FLASH_ATTR startPumpOverride(void) {
 	}
 	os_timer_disarm(&flowCheck_timer);
 	os_timer_arm(&flowCheck_timer, 100000, 0); // Allow to run for 10S if override
-	if (!toggleState) {
-		startActionFlash(-1, 1700, 300);
-	}
 }
 
 void ICACHE_FLASH_ATTR stopPumpNormal(void) {
@@ -828,9 +779,6 @@ void ICACHE_FLASH_ATTR stopPumpNormal(void) {
 		break;
 	}
 	os_timer_disarm(&flowCheck_timer);
-	if (!toggleState) {
-		startActionFlash(-1, 200, 800);
-	}
 }
 
 void ICACHE_FLASH_ATTR stopPumpOverride(void) {
@@ -846,9 +794,6 @@ void ICACHE_FLASH_ATTR stopPumpOverride(void) {
 	}
 	os_timer_disarm(&flowCheck_timer);
 	overrideSetOutput(OP_PUMP, 0);
-	if (!toggleState) {
-		startActionFlash(-1, 200, 1800);
-	}
 }
 
 void ICACHE_FLASH_ATTR processPump(void) {
@@ -871,6 +816,7 @@ void ICACHE_FLASH_ATTR processPump(void) {
 			stopPumpNormal();
 		}
 	}
+	checkActionFlash();
 }
 
 void ICACHE_FLASH_ATTR processTimerCb(void) { // 5 sec
@@ -879,6 +825,60 @@ void ICACHE_FLASH_ATTR processTimerCb(void) { // 5 sec
 	readPressure();
 	processPump();
 
+}
+
+void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
+	char *topic = (char*) os_zalloc(100);
+
+	MQTT_Client* client = (MQTT_Client*) args;
+	lastAction = MQTT_CONNECTED_CB;
+	mqttConnected = true;
+	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
+
+	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
+	TESTP("Subscribe to: %s\n", topic);
+	MQTT_Subscribe(client, topic, 0);
+
+	os_sprintf(topic, "/Raw/%s/+/set/#", sysCfg.device_id);
+	TESTP("Subscribe to: %s\n", topic);
+	MQTT_Subscribe(client, topic, 0);
+
+	os_sprintf(topic, "/App/+/+/TS Bottom/#");
+	TESTP("Subscribe to: %s\n", topic);
+	MQTT_Subscribe(client, topic, 0);
+
+	MQTT_Subscribe(client, "/App/date", 0);
+
+	publishDeviceReset(client);
+	publishDeviceInfo(client);
+
+	os_timer_disarm(&switch_timer);
+	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
+	os_timer_arm(&switch_timer, 100, true);
+
+	os_timer_disarm(&date_timer);
+	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
+	os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
+
+	os_timer_disarm(&transmit_timer);
+	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) client);
+	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
+	easygpio_outputSet(LED, 0); // Turn LED off when connected
+	initFlowMonitor();
+	initTemperatureMonitor();
+
+	checkMinHeap();
+	os_free(topic);
+}
+
+void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
+//	MQTT_Client* client = (MQTT_Client*)args;
+	os_printf("MQTT Disconnected\n");
+	lastAction = MQTT_DISCONNECTED_CB;
+	mqttConnected = false;
+	if (!checkSmartConfig(SC_CHECK)) {
+		MQTT_Connect(&mqttClient);
+	}
 }
 
 static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in BYTES
@@ -919,7 +919,7 @@ static void ICACHE_FLASH_ATTR startUp() {
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
+	WIFI_Connect(bestSSID, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 
 	os_timer_disarm(&flash_timer);
 	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
