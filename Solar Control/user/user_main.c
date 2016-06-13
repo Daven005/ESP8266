@@ -46,6 +46,11 @@ static bool toggleState;
 
 static uint32 minHeap = 0xffffffff;
 
+enum {
+	IDLE, RESTART, FLASH, IPSCAN, SWITCH_SCAN,
+	INIT_DONE, MQTT_DATA_CB, MQTT_CONNECTED_CB, MQTT_DISCONNECTED_CB, SMART_CONFIG,
+	PROCESS_CB, DS18B20_CB
+} lastAction __attribute__ ((section (".noinit")));
 enum SmartConfigAction {
 	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
 };
@@ -326,8 +331,8 @@ void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
 
 		os_sprintf(topic, "/Raw/%10s/reset", sysCfg.device_id);
 		os_sprintf(data,
-			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":\"%d\"}",
-			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason);
+			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":\"%d\", \"LastAction\":%d}",
+			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason, lastAction);
 		os_printf("%s=>%s\n", topic, data);
 		MQTT_Publish(client, topic, data, strlen(data), 0, false);
 		checkMinHeap();
@@ -522,6 +527,7 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 
 void ICACHE_FLASH_ATTR dateTimerCb(void) {
 	os_printf("Nothing heard so restarting...\n");
+	lastAction = RESTART;
 	system_restart();
 }
 
@@ -529,6 +535,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	char *topic = (char*) os_zalloc(100);
 
 	MQTT_Client* client = (MQTT_Client*) args;
+	lastAction = MQTT_CONNECTED_CB;
 	mqttConnected = true;
 	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
 
@@ -571,6 +578,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 //	MQTT_Client* client = (MQTT_Client*)args;
 	os_printf("MQTT Disconnected\n");
+	lastAction = MQTT_DISCONNECTED_CB;
 	mqttConnected = false;
 	if (!checkSmartConfig(SC_CHECK)) {
 		MQTT_Connect(&mqttClient);
@@ -692,6 +700,7 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 	char *tokens[10];
 
 	MQTT_Client* client = (MQTT_Client*) args;
+	lastAction = MQTT_DATA_CB;
 
 	os_memcpy(topicBuf, topic, topic_len);
 	topicBuf[topic_len] = 0;
@@ -865,6 +874,7 @@ void ICACHE_FLASH_ATTR processPump(void) {
 }
 
 void ICACHE_FLASH_ATTR processTimerCb(void) { // 5 sec
+	lastAction = PROCESS_CB;
 	startReadTemperatures();
 	readPressure();
 	processPump();
@@ -924,6 +934,7 @@ static void ICACHE_FLASH_ATTR startUp() {
 	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
 	os_timer_arm(&process_timer, PROCESS_REPEAT, true);
 
+	lastAction = INIT_DONE;
 	INFO(showSysInfo());
 }
 
