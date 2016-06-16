@@ -1,9 +1,11 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A4	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A5	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
+
+#define SLEEP_MODE 0
 
 /*DEFAULT CONFIGURATIONS*/
 
@@ -12,7 +14,7 @@
 #define MQTT_BUF_SIZE		512
 #define MQTT_KEEPALIVE		120	 /*second*/
 
-#define MQTT_CLIENT_ID		"Hollies%lx"
+#define DEVICE_PREFIX		"Hollies"
 #define MQTT_USER			""
 #define MQTT_PASS			""
 
@@ -53,16 +55,16 @@
 #define SETTING_DHW_OFF_HOUR 12
 
 #define DEFAULT_DHW_SET_POINT 60
-#define DEFAULT_UFH_SET_POINT 45
-#define DEFAULT_RADS_SET_POINT 58
-#define DEFAULT_SET_POINT_DIFFERENTIAL 5
-#define DEFAULT_WB_IS_ON_TEMP 65
+#define DEFAULT_UFH_SET_POINT 50
+#define DEFAULT_RADS_SET_POINT 66
+#define DEFAULT_SET_POINT_DIFFERENTIAL 4
+#define DEFAULT_WB_IS_ON_TEMP 60
 #define DEFAULT_DHW_USE_ALL_HEAT 50
 #define DEFAULT_OUTSIDE_TEMP_COMP 10
-#define DEFAULT_BOOST_TIME 10
+#define DEFAULT_BOOST_TIME 5
 #define DEFAULT_BOOST_AMOUNT 2
-#define DEFAULT_EMERGENCY_DUMP_TEMP 95
-#define DEFAULT_OB_PUMP_DELAY 10
+#define DEFAULT_EMERGENCY_DUMP_TEMP 88
+#define DEFAULT_OB_PUMP_DELAY 0
 #define DEFAULT_DHW_ON_HOUR 7
 #define DEFAULT_DHW_OFF_HOUR 22
 

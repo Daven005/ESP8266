@@ -101,13 +101,6 @@ uint8 ICACHE_FLASH_ATTR setUnmappedSensorTemperature(char *sensorID, int val, in
 	return idx;
 }
 
-uint8 ICACHE_FLASH_ATTR setUnmappedTemperature(char *sensorID, int val, int fract) {
-	int idx = sensorIdx(sensorID);
-	idx = checkAddNewTemperature(idx, sensorID, MAX_DS18B20_SENSOR);
-	checkSetTemperature(idx, val, fract, sensorID);
-	return idx;
-}
-
 bool ICACHE_FLASH_ATTR printTemperature(int idx) {
 	struct Temperature *t;
 	if (getUnmappedTemperature(idx, &t)) {

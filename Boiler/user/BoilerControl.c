@@ -94,7 +94,7 @@ void ICACHE_FLASH_ATTR setTime(time_t t) {
 
 void ICACHE_FLASH_ATTR setOutsideTemp(int idx, int val){
 	if (idx == 2) { // Choose forecast +2 hours
-		setUnmappedTemperature("Outside", val, 0);
+		setUnmappedSensorTemperature("Outside", val, 0);
 	}
 }
 
@@ -221,10 +221,10 @@ void ICACHE_FLASH_ATTR boost_cb(void) {
 }
 
 void ICACHE_FLASH_ATTR validateOutputs(void) {
-	if (output(OP_OB_ON) && output(OP_EMERGENCY_DUMP_ON)) {
+	if (outputState(OP_OB_ON) && outputState(OP_EMERGENCY_DUMP_ON)) {
 		publishError(80, 0); // Shouldn't have OB ON when emergency dump
 	}
-	if (output(OP_OB_ON) && output(OP_WB_CIRC_ON) && output(OP_OB_CIRC_ON)) {
+	if (outputState(OP_OB_ON) && outputState(OP_WB_CIRC_ON) && outputState(OP_OB_CIRC_ON)) {
 		publishError(81, 0); // Shouldn't have OB and both circulations ON
 		// Note circulations on when doing Thermal purge
 	}
@@ -239,7 +239,6 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 	static bool OB_IsOn = false;
 	uint8 chResult, dhwResult;
 	int tempTS_Top, tempWB_Flow;
-	bool checkBoost;
 	static int boostCount = 0;
 	int baseSetPoint, modifiedSetPoint;
 	uint8 sensorCount = temperatureSensorCount();
@@ -278,27 +277,23 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 	}
 	WBisHot = (tempWB_Flow >= sysCfg.settings[SETTING_WB_IS_ON_TEMP]);
 
-	setUnmappedTemperature("DHW setpoint", sysCfg.settings[SETTING_DHW_SET_POINT], 0);
+	setUnmappedSensorTemperature("DHW setpoint", sysCfg.settings[SETTING_DHW_SET_POINT], 0);
 
 	// Check CH set point
-	if (radsOffCount > 0) { // Rads have been ON in last 10 minutes
-		baseSetPoint = sysCfg.settings[SETTING_RADS_SET_POINT];
-	} else {
-		baseSetPoint = sysCfg.settings[SETTING_UFH_SET_POINT];
-	}
-	if (mappedTemperature(MAP_OUTSIDE_TEMP) <= MIN_COMP_TEMP) {
-		uint8 idx = setUnmappedTemperature("CH setpoint", baseSetPoint, 0);
+	// Rads have been ON in last RADS_OFF_DURATION (10) minutes
+	baseSetPoint = (radsOffCount > 0) ? sysCfg.settings[SETTING_RADS_SET_POINT] : sysCfg.settings[SETTING_UFH_SET_POINT];
+
+	if (mappedTemperature(MAP_OUTSIDE_TEMP) <= MIN_COMP_TEMP) { 	// No Outside Temperature compensation
+		uint8 idx = setUnmappedSensorTemperature("CH setpoint", baseSetPoint, 0);
 		INFO(extraPublishTemperatures(idx));
-		checkBoost = false; // Already on max output
-	} else if (mappedTemperature(MAP_OUTSIDE_TEMP) >= MAX_COMP_TEMP) {
-		modifiedSetPoint = baseSetPoint - sysCfg.settings[SETTING_OUTSIDE_TEMP_COMP];
-		checkBoost = true;
+		boostInProgress = false;
 	} else {
-		modifiedSetPoint = baseSetPoint - ((mappedTemperature(MAP_OUTSIDE_TEMP) - MIN_COMP_TEMP)
-								* sysCfg.settings[SETTING_OUTSIDE_TEMP_COMP]) / MAX_COMP_TEMP;
-		checkBoost = true;
-	}
-	if (checkBoost) {
+		if (mappedTemperature(MAP_OUTSIDE_TEMP) >= MAX_COMP_TEMP) { // Max Outside Temperature compensation
+			modifiedSetPoint = baseSetPoint - sysCfg.settings[SETTING_OUTSIDE_TEMP_COMP];
+		} else { 													// Proportional  Outside Temperature compensation
+			modifiedSetPoint = baseSetPoint - ((mappedTemperature(MAP_OUTSIDE_TEMP) - MIN_COMP_TEMP)
+									* sysCfg.settings[SETTING_OUTSIDE_TEMP_COMP]) / MAX_COMP_TEMP;
+		}
 		if (boostInProgress) {
 			if (CH_CallForHeat) {
 				boostHadCFH = true;
@@ -314,21 +309,19 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 			os_timer_setfn(&Boost_timer, (os_timer_func_t *) boost_cb, (void *) 0);
 			os_timer_arm(&Boost_timer, sysCfg.settings[SETTING_BOOST_TIME] * 60 * 1000, true);
 		}
-		uint8 idx = setUnmappedTemperature("CH setpoint", modifiedSetPoint, 0);
+		uint8 idx = setUnmappedSensorTemperature("CH setpoint", modifiedSetPoint, 0);
 		INFO(extraPublishTemperatures(idx));
-	} else {
-		boostInProgress = false;
 	}
 
 	chSetPoint = mappedTemperature(MAP_CURRENT_CH_SET_POINT);
 	chResult = checkCH_Logic(WBisHot, OB_IsOn, CH_CallForHeat,
-			mappedTemperature(MAP_HEATING_FLOW_TEMP) > chSetPoint,
+			mappedTemperature(MAP_HEATING_FLOW_TEMP) >= chSetPoint || mappedTemperature(MAP_TEMP_TS_MIDDLE) >= chSetPoint,
 			mappedTemperature(MAP_TEMP_TS_BOTTOM)
 					> (chSetPoint + sysCfg.settings[SETTING_SET_POINT_DIFFERENTIAL]));
 
 	dhwSetPoint = mappedTemperature(MAP_CURRENT_DHW_SET_POINT);
 	dhwResult = checkDHW_Logic(WBisHot, OB_IsOn, dhwOn(),
-			mappedTemperature(MAP_TEMP_TS_TOP) > dhwSetPoint,
+			mappedTemperature(MAP_TEMP_TS_TOP) >= dhwSetPoint,
 			mappedTemperature(dhwMax() ? MAP_TEMP_TS_MIDDLE : MAP_TEMP_TS_CYLINDER) // Use lower sensor for more DHW
 					> (dhwSetPoint + sysCfg.settings[SETTING_SET_POINT_DIFFERENTIAL]));
 
@@ -381,9 +374,9 @@ void ICACHE_FLASH_ATTR initBoilerControl() {
 	checkInputs(false);
 	ds18b20StartScan();
 	// Allocate derived unmapped temperatures
-	setUnmappedTemperature("CH setpoint", 0, 0);
-	setUnmappedTemperature("DHW setpoint", 0, 0);
-	setUnmappedTemperature("Outside", 0, 0);
+	setUnmappedSensorTemperature("CH setpoint", 0, 0);
+	setUnmappedSensorTemperature("DHW setpoint", sysCfg.settings[SETTING_DHW_SET_POINT], 0);
+	setUnmappedSensorTemperature("Outside", 0, 0);
 	os_timer_disarm(&TemperatureMonitor_timer);
 	os_timer_setfn(&TemperatureMonitor_timer, (os_timer_func_t *) TemperatureMonitor_cb, (void *) 0);
 	os_timer_arm(&TemperatureMonitor_timer, 60*1000, false);

@@ -28,7 +28,7 @@ uint8 sensorIdx(char* sensorID);
 void setTemperature(char *sensorID, int value);
 bool printTemperature(int);
 bool printMappedTemperature(int);
-uint8 setUnmappedTemperature(char *sensorID, int val, int fract);
+uint8 setUnmappedSensorTemperature(char *sensorID, int val, int fract);
 
 // Override used for testing
 uint8 setTemperatureOverride(char *sensorID, char *value);

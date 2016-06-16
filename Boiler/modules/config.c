@@ -86,7 +86,8 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		os_sprintf(sysCfg.sta_pwd, "%s", STA_PASS);
 		sysCfg.sta_type = STA_TYPE;
 
-		os_sprintf(sysCfg.device_id, MQTT_CLIENT_ID, system_get_chip_id());
+		os_sprintf(sysCfg.deviceID_prefix, DEVICE_PREFIX);
+		os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
 		os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
 		sysCfg.mqtt_port = MQTT_PORT;
 		os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);

@@ -49,6 +49,7 @@ typedef struct{
 
 	uint16 updates;
 	uint8 inputs;
+	char deviceID_prefix[8];
 	char deviceName[NAME_SIZE];
 	char deviceLocation[NAME_SIZE];
 	uint16_t settings[SETTINGS_SIZE];
