@@ -65,9 +65,10 @@ struct dht_sensor_data *ICACHE_FLASH_ATTR dht2Read(void) {
 
 static void ICACHE_FLASH_ATTR dht_Start_Cb(struct dht_sensor_data *reading) {
 	easygpio_outputEnable(reading->pin, 0); // Set as output and Hold low for 20ms
+	reading->error = E_NONE;
 	os_timer_disarm(&reading->wakeTimer);
 	os_timer_setfn(&reading->wakeTimer, dht_Cb, reading);
-	os_timer_arm(&reading->wakeTimer, 20, false);
+	os_timer_arm(&reading->wakeTimer, 18, false);
 }
 
 static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
@@ -76,8 +77,7 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 	int i = 0;
 	int j = 0;
 	int checksum = 0;
-	int data[100];
-	data[0] = data[1] = data[2] = data[3] = data[4] = 0;
+	int data[10] = { 0, 0, 0, 0, 0};
 
 	easygpio_outputSet(reading->pin, 1);
 	os_delay_us(40);
@@ -90,9 +90,10 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 	}
 
 	if (i == DHT_MAXCOUNT) {
-		reading->success = 0;
-		// os_printf("Failed to get reading, dying\r\n");
+		// TESTP("Failed to get reading, dying\n");
 		easygpio_outputSet(reading->pin, 1);
+		reading->error = E_MAXCOUNT;
+		reading->success = 0;
 		return;
 	}
 
@@ -121,6 +122,7 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 		//os_printf("DHT: %02x %02x %02x %02x [%02x] CS: %02x", data[0], data[1],data[2],data[3],data[4],checksum);
 		if (data[4] == checksum) {
 			// checksum is valid
+			INFO(for (i=0; i<=5; i++) INFOP("%02x ", data[i]));
 			reading->temperature = scale_temperature(reading, data);
 			reading->humidity = scale_humidity(reading, data);
 			if (reading->count == 0) {
@@ -131,17 +133,18 @@ static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading) {
 				reading->avgTemperature = (reading->avgTemperature * 4 + reading->temperature) / 5;
 				reading->avgHumidity = (reading->avgHumidity * 4 + reading->humidity) / 5;
 			}
-			INFO("DHT %d Average Temperature =  %d*C, Humidity = %d%%\n", reading->id,
+			INFOP("DHT %d (%d-%d) Average Temperature: %dC, Humidity: %d%%\n", reading->id, reading->sensorType, reading->pin,
 					(int) (reading->avgTemperature), (int) (reading->avgHumidity));
 			reading->success = true;
 		} else {
-			INFO("Checksum was incorrect after %d bits. Expected %d but got %d\r\n", j, data[4],
-					checksum);
+			// TESTP("Checksum was incorrect after %d bits. Expected %d but got %d\n", j, data[4], checksum);
 			reading->success = false;
+			reading->error = E_CRC;
 		}
 	} else {
-		INFO("Got too few bits: %d should be at least 40\r\n", j);
-		reading->success = 0;
+		// TESTP("Got too few bits: %d should be at least 40\n", j);
+		reading->success = false;
+		reading->error = E_BITCOUNT;
 	}
 	easygpio_outputSet(reading->pin, 1);
 	return;
@@ -152,6 +155,7 @@ void ICACHE_FLASH_ATTR dht1Init(enum DHTType dht_type, uint8 pin, uint32_t poll_
 	reading1.sensorType = dht_type;
 	easygpio_outputEnable((reading1.pin = pin), 1);
 	reading1.id = 1;
+	reading1.error = E_NONE;
 	os_timer_disarm(&reading1.timer);
 	os_timer_setfn(&reading1.timer, dht_Start_Cb, &reading1);
 	os_timer_arm(&reading1.timer, poll_time, 1);
@@ -161,8 +165,8 @@ void ICACHE_FLASH_ATTR dht2Init(enum DHTType dht_type, uint8 pin, uint32_t poll_
 	reading2.sensorType = dht_type;
 	easygpio_outputEnable((reading2.pin = pin), 1);
 	reading2.id = 2;
+	reading2.error = E_NONE;
 	os_timer_disarm(&reading2.timer);
 	os_timer_setfn(&reading2.timer, dht_Start_Cb, &reading2);
 	os_timer_arm(&reading2.timer, poll_time, 1);
 }
-

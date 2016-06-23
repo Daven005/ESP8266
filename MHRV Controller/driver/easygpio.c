@@ -33,6 +33,7 @@
 #include "gpio.h"
 #include "osapi.h"
 #include "ets_sys.h"
+#include "debug.h"
 
 #define EASYGPIO_USE_GPIO_INPUT_GET
 
@@ -190,6 +191,7 @@ easygpio_pinMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, EasyGPIO_PinM
   uint32_t gpio_name;
   uint8_t gpio_func;
 
+  TESTP("GPIO %d mode %d pull %d\n", gpio_pin, pinMode, pullStatus);
   if (16==gpio_pin) {
     // ignoring pull status on GPIO16 for now
     if (EASYGPIO_OUTPUT == pinMode) {
@@ -318,12 +320,12 @@ easygpio_inputGet(uint8_t gpio_pin) {
  * This function does the same thing as GPIO_DIS_OUTPUT, but works on GPIO16 too.
  */
 void easygpio_outputDisable(uint8_t gpio_pin) {
-  if (16==gpio_pin) {
-    WRITE_PERI_REG(RTC_GPIO_ENABLE,
-        READ_PERI_REG(RTC_GPIO_ENABLE) & 0xfffffffeUL);  //out disable
-  } else {
-    GPIO_DIS_OUTPUT(GPIO_ID_PIN(gpio_pin));
-  }
+	INFOP("%d<", gpio_pin);
+	if (16 == gpio_pin) {
+		WRITE_PERI_REG(RTC_GPIO_ENABLE, READ_PERI_REG(RTC_GPIO_ENABLE) & 0xfffffffeUL); //out disable
+	} else {
+		GPIO_DIS_OUTPUT(GPIO_ID_PIN(gpio_pin));
+	}
 }
 
 /**
@@ -337,16 +339,16 @@ void easygpio_outputDisable(uint8_t gpio_pin) {
  *  - does the same thing as GPIO_OUTPUT_SET, but works on GPIO16 too.
  */
 void easygpio_outputEnable(uint8_t gpio_pin, uint8_t value) {
-  if (16==gpio_pin) {
-    // write the value before flipping to output
-    // - so we don't flash previous value for a few ns.
-    WRITE_PERI_REG(RTC_GPIO_OUT,
-                           (READ_PERI_REG(RTC_GPIO_OUT) & 0xfffffffeUL) | (0x1UL & value));
+	INFOP("%d>", gpio_pin);
+	if (16 == gpio_pin) {
+		// write the value before flipping to output
+		// - so we don't flash previous value for a few ns.
+		WRITE_PERI_REG(RTC_GPIO_OUT,
+				(READ_PERI_REG(RTC_GPIO_OUT) & 0xfffffffeUL) | (0x1UL & value));
 
-    WRITE_PERI_REG(RTC_GPIO_ENABLE,
-          (READ_PERI_REG(RTC_GPIO_ENABLE) & 0xfffffffeUL) | 0x1UL); //out enable
+		WRITE_PERI_REG(RTC_GPIO_ENABLE, (READ_PERI_REG(RTC_GPIO_ENABLE) & 0xfffffffeUL) | 0x1UL); //out enable
 
-  } else {
-    GPIO_OUTPUT_SET(GPIO_ID_PIN(gpio_pin), value);
-  }
+	} else {
+		GPIO_OUTPUT_SET(GPIO_ID_PIN(gpio_pin), value);
+	}
 }

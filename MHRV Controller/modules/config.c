@@ -36,15 +36,14 @@
 #include <osapi.h>
 #include <spi_flash.h>
 #include <user_interface.h>
+#include "dht22.h"
 
 #include "debug.h"
 
 SYSCFG sysCfg;
 SAVE_FLAG saveFlag;
 
-void ICACHE_FLASH_ATTR
-CFG_Save()
-{
+void ICACHE_FLASH_ATTR CFG_Save() {
 	 spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 	                   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 
@@ -79,7 +78,7 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	}
-	if(sysCfg.cfg_holder != CFG_HOLDER){
+	if (sysCfg.cfg_holder != CFG_HOLDER){
 		os_memset(&sysCfg, 0x00, sizeof sysCfg);
 
 		sysCfg.cfg_holder = CFG_HOLDER;
@@ -88,31 +87,40 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		os_sprintf(sysCfg.sta_pwd, "%s", STA_PASS);
 		sysCfg.sta_type = STA_TYPE;
 
-		os_sprintf(sysCfg.device_id, MQTT_CLIENT_ID, system_get_chip_id());
+		os_sprintf(sysCfg.deviceID_prefix, DEVICE_PREFIX);
+		os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
 		os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
 		sysCfg.mqtt_port = MQTT_PORT;
 		os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);
 		os_sprintf(sysCfg.mqtt_pass, "%s", MQTT_PASS);
 
-		sysCfg.security = DEFAULT_SECURITY;	/* default non ssl */
+		sysCfg.security = DEFAULT_SECURITY; /* default non ssl */
 
 		sysCfg.mqtt_keepalive = MQTT_KEEPALIVE;
 
-		int idx;
-		for (idx=0; idx<MAP_SIZE; idx++) {
-			sysCfg.mapping[idx] = idx;
-		}
-		for (idx=0; idx<SETTINGS_SIZE; idx++) {
-			sysCfg.settings[idx] = SET_MINIMUM;
-		}
+		sysCfg.settings[SETTING_HUMIDTY1] = DEFAULT_HUMIDTY1;
+		sysCfg.settings[SETTING_HUMIDTY2] = DEFAULT_HUMIDTY2;
+		sysCfg.settings[SETTING_TEMPERATURE1] = DEFAULT_TEMPERATURE1;
+		sysCfg.settings[SETTING_TEMPERATURE2] = DEFAULT_TEMPERATURE2;
+		sysCfg.settings[SETTING_START_ON] = DEFAULT_START_ON;
+		sysCfg.settings[SETTING_FINISH_ON] = DEFAULT_FINISH_ON;
+		sysCfg.settings[SETTING_PIR1_ON_TIME] = DEFAULT_PIR1_ON_TIME;
+		sysCfg.settings[SETTING_PIR2_ON_TIME] = DEFAULT_PIR2_ON_TIME;
+		sysCfg.settings[SETTING_DHT1] = DEFAULT_DHT1;
+		sysCfg.settings[SETTING_DHT2] = DEFAULT_DHT2;
+		sysCfg.settings[SETTING_PIR_ACTION] = DEFAULT_PIR_ACTION;
 		sysCfg.updates = UPDATES;
 		sysCfg.inputs = INPUTS;
 
 		os_sprintf(sysCfg.deviceName, "Not Set");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
-		ets_uart_printf(" default configuration\r\n");
 
 		CFG_Save();
 	}
+}
 
+void ICACHE_FLASH_ATTR CFG_print(void) {
+	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
+	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
 }

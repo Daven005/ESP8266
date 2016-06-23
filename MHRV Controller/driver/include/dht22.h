@@ -26,9 +26,9 @@
 #include "osapi.h"
 #include "easygpio.h"
 
-enum DHTType{
-	DHT11,
-	DHT22
+enum DHTType {
+	DHT11 = 1,
+	DHT22 = 2
 };
 
 struct dht_sensor_data {
@@ -43,11 +43,12 @@ struct dht_sensor_data {
 	uint8 pin;
 	ETSTimer timer;
 	ETSTimer wakeTimer;
+	enum errorCode { E_NONE, E_MAXCOUNT, E_CRC, E_BITCOUNT } error;
 };
 
 #define DHT_MAXTIMINGS	10000
 #define DHT_BREAKTIME	20
-#define DHT_MAXCOUNT	32000
+#define DHT_MAXCOUNT	100
 
 void dht1Init(enum DHTType dht_type, uint8 pin, uint32_t poll_time);
 struct dht_sensor_data *dht1Read(void);
