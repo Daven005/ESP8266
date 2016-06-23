@@ -315,7 +315,7 @@ LOCAL void ICACHE_FLASH_ATTR startUp() {
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
+	WIFI_Connect(bestSSID, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 }
 
 static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
