@@ -13,12 +13,14 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_151
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
-ESPTOOL		?= $(SDK_TOOLS)/esptool.py
-ESPPORT		?= COM17
+ESPTOOL		?= $(SDK_TOOLS)/esptool1.py
+ESPPORT		?= COM3
+
+ROM0_ADDR   ?= 0x10000
 
 # name for the target project
 TARGET		= app
@@ -28,22 +30,21 @@ MODULES		= user mqtt modules driver
 EXTRA_INCDIR    = include $(SDK_BASE)/include
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
+LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
-LDFLAGS		= -Wl,-M=LevelSensor.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
+LDFLAGS		= -Wl,-M=TemperatureMonitor.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
-# linker script used for the above linkier step
+# linker script used for the above linker step
 LD_SCRIPT	= eagle.app.v6.ld
 
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
 SDK_INCDIR	= include include/driver driver
-# include/json
 
 # select which tools to use as compiler, librarian and linker
 CC		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
@@ -83,18 +84,27 @@ endif
 
 vpath %.c $(SRC_DIR)
 
-user_main.o: include/user_config.h include/driver/ds18b20.h
-config.c: include/user_config.h
-
 define compile-objects
 $1/%.o: %.c
 	echo "CC $$< $(MODULE_INCDIR)"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean newversion newbuild newrevision fsize
 
 all: checkdirs $(TARGET_OUT)
+
+newversion:
+	incVersion 0
+	touch user/user_main.c
+	
+newbuild:
+	incVersion 3
+	touch user/user_main.c
+
+newrevision:
+	incVersion 2
+	touch user/user_main.c
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"  -L$(SDK_LIBDIR) $(LD_SCRIPT)
@@ -113,7 +123,7 @@ $(TARGET_OUT): $(APP_AR)
 #	$(Q) rm eagle.app.sym
 	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
 	$(vecho) "eagle.flash.bin-------->0x00000"
-	$(vecho) "eagle.irom0text.bin---->0x40000"
+	$(vecho) "eagle.irom0text.bin---->$(ROM0_ADDR)"
 	$(vecho) "Done"
 
 $(APP_AR): $(OBJ)
@@ -121,6 +131,7 @@ $(APP_AR): $(OBJ)
 	$(Q) $(AR) cru $@ $^
 
 checkdirs: $(BUILD_DIR) $(FW_BASE)
+	@echo $(BUILD_DIR)
 
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
@@ -134,7 +145,7 @@ flashonefile: all
 	$(OBJCOPY) --only-section .rodata -O binary $(TARGET_OUT) eagle.app.v6.rodata.bin
 	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET_OUT) eagle.app.v6.irom0text.bin
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
-	$(SDK_TOOLS)/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin 0x40000
+	$(SDK_TOOLS)/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin $(ROM0_ADDR)
 	rm -f eagle.app.v6.data.bin
 	rm -f eagle.app.v6.flash.bin
 	rm -f eagle.app.v6.irom0text.bin
@@ -148,11 +159,21 @@ flashonefile: all
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 115200 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 write_flash 0x00000 firmware/eagle.flash.bin $(ROM0_ADDR) firmware/eagle.irom0text.bin
+
+flashverify: all
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 verify_flash  $(ROM0_ADDR) firmware/eagle.irom0text.bin
+
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+
+fread:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 read_flash  0x00000  0x1000  firmware/eagle.flashRead.bin
+
+fsize:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 flash_id
 
 rebuild: clean all
 

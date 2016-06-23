@@ -49,6 +49,7 @@ typedef struct{
 
 	uint8_t mapping[MAP_SIZE];
 	uint8_t settings[SETTINGS_SIZE];
+	char deviceID_prefix[8];
 	char deviceName[NAME_SIZE];
 	char deviceLocation[NAME_SIZE];
 	uint16 updates;

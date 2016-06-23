@@ -12,7 +12,7 @@
 #define MQTT_BUF_SIZE		512
 #define MQTT_KEEPALIVE		120	 /*second*/
 
-#define MQTT_CLIENT_ID		"Hollies%lx"
+#define DEVICE_PREFIX		"Hollies"
 #define MQTT_USER			""
 #define MQTT_PASS			""
 
@@ -33,24 +33,8 @@
 #define SETTINGS_SIZE 10
 #define MAX_OUTPUT 2
 
-#define SETTING_DHW_START_BOILER 0
-#define SETTING_DHW_STOP_BOILER 1
-#define SETTING_WB_IS_ON_TEMP 2
-#define SETTING_CH_START_BOILER 3
-#define SETTING_DHW_USE_ALL_HEAT 4
-
 #define SET_MINIMUM 45
 #define SET_MAXIMUM 85
-
-#define MAP_TEMP_TS_TOP 0
-#define MAP_TEMP_TS_MIDDLE 1
-#define MAP_TEMP_TS_BOTTOM 2
-#define MAP_WB_FLOW_TEMP 3
-
-#define IP_CALL_FOR_HEAT 0
-
-#define OP_OB_CIRC_ON 0
-#define OP_WB_CIRC_ON 1
 
 #define UPDATES 60
 #define INPUTS 0
