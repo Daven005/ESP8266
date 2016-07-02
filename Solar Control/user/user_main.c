@@ -347,17 +347,47 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 	}
 }
 
+void ICACHE_FLASH_ATTR publishMapping(MQTT_Client* client) {
+	if (mqttConnected) {
+		char *topic = (char *) os_zalloc(50);
+		char *data = (char *) os_zalloc(300);
+		int idx;
+
+		if (topic == NULL || data == NULL) {
+			startFlash(50, true); // fast
+			return;
+		}
+		os_sprintf(topic, "/Raw/%10s/mapping", sysCfg.device_id);
+		os_sprintf(data, "{[");
+		for (idx=0; idx<MAP_TEMP_SIZE; idx++) {
+			if (idx != 0)
+				os_sprintf(data + strlen(data), ", ");
+			os_sprintf(data + strlen(data), "{\"map\":%d,\"name\":%s}",
+					sysCfg.mapping[idx], sysCfg.mappingName[idx]);
+		}
+		os_sprintf(data + strlen(data), "]}");
+		MQTT_Publish(client, topic, data, strlen(data), 0, true);
+		TESTP("%s=>%s\n", topic, data);
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
+	}
+}
+
 void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
 	if (mqttConnected) {
 		char *topic = (char *) os_zalloc(50);
-		char *data = (char *) os_zalloc(100);
-		int idx;
+		char *data = (char *) os_zalloc(200);
+		if (topic == NULL || data == NULL) {
+			startFlash(50, true); // fast
+			return;
+		}
 
 		os_sprintf(topic, "/Raw/%10s/reset", sysCfg.device_id);
 		os_sprintf(data,
 			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":\"%d\", \"LastAction\":%d}",
 			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason, lastAction);
-		os_printf("%s=>%s\n", topic, data);
+		TESTP("%s=>%s\n", topic, data);
 		MQTT_Publish(client, topic, data, strlen(data), 0, false);
 		checkMinHeap();
 		os_free(topic);
@@ -800,9 +830,17 @@ void ICACHE_FLASH_ATTR stopPumpOverride(void) {
 void ICACHE_FLASH_ATTR processPump(void) {
 	static pumpDelayOn = 0;
 	static pumpDelayOff = 0;
+	bool startPump;
 
 	TESTP("Flow = %d (Av=%d, Mx=%d, Mn=%d)\n", flowCurrentReading(), flowAverageReading(), flowMaxReading(), flowMinReading());
-	if (mappedTemperature(MAP_TEMP_PANEL) > (mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP])) {
+	if (mappedTemperature(MAP_TEMP_SUPPLY) > mappedTemperature(MAP_TEMP_TS_BOTTOM)) {
+		startPump = mappedTemperature(MAP_TEMP_PANEL) >
+					(mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP]);
+	} else { // Get extra heat to warm pipework
+		startPump = mappedTemperature(MAP_TEMP_PANEL) >
+					(mappedTemperature(MAP_TEMP_TS_BOTTOM) + 2 * sysCfg.settings[SET_PANEL_TEMP]);
+	}
+	if (startPump) {
 		pumpDelayOff = 0;
 		if (pumpDelayOn < sysCfg.settings[SET_PUMP_DELAY]) {
 			pumpDelayOn++;
@@ -852,6 +890,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 
 	publishDeviceReset(client);
 	publishDeviceInfo(client);
+	publishMapping(client);
 
 	os_timer_disarm(&switch_timer);
 	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
@@ -970,10 +1009,6 @@ static void ICACHE_FLASH_ATTR initDone_cb() {
 	TESTP("Start WiFi Scan\n");
 	wifi_set_opmode(STATION_MODE);
 	wifi_station_scan(NULL, wifi_station_scan_done);
-}
-
-void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *evt) {
-	TESTP("WiFi event %x\n", evt->event);
 }
 
 void ICACHE_FLASH_ATTR user_init(void) {

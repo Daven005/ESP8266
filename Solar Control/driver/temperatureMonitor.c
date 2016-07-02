@@ -23,11 +23,11 @@
 #include "temperatureMonitor.h"
 
 static os_timer_t ds18b20_timer;
-static uint16_t averagePT100Reading;
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static bool publishTemperaturesSignal = false;
 
 #if USE_PT100
+static uint16_t averagePT100Reading;
 uint16_t ICACHE_FLASH_ATTR averagePT100(void) {
 	uint32 sTime = system_get_rtc_time();
 	SELECT_PTC;
