@@ -21,8 +21,14 @@ LOCAL os_timer_t OB_firing_timer;
 LOCAL os_timer_t TemperatureMonitor_timer;
 static enum { OB_OFF, OB_STARTING, OB_ON, OB_PURGING } firingState = OB_OFF;
 static bool boostInProgress = false;;
-static bool boostHadCFH = false;;
+static bool boostHadCFH = false;
+static bool temperatureError = false;
 static int boostCount = 0;
+#define MAX_CRITICAL_SENSOR 8
+static const int criticalSensors[MAX_CRITICAL_SENSOR] = {
+		MAP_OB_FLOW_TEMP, MAP_OB_FLOW_TEMP, MAP_TEMP_TS_MIDDLE, MAP_TEMP_TS_TOP,
+		MAP_WB_FLOW_TEMP, MAP_HEATING_FLOW_TEMP, MAP_TEMP_TS_BOTTOM, MAP_TEMP_TS_CYLINDER
+};
 
 static uint8 radsOffCount = 0;
 static uint8 dhwWarningCount = 0;
@@ -94,7 +100,7 @@ void ICACHE_FLASH_ATTR setTime(time_t t) {
 
 void ICACHE_FLASH_ATTR setOutsideTemp(int idx, int val){
 	if (idx == 2) { // Choose forecast +2 hours
-		setUnmappedSensorTemperature("Outside", val, 0);
+		setUnmappedSensorTemperature("Outside", DERIVED, val, 0);
 	}
 }
 
@@ -241,12 +247,10 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 	int tempTS_Top, tempWB_Flow;
 	static int boostCount = 0;
 	int baseSetPoint, modifiedSetPoint;
-	uint8 sensorCount = temperatureSensorCount();
 	int dhwSetPoint;
 	int chSetPoint;
 
-	if (sensorCount < REQUIRED_SENSORS) {
-		publishError(98, sensorCount); // Sensor(s) Missing
+	if (temperatureError) { // Sensor(s) Missing
 		return;
 	}
 
@@ -277,14 +281,14 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 	}
 	WBisHot = (tempWB_Flow >= sysCfg.settings[SETTING_WB_IS_ON_TEMP]);
 
-	setUnmappedSensorTemperature("DHW setpoint", sysCfg.settings[SETTING_DHW_SET_POINT], 0);
+	setUnmappedSensorTemperature("DHW setpoint", DERIVED, sysCfg.settings[SETTING_DHW_SET_POINT], 0);
 
 	// Check CH set point
 	// Rads have been ON in last RADS_OFF_DURATION (10) minutes
 	baseSetPoint = (radsOffCount > 0) ? sysCfg.settings[SETTING_RADS_SET_POINT] : sysCfg.settings[SETTING_UFH_SET_POINT];
 
 	if (mappedTemperature(MAP_OUTSIDE_TEMP) <= MIN_COMP_TEMP) { 	// No Outside Temperature compensation
-		uint8 idx = setUnmappedSensorTemperature("CH setpoint", baseSetPoint, 0);
+		int idx = setUnmappedSensorTemperature("CH setpoint", DERIVED, baseSetPoint, 0);
 		INFO(extraPublishTemperatures(idx));
 		boostInProgress = false;
 	} else {
@@ -309,7 +313,7 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 			os_timer_setfn(&Boost_timer, (os_timer_func_t *) boost_cb, (void *) 0);
 			os_timer_arm(&Boost_timer, sysCfg.settings[SETTING_BOOST_TIME] * 60 * 1000, true);
 		}
-		uint8 idx = setUnmappedSensorTemperature("CH setpoint", modifiedSetPoint, 0);
+		int idx = setUnmappedSensorTemperature("CH setpoint", DERIVED, modifiedSetPoint, 0);
 		INFO(extraPublishTemperatures(idx));
 	}
 
@@ -343,6 +347,16 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 }
 
 void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
+	int idx;
+
+	temperatureError = false;
+	for (idx=0; idx < MAX_CRITICAL_SENSOR; idx++) {
+		if (!mappedTemperatureIsSet(criticalSensors[idx])) {
+			temperatureError = true;
+			publishError(100+idx, 0);
+		}
+	}
+
 	if (!input(IP_RADS_ON)) {
 		if (radsOffCount > 0) {
 			radsOffCount--;
@@ -368,17 +382,18 @@ void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
 			}
 		}
 	}
+	os_timer_disarm(&TemperatureMonitor_timer);
+	os_timer_arm(&TemperatureMonitor_timer, 60*1000, false); // Repeat every minute
 }
 
 void ICACHE_FLASH_ATTR initBoilerControl() {
 	checkInputs(false);
 	ds18b20StartScan();
 	// Allocate derived unmapped temperatures
-	setUnmappedSensorTemperature("CH setpoint", 0, 0);
-	setUnmappedSensorTemperature("DHW setpoint", sysCfg.settings[SETTING_DHW_SET_POINT], 0);
-	setUnmappedSensorTemperature("Outside", 0, 0);
+	setUnmappedSensorTemperature("CH setpoint", DERIVED, 0, 0);
+	setUnmappedSensorTemperature("DHW setpoint", DERIVED, sysCfg.settings[SETTING_DHW_SET_POINT], 0);
+	setUnmappedSensorTemperature("Outside", DERIVED, 0, 0);
 	os_timer_disarm(&TemperatureMonitor_timer);
 	os_timer_setfn(&TemperatureMonitor_timer, (os_timer_func_t *) TemperatureMonitor_cb, (void *) 0);
-	os_timer_arm(&TemperatureMonitor_timer, 60*1000, false);
-
+	os_timer_arm(&TemperatureMonitor_timer, 10*1000, false); // Start up within 10 secs
 }

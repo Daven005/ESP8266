@@ -166,6 +166,9 @@ flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
+fsize:
+	$(ESPTOOL) -p $(ESPPORT) flash_id
+
 rebuild: clean all
 
 clean:

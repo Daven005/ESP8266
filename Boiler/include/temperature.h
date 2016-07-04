@@ -8,11 +8,12 @@
 #ifndef INCLUDE_TEMPERATURE_H_
 #define INCLUDE_TEMPERATURE_H_
 
-#define MAX_DS18B20_SENSOR 10
 #define MAX_TEMPERATURE_SENSOR 15
+enum temperatureType_t { NOT_SET, SENSOR, DERIVED };
 
 struct Temperature {
 	bool set;
+	enum temperatureType_t temperatureType;
 	bool override;
 	char sign;
 	uint16 val;
@@ -23,15 +24,14 @@ struct Temperature {
 
 bool getUnmappedTemperature(int i, struct Temperature **t);
 void ds18b20StartScan(void);
-uint8 temperatureSensorCount(void);
-uint8 sensorIdx(char* sensorID);
-void setTemperature(char *sensorID, int value);
+int sensorIdx(char* sensorID);
 bool printTemperature(int);
 bool printMappedTemperature(int);
-uint8 setUnmappedSensorTemperature(char *sensorID, int val, int fract);
+bool mappedTemperatureIsSet(int name);
+int setUnmappedSensorTemperature(char *sensorID, enum temperatureType_t temperatureType, int val, int fract);
 
 // Override used for testing
-uint8 setTemperatureOverride(char *sensorID, char *value);
-uint8 clearTemperatureOverride(char *sensorID);
+int setTemperatureOverride(char *sensorID, char *value);
+int clearTemperatureOverride(char *sensorID);
 
 #endif /* INCLUDE_TEMPERATURE_H_ */

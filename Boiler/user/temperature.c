@@ -14,31 +14,19 @@
 #include "config.h"
 #include "debug.h"
 
-static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
-LOCAL os_timer_t ds18b20_timer;
+struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
+static os_timer_t ds18b20_timer;
 static bool publishTemperaturesSignal;
 
 extern void extraPublishTemperatures(uint8);
 
-uint8 ICACHE_FLASH_ATTR temperatureSensorCount(void) {
-	uint8 idx, sensors = 0;
-	for (idx = 0; idx < MAX_DS18B20_SENSOR; idx++) {
-		if (temperature[idx].set) {
-			if (temperature[idx].missed < 5) {
-				sensors++;
-			} else {
-				publishError(97, idx); // Know temperature sensor missed for 5 readings
-			}
-		}
-	}
-	return sensors;
-}
-
 static void ICACHE_FLASH_ATTR incMissed(void) {
 	uint8 idx;
-	for (idx = 0; idx < MAX_DS18B20_SENSOR; idx++) {
-		if (temperature[idx].missed < 250) {
-			temperature[idx].missed++;
+	for (idx = 0; idx < MAX_TEMPERATURE_SENSOR; idx++) {
+		if (temperature[idx].temperatureType == SENSOR) {
+			if (temperature[idx].missed < 250) {
+				temperature[idx].missed++;
+			}
 		}
 	}
 }
@@ -52,33 +40,32 @@ bool ICACHE_FLASH_ATTR getUnmappedTemperature(int i, struct Temperature **t) {
 	return true;
 }
 
-uint8 ICACHE_FLASH_ATTR sensorIdx(char *sensorID) {
+int ICACHE_FLASH_ATTR sensorIdx(char *sensorID) {
 	int i;
 	for (i = 0; i < MAX_TEMPERATURE_SENSOR; i++) {
-		if (strcmp(sensorID, temperature[i].address) == 0)
+		if (strcmp(sensorID, temperature[i].address) == 0 && temperature[i].temperatureType != NOT_SET)
 			return i;
 	}
-	return 0xff;
+	return -1;
 }
 
-int ICACHE_FLASH_ATTR checkAddNewTemperature(int idx, char* sensorID, int start) {
-	if (idx == 0xff) { // Not Found
-		int i;
-		for (i = start; i < MAX_TEMPERATURE_SENSOR; i++) {
-			if (!temperature[i].set) {
-				idx = i;
-				strcpy(temperature[idx].address, sensorID);
-				INFOP("New ");
-				break;
-			}
+int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureType_t temperatureType) {
+	int i;
+	for (i = 0; i < MAX_TEMPERATURE_SENSOR; i++) {
+		if (temperature[i].temperatureType == NOT_SET) {
+			temperature[i].temperatureType = temperatureType;
+			strcpy(temperature[i].address, sensorID);
+			INFOP("New ");
+			return i;
 		}
 	}
-	return idx;
+	ERRORP("No space for temperature %s\n", sensorID);
+	return -1;
 }
 
 void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* sensorID) {
-	if (idx < MAX_TEMPERATURE_SENSOR) {
-		INFOP("Sensor[%d] %s = %d\n", idx, sensorID, val);
+	if (0 <= idx && idx < MAX_TEMPERATURE_SENSOR) {
+		INFOP("Sensor[%d] %s = %d.%d\n", idx, sensorID, val, fract);
 		temperature[idx].set = true;
 		if (!temperature[idx].override) {
 			if (val < 0) {
@@ -94,9 +81,12 @@ void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* se
 	}
 }
 
-uint8 ICACHE_FLASH_ATTR setUnmappedSensorTemperature(char *sensorID, int val, int fract) {
+int ICACHE_FLASH_ATTR setUnmappedSensorTemperature(char *sensorID,
+		enum temperatureType_t temperatureType, int val, int fract) {
 	int idx = sensorIdx(sensorID);
-	idx = checkAddNewTemperature(idx, sensorID, 0);
+	if (idx == -1) {
+		idx = checkAddNewTemperature(sensorID, temperatureType);
+	}
 	checkSetTemperature(idx, val, fract, sensorID);
 	return idx;
 }
@@ -137,7 +127,7 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 	do {
 		if (ds_search(addr)) {
 			if (crc8(addr, 7) != addr[7]) {
-				INFOP("CRC mismatch, crc=%xd, addr[7]=%xd\n", crc8(addr, 7), addr[7]);
+				ERRORP("CRC mismatch, crc=%xd, addr[7]=%xd\n", crc8(addr, 7), addr[7]);
 			}
 			switch (addr[0]) {
 			case DS18B20:
@@ -171,7 +161,7 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 		tFract = (tReading & 0xf) * 100 / 16;
 		os_sprintf(bfr, "%02x%02x%02x%02x%02x%02x%02x%02x", addr[0], addr[1],
 				addr[2], addr[3], addr[4], addr[5], addr[6], addr[7]);
-		idx = setUnmappedSensorTemperature(bfr, (tSign=='+') ? tVal : -tVal, tFract);
+		idx = setUnmappedSensorTemperature(bfr, SENSOR, (tSign=='+') ? tVal : -tVal, tFract);
 		INFO(if (idx != 0xff) {printTemperature(idx); os_printf("\n");});
 	} while (true);
 	if (publishTemperaturesSignal) {
@@ -199,10 +189,14 @@ int ICACHE_FLASH_ATTR mappedTemperature(uint8 name) {
 	return -99;
 }
 
-uint8 ICACHE_FLASH_ATTR setTemperatureOverride(char *sensorID, char *value) {
+bool ICACHE_FLASH_ATTR mappedTemperatureIsSet(int name) {
+	return temperature[sysCfg.mapping[name]].set;
+}
+
+int ICACHE_FLASH_ATTR setTemperatureOverride(char *sensorID, char *value) {
 	int idx = sensorIdx(sensorID);
 	int val;
-	if (idx <= MAX_TEMPERATURE_SENSOR) {
+	if (0 <= idx && idx < MAX_TEMPERATURE_SENSOR) {
 		temperature[idx].set = true;
 		temperature[idx].override = true;
 		val = atoi(value);
@@ -222,13 +216,17 @@ uint8 ICACHE_FLASH_ATTR setTemperatureOverride(char *sensorID, char *value) {
 	return idx;
 }
 
-uint8 ICACHE_FLASH_ATTR clearTemperatureOverride(char *sensorID) {
+int ICACHE_FLASH_ATTR clearTemperatureOverride(char *sensorID) {
 	int idx = sensorIdx(sensorID);
-	if (idx <= MAX_TEMPERATURE_SENSOR) {
+	if (0 <= idx && idx <= MAX_TEMPERATURE_SENSOR) {
 		temperature[idx].set = false;
 		temperature[idx].override = false;
 		publishTemperaturesSignal = true; // Now get temperatures republished once they have been read
 		ds18b20StartScan();
 	}
 	return idx;
+}
+
+void ICACHE_FLASH_ATTR initTemperature(void) {
+	os_memset(temperature, 0, sizeof(temperature));
 }
