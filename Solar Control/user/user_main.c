@@ -27,9 +27,6 @@ static os_timer_t flashA_timer;
 static os_timer_t transmit_timer;
 static os_timer_t date_timer;
 static os_timer_t process_timer;
-static os_timer_t flowCheck_timer;
-
-#define PROCESS_REPEAT 5000
 
 MQTT_Client mqttClient;
 uint8 mqttConnected;
@@ -46,19 +43,16 @@ static bool toggleState;
 
 static uint32 minHeap = 0xffffffff;
 
-enum {
+enum lastAction_t {
 	IDLE, RESTART, FLASH, IPSCAN, SWITCH_SCAN,
 	INIT_DONE, MQTT_DATA_CB, MQTT_CONNECTED_CB, MQTT_DISCONNECTED_CB, SMART_CONFIG,
-	PROCESS_CB, DS18B20_CB
+	PROCESS_CB, DS18B20_CB, WIFI_CONNECT_CHANGE=100
 } lastAction __attribute__ ((section (".noinit")));
+enum lastAction_t savedLastAction;
 enum SmartConfigAction {
 	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
 };
 bool checkSmartConfig(enum SmartConfigAction);
-void startPumpNormal(void);
-void startPumpOverride(void);
-void stopPumpNormal(void);
-void stopPumpOverride(void);
 void turnOffOverride(void);
 void checkActionFlash(void);
 
@@ -280,18 +274,18 @@ void ICACHE_FLASH_ATTR publishSensorData(MQTT_Client* client) {
 			return;
 		}
 
-		os_sprintf(topic, (const char*) "/Raw/%s/2/info", sysCfg.device_id);
-		os_sprintf(data, (const char*) "{ \"Type\":\"FlowMax\", \"Value\":%d}", flowMaxReading());
-		MQTT_Publish(client, topic, data, strlen(data), 0, false);
-		TESTP("%s=>%s\n", topic, data);
-
 		os_sprintf(topic, (const char*) "/Raw/%s/4/info", sysCfg.device_id);
-		os_sprintf(data, (const char*) "{ \"Type\":\"Flow\", \"Value\":%d}", flowPerReading());
+		os_sprintf(data, (const char*) "{ \"Type\":\"Flow\", \"Value\":%d}", flowInLitresPerHour());
 		MQTT_Publish(client, topic, data, strlen(data), 0, false);
 		TESTP("%s=>%s\n", topic, data);
 
 		os_sprintf(topic, (const char*) "/Raw/%s/5/info", sysCfg.device_id);
 		os_sprintf(data, (const char*) "{ \"Type\":\"Pressure\", \"Value\":%d}", pressure);
+		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		TESTP("%s=>%s\n", topic, data);
+
+		os_sprintf(topic, (const char*) "/Raw/%s/6/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"Energy\", \"Value\":%d}", energyReading());
 		MQTT_Publish(client, topic, data, strlen(data), 0, false);
 		TESTP("%s=>%s\n", topic, data);
 
@@ -350,7 +344,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 void ICACHE_FLASH_ATTR publishMapping(MQTT_Client* client) {
 	if (mqttConnected) {
 		char *topic = (char *) os_zalloc(50);
-		char *data = (char *) os_zalloc(300);
+		char *data = (char *) os_zalloc(500);
 		int idx;
 
 		if (topic == NULL || data == NULL) {
@@ -358,14 +352,14 @@ void ICACHE_FLASH_ATTR publishMapping(MQTT_Client* client) {
 			return;
 		}
 		os_sprintf(topic, "/Raw/%10s/mapping", sysCfg.device_id);
-		os_sprintf(data, "{[");
+		os_sprintf(data, "[");
 		for (idx=0; idx<MAP_TEMP_SIZE; idx++) {
 			if (idx != 0)
 				os_sprintf(data + strlen(data), ", ");
-			os_sprintf(data + strlen(data), "{\"map\":%d,\"name\":%s}",
+			os_sprintf(data + strlen(data), "{\"map\":%d,\"name\":\"%s\"}",
 					sysCfg.mapping[idx], sysCfg.mappingName[idx]);
 		}
-		os_sprintf(data + strlen(data), "]}");
+		os_sprintf(data + strlen(data), "]");
 		MQTT_Publish(client, topic, data, strlen(data), 0, true);
 		TESTP("%s=>%s\n", topic, data);
 		checkMinHeap();
@@ -491,6 +485,7 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 		case 1:
 			publishDeviceInfo(&mqttClient);
 			publishData(&mqttClient);
+			printFlows();
 			for (idx=0; idx<MAX_OUTPUT; idx++)
 				printOutput(idx);
 			os_printf("\n");
@@ -574,6 +569,7 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 		MQTT_Connect(&mqttClient);
 		wifiChannel = wifi_get_channel();
 	} else {
+		lastAction = WIFI_CONNECT_CHANGE+status;
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
 	}
@@ -728,6 +724,8 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 			if (tokenCount == 2 && strcmp("date", tokens[1]) == 0) {
 				os_timer_disarm(&date_timer); // Restart it
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
+			} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
+				publishData((void *) client); // publish all I/O & temps
 			}
 			if (tokenCount >= 5 && strcmp("TS Bottom", tokens[3]) == 0) {
 				saveTSbottom(dataBuf);
@@ -744,134 +742,18 @@ void ICACHE_FLASH_ATTR readPressure(void) {
 	pressure =  system_adc_read();
 }
 
-void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
-	TESTP("*");
-	if (flowAverageReading() <= 1) {
-		switch (pumpState()) {
-		case PUMP_OFF_NORMAL:
-		case PUMP_OFF_OVERRIDE:
-			break;
-		case PUMP_ON_NORMAL:
-			stopPumpOverride();
-			publishAlarm(1, flowCurrentReading());
-			break;
-		case PUMP_ON_OVERRIDE:
-			publishAlarm(2, flowCurrentReading());
-			break;
-		}
-	}
-}
-
-void ICACHE_FLASH_ATTR turnOffOverride() {
-	clearPumpOverride();
-	checkActionFlash();
-}
-
-void ICACHE_FLASH_ATTR startPumpNormal(void) {
-	switch (pumpState()) {
-	case PUMP_OFF_NORMAL:
-		TESTP("Start Pump\n");
-		checkSetOutput(OP_PUMP, 1);
-		break;
-	case PUMP_ON_NORMAL:
-		break;
-	case PUMP_OFF_OVERRIDE:
-	case PUMP_ON_OVERRIDE :
-		return;
-	}
-	os_timer_disarm(&flowCheck_timer);
-	os_timer_arm(&flowCheck_timer, PROCESS_REPEAT-500, 0);
-}
-
-void ICACHE_FLASH_ATTR startPumpOverride(void) {
-	switch (pumpState()) {
-	case PUMP_OFF_NORMAL:
-	case PUMP_OFF_OVERRIDE:
-	case PUMP_ON_NORMAL:
-		TESTP("Start Pump with override\n");
-		overrideSetOutput(OP_PUMP, 1);
-		break;
-	case PUMP_ON_OVERRIDE :
-		return;
-	}
-	os_timer_disarm(&flowCheck_timer);
-	os_timer_arm(&flowCheck_timer, 100000, 0); // Allow to run for 10S if override
-}
-
-void ICACHE_FLASH_ATTR stopPumpNormal(void) {
-	switch (pumpState()) {
-	case PUMP_OFF_NORMAL:
-	case PUMP_OFF_OVERRIDE:
-	case PUMP_ON_OVERRIDE :
-		return;
-	case PUMP_ON_NORMAL:
-		TESTP("Stop Pump\n");
-		checkSetOutput(OP_PUMP, 0);
-		break;
-	}
-	os_timer_disarm(&flowCheck_timer);
-}
-
-void ICACHE_FLASH_ATTR stopPumpOverride(void) {
-	switch (pumpState()) {
-	case PUMP_OFF_NORMAL:
-	case PUMP_ON_OVERRIDE :
-	case PUMP_ON_NORMAL:
-		TESTP("Stop Pump with override\n");
-		overrideSetOutput(OP_PUMP, 1);
-		break;
-	case PUMP_OFF_OVERRIDE:
-		return;
-	}
-	os_timer_disarm(&flowCheck_timer);
-	overrideSetOutput(OP_PUMP, 0);
-}
-
-void ICACHE_FLASH_ATTR processPump(void) {
-	static pumpDelayOn = 0;
-	static pumpDelayOff = 0;
-	bool startPump;
-
-	TESTP("Flow = %d (Av=%d, Mx=%d, Mn=%d)\n", flowCurrentReading(), flowAverageReading(), flowMaxReading(), flowMinReading());
-	if (mappedTemperature(MAP_TEMP_SUPPLY) > mappedTemperature(MAP_TEMP_TS_BOTTOM)) {
-		startPump = mappedTemperature(MAP_TEMP_PANEL) >
-					(mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP]);
-	} else { // Get extra heat to warm pipework
-		startPump = mappedTemperature(MAP_TEMP_PANEL) >
-					(mappedTemperature(MAP_TEMP_TS_BOTTOM) + 2 * sysCfg.settings[SET_PANEL_TEMP]);
-	}
-	if (startPump) {
-		pumpDelayOff = 0;
-		if (pumpDelayOn < sysCfg.settings[SET_PUMP_DELAY]) {
-			pumpDelayOn++;
-		} else {
-			startPumpNormal();
-		}
-	} else {
-		pumpDelayOn = 0;
-		if (pumpDelayOff < sysCfg.settings[SET_PUMP_DELAY]) {
-			pumpDelayOff++;
-		} else {
-			stopPumpNormal();
-		}
-	}
-	checkActionFlash();
-}
-
 void ICACHE_FLASH_ATTR processTimerCb(void) { // 5 sec
 	lastAction = PROCESS_CB;
 	startReadTemperatures();
 	readPressure();
 	processPump();
-
 }
 
 void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	char *topic = (char*) os_zalloc(100);
+	static int reconnections = 0;
 
 	MQTT_Client* client = (MQTT_Client*) args;
-	lastAction = MQTT_CONNECTED_CB;
-	mqttConnected = true;
 	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
 
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
@@ -887,28 +769,24 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	MQTT_Subscribe(client, topic, 0);
 
 	MQTT_Subscribe(client, "/App/date", 0);
+	MQTT_Subscribe(client, "/App/refresh", 0);
 
-	publishDeviceReset(client);
-	publishDeviceInfo(client);
-	publishMapping(client);
-
-	os_timer_disarm(&switch_timer);
-	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
-	os_timer_arm(&switch_timer, 100, true);
-
-	os_timer_disarm(&date_timer);
-	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
-	os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
-
-	os_timer_disarm(&transmit_timer);
-	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) client);
-	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
-	easygpio_outputSet(LED, 0); // Turn LED off when connected
-	initFlowMonitor();
-	initTemperatureMonitor();
-
+	if (mqttConnected) { // Has REconnected
+		publishDeviceInfo(client);
+		reconnections++;
+		publishError(51, reconnections);
+	} else {
+		publishDeviceReset(client);
+		publishDeviceInfo(client);
+		publishMapping(client);
+		initFlowMonitor();
+		initTemperatureMonitor();
+	}
 	checkMinHeap();
 	os_free(topic);
+	easygpio_outputSet(LED, 0); // Turn LED off when connected
+	lastAction = MQTT_CONNECTED_CB;
+	mqttConnected = true;
 }
 
 void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
@@ -967,13 +845,22 @@ static void ICACHE_FLASH_ATTR startUp() {
 	os_timer_disarm(&flashA_timer);
 	os_timer_setfn(&flashA_timer, (os_timer_func_t *) flashAction_cb, (void *) 0);
 
-	os_timer_disarm(&flowCheck_timer);
-	os_timer_setfn(&flowCheck_timer, (os_timer_func_t *) flowCheck_cb, (void *) 0);
-
 	os_timer_disarm(&process_timer);
 	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
 	os_timer_arm(&process_timer, PROCESS_REPEAT, true);
+	os_timer_disarm(&date_timer);
+	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
+	os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 
+	os_timer_disarm(&transmit_timer);
+	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
+	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
+
+	os_timer_disarm(&switch_timer);
+	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
+	os_timer_arm(&switch_timer, 100, true);
+
+	initPump();
 	lastAction = INIT_DONE;
 	INFO(showSysInfo());
 }
@@ -1015,6 +902,7 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
 	initIO();
+	savedLastAction = lastAction;
 	wifi_station_set_auto_connect(false);
 	wifi_station_set_reconnect_policy(true);
 	system_init_done_cb(&initDone_cb);

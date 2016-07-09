@@ -64,6 +64,7 @@
 #define MAP_TEMP_RETURN 3
 
 #define OP_PUMP 0
+#define PROCESS_REPEAT 5000
 
 #define UPDATES 60
 #define INPUTS 0
