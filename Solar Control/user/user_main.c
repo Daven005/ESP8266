@@ -31,6 +31,14 @@ static os_timer_t process_timer;
 MQTT_Client mqttClient;
 uint8 mqttConnected;
 
+typedef struct { MQTT_Client *mqttClient; char *topic; char *data; } mqttData_t;
+#define QUEUE_SIZE 20
+os_event_t taskQueue[QUEUE_SIZE];
+#define EVENT_MQTT_CONNECTED 1
+#define EVENT_MQTT_DATA 2
+#define EVENT_PROCESS_TIMER 3
+#define EVENT_TRANSMIT 4
+
 static unsigned int switchCount;
 static unsigned int flashCount;
 static int flashActionCount;
@@ -45,8 +53,9 @@ static uint32 minHeap = 0xffffffff;
 
 enum lastAction_t {
 	IDLE, RESTART, FLASH, IPSCAN, SWITCH_SCAN,
-	INIT_DONE, MQTT_DATA_CB, MQTT_CONNECTED_CB, MQTT_DISCONNECTED_CB, SMART_CONFIG,
-	PROCESS_CB, DS18B20_CB, WIFI_CONNECT_CHANGE=100
+	INIT_DONE, MQTT_DATA_CB, MQTT_DATA_FUNC, MQTT_CONNECTED_CB, MQTT_CONNECTED_FUNC,
+	MQTT_DISCONNECTED_CB, SMART_CONFIG,
+	PROCESS_CB, PROCESS_FUNC, DS18B20_CB, WIFI_CONNECT_CHANGE=100
 } lastAction __attribute__ ((section (".noinit")));
 enum lastAction_t savedLastAction;
 enum SmartConfigAction {
@@ -63,6 +72,13 @@ uint32 ICACHE_FLASH_ATTR checkMinHeap(void) {
 	uint32 heap = system_get_free_heap_size();
 	if (heap < minHeap) minHeap = heap;
 	return minHeap;
+}
+
+void ICACHE_FLASH_ATTR checkTime(char *func, uint32 previous) {
+	uint32 now = system_get_time();
+	if ((now-previous) > 8000) {
+		TESTP("*** %d XS time in %s\n", (now-previous), func);
+	}
 }
 
 int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[]) {
@@ -95,7 +111,7 @@ void ICACHE_FLASH_ATTR stopFlash(void) {
 	os_timer_disarm(&flash_timer);
 }
 
-void ICACHE_FLASH_ATTR flash_cb(void) {
+void ICACHE_FLASH_ATTR flashCb(void) {
 	easygpio_outputSet(LED, !easygpio_inputGet(LED));
 	if (flashCount)
 		flashCount--;
@@ -119,7 +135,7 @@ void ICACHE_FLASH_ATTR stopActionFlash(void) {
 	os_timer_disarm(&flashA_timer);
 }
 
-void ICACHE_FLASH_ATTR flashAction_cb(void) {
+void ICACHE_FLASH_ATTR flashActionCb(void) {
 	os_timer_disarm(&flashA_timer);
 	if (easygpio_inputGet(ACTION_LED)) {
 		if (flashActionCount > 0)
@@ -298,11 +314,13 @@ void ICACHE_FLASH_ATTR publishSensorData(MQTT_Client* client) {
 }
 
 void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
+	uint32 t = system_get_time();
 	if (mqttConnected) {
 		publishTemperatures(client, -1); // All
 		publishSensorData(client);
 		publishOutput(OP_PUMP, outputState(OP_PUMP));
 	}
+	checkTime("publishData", t);
 }
 
 void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
@@ -450,12 +468,13 @@ bool ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction action) {
 	return doingSmartConfig;
 }
 
-void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) { // Depends on Update period
-	MQTT_Client* client = (MQTT_Client*) args;
+void ICACHE_FLASH_ATTR transmitCb(uint32_t args) { // Depends on Update period
+	uint32 t = system_get_time();
 	if (!checkSmartConfig(SC_CHECK)) {
-		publishData(client);
-		checkMinHeap();
+		if (!system_os_post(USER_TASK_PRIO_1, EVENT_TRANSMIT, 0))
+			TESTP("Can't post EVENT_TRANSMIT\n");
 	}
+	checkTime("transmitCb", t);
 }
 
 void ICACHE_FLASH_ATTR switchAction(int action) {
@@ -690,32 +709,113 @@ static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_C
 	CFG_Save();
 }
 
+static void ICACHE_FLASH_ATTR saveCloudForecast(char *bfr) {
+	jsmn_parser p;
+	jsmntok_t t[20];
+	int r, i;
+
+	jsmn_init(&p);
+	r = jsmn_parse(&p, bfr, strlen(bfr), t, sizeof(t) / sizeof(t[0]));
+
+	if (r < 0) {
+		TESTP("Failed to parse JSON: %d\n", r);
+		return;
+	}
+	if (r < 1 || t[0].type != JSMN_OBJECT) {/* Assume the top-level element is an object */
+		TESTP("Object expected\n");
+		return;
+	}
+	TESTP("%d tokens\n", r);
+	for (i = 1; i < r; i++) { /* Loop over all keys of the root object */
+		if (jsoneq(bfr, &t[i], "c")) {
+			if (t[i + 1].type == JSMN_ARRAY) {
+				int j;
+				int val;
+				TESTP("Cloud: ");
+				for (j = 0; j < t[i + 1].size; j++) {
+					jsmntok_t *g = &t[i + j + 2];
+					val = atol(bfr + g->start);
+					setCloud(j, val);
+					TESTP("[%d]=%d ", j, val);
+				}
+				TESTP("\n");
+			}
+		}
+	}
+}
+
+static void ICACHE_FLASH_ATTR saveSunPosition(char *bfr) {
+	jsmn_parser p;
+	jsmntok_t t[20];
+	int r, i, az, alt;
+
+	jsmn_init(&p);
+	r = jsmn_parse(&p, bfr, strlen(bfr), t, sizeof(t) / sizeof(t[0]));
+
+	if (r < 0) {
+		TESTP("Failed to parse JSON: %d\n", r);
+		return;
+	}
+	if (r < 1 || t[0].type != JSMN_OBJECT) {/* Assume the top-level element is an object */
+		TESTP("Object expected\n");
+		return;
+	}
+	TESTP("%d tokens\n", r);
+	for (i = 1; i < r; i++) { /* Loop over all keys of the root object */
+		if (jsoneq(bfr, &t[i], "az")) {
+			az = atoi(bfr + t[i+1].start);
+		} else if (jsoneq(bfr, &t[i], "alt")) {
+			alt = atoi(bfr + t[i+1].start);
+		}
+	}
+	setSun(az, alt);
+}
+
+void ICACHE_FLASH_ATTR checkResetBoilerTemperature(void) {
+	if (sunnyEnough() && mappedTemperature(MAP_TEMP_PANEL) >= 50 ) {
+		MQTT_Publish(&mqttClient, "/App/Set/Boiler Control/0", "50", 2, 0, 0);
+	} else {
+		MQTT_Publish(&mqttClient, "/App/Set/Boiler Control/0", "60", 2, 0, 0);
+	}
+}
+
 void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
 		const char *data, uint32_t data_len) {
 	char *topicBuf = (char*) os_zalloc(topic_len + 1), *dataBuf = (char*) os_zalloc(data_len + 1);
-	char *tokens[10];
 
-	MQTT_Client* client = (MQTT_Client*) args;
-	lastAction = MQTT_DATA_CB;
-
+	mqttData_t *params = (mqttData_t *)os_malloc(sizeof(mqttData_t));
 	os_memcpy(topicBuf, topic, topic_len);
 	topicBuf[topic_len] = 0;
 	os_memcpy(dataBuf, data, data_len);
 	dataBuf[data_len] = 0;
-	os_printf("Receive topic: %s, data: %s \r\n", topicBuf, dataBuf);
 
-	int tokenCount = splitString((char *) topicBuf, '/', tokens);
+	TESTP("Receive topic: %s, data: %s\n", topicBuf, dataBuf);
+	params->mqttClient = (MQTT_Client*) args;
+	params->topic = topicBuf;
+	params->data = dataBuf;
+	if (!system_os_post(USER_TASK_PRIO_1, EVENT_MQTT_DATA, (os_param_t) params))
+		TESTP("Can't post EVENT_MQTT_DATA\n");
+	lastAction = MQTT_DATA_CB;
+}
+
+void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *data) {
+	char *tokens[10];
+	uint32 t = system_get_time();
+
+	lastAction = MQTT_DATA_FUNC;
+
+	int tokenCount = splitString((char *) topic, '/', tokens);
 
 	if (tokenCount > 0) {
 		if (strcmp("Raw", tokens[0]) == 0) {
 			if (tokenCount == 4 && strcmp(sysCfg.device_id, tokens[1]) == 0
 					&& strcmp("set", tokens[2]) == 0) {
-				if (strlen(dataBuf) < NAME_SIZE - 1) {
-					decodeDeviceSet(tokens[3], dataBuf, client);
+				if (strlen(data) < NAME_SIZE - 1) {
+					decodeDeviceSet(tokens[3], data, client);
 				}
 			} else if (tokenCount == 5 && strcmp(sysCfg.device_id, tokens[1]) == 0) {
 				if (strcmp("set", tokens[3]) == 0) {
-					decodeSensorSet(dataBuf, tokens[2], tokens[4], client);
+					decodeSensorSet(data, tokens[2], tokens[4], client);
 				} else if (strcmp("clear", tokens[3]) == 0) {
 					decodeSensorClear(tokens[2], tokens[4], client);
 				}
@@ -726,15 +826,21 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 			} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
 				publishData((void *) client); // publish all I/O & temps
+			} else if (tokenCount == 3 && strcmp("Cloud", tokens[2]) == 0) {
+				saveCloudForecast(data);
+			} else if (tokenCount == 3 && strcmp("Sun", tokens[2]) == 0) {
+				saveSunPosition(data);
+				checkResetBoilerTemperature();
 			}
 			if (tokenCount >= 5 && strcmp("TS Bottom", tokens[3]) == 0) {
-				saveTSbottom(dataBuf);
+				saveTSbottom(data);
 			}
 		}
-		checkMinHeap();
-		os_free(topicBuf);
-		os_free(dataBuf);
 	}
+	checkMinHeap();
+	os_free(topic);
+	os_free(data);
+	checkTime("mqttDataFunc", t);
 }
 
 void ICACHE_FLASH_ATTR readPressure(void) {
@@ -743,17 +849,29 @@ void ICACHE_FLASH_ATTR readPressure(void) {
 }
 
 void ICACHE_FLASH_ATTR processTimerCb(void) { // 5 sec
-	lastAction = PROCESS_CB;
 	startReadTemperatures();
+	if (!system_os_post(USER_TASK_PRIO_1, EVENT_PROCESS_TIMER, 0))
+		TESTP("Can't post EVENT_MQTT_CONNECTED\n");
+}
+
+void ICACHE_FLASH_ATTR processTimerFunc(void) {
+	uint32 t = system_get_time();
+	lastAction = PROCESS_FUNC;
 	readPressure();
 	processPump();
+	checkTime("processTimerFunc", t);
 }
 
 void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
+	if (!system_os_post(USER_TASK_PRIO_1, EVENT_MQTT_CONNECTED, (os_param_t) args))
+		TESTP("Can't post EVENT_MQTT_CONNECTED\n");
+}
+
+void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
+	uint32 t = system_get_time();
 	char *topic = (char*) os_zalloc(100);
 	static int reconnections = 0;
 
-	MQTT_Client* client = (MQTT_Client*) args;
 	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
 
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
@@ -770,6 +888,8 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 
 	MQTT_Subscribe(client, "/App/date", 0);
 	MQTT_Subscribe(client, "/App/refresh", 0);
+	MQTT_Subscribe(client, "/App/Cloud/hourly", 0);
+	MQTT_Subscribe(client, "/App/Sun/current", 0);
 
 	if (mqttConnected) { // Has REconnected
 		publishDeviceInfo(client);
@@ -787,6 +907,7 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	easygpio_outputSet(LED, 0); // Turn LED off when connected
 	lastAction = MQTT_CONNECTED_CB;
 	mqttConnected = true;
+	checkTime("mqttConnectedFunc", t);
 }
 
 void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
@@ -820,6 +941,27 @@ static void ICACHE_FLASH_ATTR showSysInfo() {
 			system_get_boot_version(), system_get_userbin_addr());
 }
 
+static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
+	mqttData_t *mqttData;
+	TESTP("Background task %d\n", e->sig);
+	switch (e->sig) {
+	case EVENT_MQTT_CONNECTED:
+		mqttConnectedFunction((MQTT_Client *) e->par);
+		break;
+	case EVENT_MQTT_DATA:
+		mqttData = (mqttData_t *) e->par;
+		mqttDataFunction(mqttData->mqttClient, mqttData->topic, mqttData->data);
+		os_free(mqttData);
+		break;
+	case EVENT_PROCESS_TIMER:
+		processTimerFunc();
+		break;
+	case EVENT_TRANSMIT:
+		publishData(&mqttClient);
+		break;
+	}
+}
+
 static void ICACHE_FLASH_ATTR startUp() {
 	CFG_Load();
 	INFO(CFG_print());
@@ -840,14 +982,15 @@ static void ICACHE_FLASH_ATTR startUp() {
 	WIFI_Connect(bestSSID, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 
 	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
+	os_timer_setfn(&flash_timer, (os_timer_func_t *) flashCb, (void *) 0);
 
 	os_timer_disarm(&flashA_timer);
-	os_timer_setfn(&flashA_timer, (os_timer_func_t *) flashAction_cb, (void *) 0);
+	os_timer_setfn(&flashA_timer, (os_timer_func_t *) flashActionCb, (void *) 0);
 
 	os_timer_disarm(&process_timer);
 	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
 	os_timer_arm(&process_timer, PROCESS_REPEAT, true);
+
 	os_timer_disarm(&date_timer);
 	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
 	os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
@@ -860,6 +1003,8 @@ static void ICACHE_FLASH_ATTR startUp() {
 	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
 	os_timer_arm(&switch_timer, 100, true);
 
+	if ( !system_os_task(backgroundTask, USER_TASK_PRIO_1, taskQueue, QUEUE_SIZE))
+		TESTP("Can't set up backkground task\n");
 	initPump();
 	lastAction = INIT_DONE;
 	INFO(showSysInfo());

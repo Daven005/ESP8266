@@ -25,6 +25,8 @@
 static os_timer_t ds18b20_timer;
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static bool publishTemperaturesSignal = false;
+static uint8  cloud[3] = { 10, 10, 10 };
+static int sunAzimuth, sunAltitdude;
 
 #if USE_PT100
 static uint16_t averagePT100Reading;
@@ -61,6 +63,27 @@ void ICACHE_FLASH_ATTR saveHighReading(void) {
 	}
 }
 #endif
+
+void ICACHE_FLASH_ATTR setCloud(int idx, int c) {
+	if (0 <= idx && idx < sizeof(cloud)) {
+		if (0 <= c && c <= 10) {
+			cloud[idx] = c;
+		}
+	}
+}
+
+void ICACHE_FLASH_ATTR setSun(int az, int alt) {
+	if (-180 <= az && az <= 180) sunAzimuth = az;
+	if (-45 <= alt && alt <= 45) sunAltitdude = alt;
+}
+
+bool ICACHE_FLASH_ATTR sunnyEnough(void) {
+	if (cloud[0] <= 7 || cloud[1] <= 7) {
+		if (-40 <= sunAltitdude && sunAltitdude <= 40)
+			return true;
+	}
+	return false;
+}
 
 bool ICACHE_FLASH_ATTR getUnmappedTemperature(int i, struct Temperature **t) {
 	if (i >= MAX_TEMPERATURE_SENSOR)
