@@ -1,1 +1,1 @@
-﻿char *version = "1.0.7.10";
+﻿char *version = "1.0.7.11";

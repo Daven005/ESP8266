@@ -291,6 +291,7 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 		int idx = setUnmappedSensorTemperature("CH setpoint", DERIVED, baseSetPoint, 0);
 		INFO(extraPublishTemperatures(idx));
 		boostInProgress = false;
+		boostHadCFH = false;
 	} else {
 		if (mappedTemperature(MAP_OUTSIDE_TEMP) >= MAX_COMP_TEMP) { // Max Outside Temperature compensation
 			modifiedSetPoint = baseSetPoint - sysCfg.settings[SETTING_OUTSIDE_TEMP_COMP];
@@ -361,6 +362,7 @@ void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
 		if (radsOffCount > 0) {
 			radsOffCount--;
 		}
+		INFOP("Rads OFF %d\n", radsOffCount);
 	}
 	if (mappedTemperature(MAP_TEMP_TS_TOP) > (mappedTemperature(MAP_CURRENT_DHW_SET_POINT) - 10)) {
 		dhwWarningCount = 10;

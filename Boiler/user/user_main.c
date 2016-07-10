@@ -77,7 +77,7 @@ void ICACHE_FLASH_ATTR stopFlash(void) {
 	os_timer_disarm(&flash_timer);
 }
 
-void ICACHE_FLASH_ATTR flash_cb(void) {
+void ICACHE_FLASH_ATTR flashCb(void) {
 	easygpio_outputSet(LED, !easygpio_inputGet(LED));
 	if (flashCount > 0)
 		flashCount--;
@@ -90,7 +90,7 @@ void ICACHE_FLASH_ATTR startFlashCount(int t, unsigned int f) {
 	easygpio_outputSet(LED, 1);
 	flashCount = f * 2;
 	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
+	os_timer_setfn(&flash_timer, (os_timer_func_t *) flashCb, (void *) 0);
 	os_timer_arm(&flash_timer, t, true);
 }
 
@@ -98,7 +98,7 @@ void ICACHE_FLASH_ATTR startFlash(int t, int repeat) {
 	easygpio_outputSet(LED, 1);
 	flashCount = -1;
 	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
+	os_timer_setfn(&flash_timer, (os_timer_func_t *) flashCb, (void *) 0);
 	os_timer_arm(&flash_timer, t, true);
 }
 
@@ -507,11 +507,10 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 
 void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	char topic[100];
-	char data[150];
+	static int reconnections = 0;
 
 	MQTT_Client* client = (MQTT_Client*) args;
 	os_printf("MQTT connected\n");
-	mqttConnected = true;
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
 	INFOP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
@@ -525,15 +524,21 @@ void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	MQTT_Subscribe(client, "/App/Temp/hourly", 0);
 	MQTT_Subscribe(client, "/App/Refresh", 0);
 
-	publishDeviceReset(client);
-	publishDeviceInfo(client);
-	publishMapping(client);
-
+	if (mqttConnected) { // Has REconnected
+		publishDeviceInfo(client);
+		reconnections++;
+		publishError(51, reconnections);
+	} else {
+		publishDeviceReset(client);
+		publishDeviceInfo(client);
+		publishMapping(client);
+	}
 	os_timer_disarm(&mqtt_timer);
 	os_timer_setfn(&mqtt_timer, (os_timer_func_t *) mqttCb, (void *) client);
 	os_timer_arm(&mqtt_timer, sysCfg.updates * 1000, true);
 
 	easygpio_outputSet(LED, 0);
+	mqttConnected = true;
 	lastAction = MQTT_CONNECTED_CB;
 }
 
@@ -743,7 +748,6 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 		} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
 			mqttCb((void *)client); // publish all I/O & temps
 		}
-
 	}
 	checkMinHeap();
 	os_free(topicBuf);
