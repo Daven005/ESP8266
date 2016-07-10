@@ -17,7 +17,7 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK_151
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
-ESPTOOL		?= $(SDK_TOOLS)/esptool.py
+ESPTOOL		?= $(SDK_TOOLS)/esptool1.py
 ESPPORT		?= COM3
 
 ROM0_ADDR   ?= 0x10000
@@ -38,7 +38,7 @@ CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-
 # linker flags used to generate the main object file
 LDFLAGS		= -Wl,-M=TemperatureMonitor.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
-# linker script used for the above linkier step
+# linker script used for the above linker step
 LD_SCRIPT	= eagle.app.v6.ld
 
 # various paths from the SDK used in this project
@@ -90,7 +90,7 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean newversion newbuild newrevision
+.PHONY: all checkdirs clean newversion newbuild newrevision fsize
 
 all: checkdirs $(TARGET_OUT)
 
@@ -105,7 +105,6 @@ newbuild:
 newrevision:
 	incVersion 2
 	touch user/user_main.c
-
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"  -L$(SDK_LIBDIR) $(LD_SCRIPT)
@@ -162,9 +161,19 @@ flashonefile: all
 flash: all
 	$(ESPTOOL) -p $(ESPPORT) -b 115200 write_flash 0x00000 firmware/eagle.flash.bin $(ROM0_ADDR) firmware/eagle.irom0text.bin
 
+flashverify: all
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 verify_flash  $(ROM0_ADDR) firmware/eagle.irom0text.bin
+
+
 flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+
+fread:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 read_flash  0x00000  0x1000  firmware/eagle.flashRead.bin
+
+fsize:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 flash_id
 
 rebuild: clean all
 

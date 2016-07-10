@@ -8,7 +8,7 @@
 #ifndef USER_DEBUG_H_
 #define USER_DEBUG_H_
 
-#define DEBUG 2
+#define DEBUG 1
 
 #ifndef INFOP
 #define INFOP if (DEBUG>=2) os_printf

@@ -49,8 +49,6 @@ static bool checkSmartConfig(enum SmartConfigAction action);
 bool getUnmappedTemperature(int i, struct Temperature **t);
 void publishError(uint8 err, int info);
 
-#define SWITCH 0 // GPIO 00
-#define LED 5
 
 void checkCanSleep();
 void user_rf_pre_init(void) {}
@@ -225,7 +223,9 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
 }
 
 void ICACHE_FLASH_ATTR mqttCb(uint32_t *args) {
+	publishDeviceInfo((MQTT_Client *)args);
 	ds18b20StartScan();
+	// Temperatures will be published at end of scan
 }
 
 void ICACHE_FLASH_ATTR mqttPublishedCb(uint32_t *args) {
@@ -635,7 +635,7 @@ static void ICACHE_FLASH_ATTR startUp() {
 
 static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
   uint8 ssid[33];
-  int8 bestRSSI = -100;
+  sint8 bestRSSI = -100;
 
   if (status == OK) {
     struct bss_info *bss_link = (struct bss_info *)arg;
@@ -647,10 +647,11 @@ static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
       } else {
         os_memcpy(ssid, bss_link->ssid, 32);
       }
-      if (bss_link->rssi > bestRSSI) {
+      if (bss_link->rssi > bestRSSI && (strncmp(STA_SSID, ssid, strlen(STA_SSID)) == 0)) {
     	  strcpy(bestSSID, ssid);
+    	  bestRSSI = bss_link->rssi;
       }
-      TESTP("WiFi Scan: (%d,\"%s\",%d)\n", bss_link->authmode, ssid, bss_link->rssi);
+      TESTP("WiFi Scan: (%d,\"%s\",%d) best is %s\n", bss_link->authmode, ssid, bss_link->rssi, bestSSID);
       bss_link = bss_link->next.stqe_next;
     }
   } else {
@@ -665,6 +666,10 @@ static void ICACHE_FLASH_ATTR initDone_cb() {
 	wifi_station_scan(NULL, wifi_station_scan_done);
 }
 
+void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *evt) {
+	TESTP("event %x\n", evt->event);
+}
+
 void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
@@ -677,5 +682,6 @@ void ICACHE_FLASH_ATTR user_init(void) {
 
 	wifi_station_set_auto_connect(false);
 	wifi_station_set_reconnect_policy(true);
+	wifi_set_event_handler_cb(wifi_handle_event_cb);
 	system_init_done_cb(&initDone_cb);
 }

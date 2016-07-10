@@ -148,7 +148,7 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 				TESTP( "Device is DS18B20 family.\n" );
 				break;
 			default:
-				TESTP("Device is unknown family.\n");
+				TESTP("Device is unknown family (%x).\n", addr[0]);
 				return;
 			}
 		} else {

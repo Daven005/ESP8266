@@ -77,7 +77,7 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	}
-	if(sysCfg.cfg_holder != CFG_HOLDER){
+	if (sysCfg.cfg_holder != CFG_HOLDER){
 		os_memset(&sysCfg, 0x00, sizeof sysCfg);
 
 		sysCfg.cfg_holder = CFG_HOLDER;

@@ -1,13 +1,14 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A2	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A5	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
 /*DEFAULT CONFIGURATIONS*/
 
-#define SLEEP_MODE 1
+#define SLEEP_MODE 0
+#define USE_PT100 0
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
@@ -45,5 +46,8 @@
 // Derived temperatures
 
 #define UPDATES 60
+
+#define SWITCH 0 // GPIO 00
+#define LED 5
 
 #endif
