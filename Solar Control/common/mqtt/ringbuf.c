@@ -11,7 +11,7 @@
 * \param r pointer to a RINGBUF object
 * \param buf pointer to a byte array
 * \param size size of buf
-* \return 0 if successfull, otherwise failed
+* \return 0 if successful, otherwise failed
 */
 I16 ICACHE_FLASH_ATTR RINGBUF_Init(RINGBUF *r, U8* buf, I32 size)
 {
@@ -27,7 +27,7 @@ I16 ICACHE_FLASH_ATTR RINGBUF_Init(RINGBUF *r, U8* buf, I32 size)
 * \brief put a character into ring buffer
 * \param r pointer to a ringbuf object
 * \param c character to be put
-* \return 0 if successfull, otherwise failed
+* \return 0 if successful, otherwise failed
 */
 I16 ICACHE_FLASH_ATTR RINGBUF_Put(RINGBUF *r, U8 c)
 {
@@ -48,7 +48,7 @@ I16 ICACHE_FLASH_ATTR RINGBUF_Put(RINGBUF *r, U8 c)
 * \brief get a character from ring buffer
 * \param r pointer to a ringbuf object
 * \param c read character
-* \return 0 if successfull, otherwise failed
+* \return 0 if successful, otherwise failed
 */
 I16 ICACHE_FLASH_ATTR RINGBUF_Get(RINGBUF *r, U8* c)
 {

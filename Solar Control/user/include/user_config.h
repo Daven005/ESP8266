@@ -5,6 +5,21 @@
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
+#define MAX_DS18B20_SENSOR 3
+#define MAX_TEMPERATURE_SENSOR 5
+
+#define LED 5
+#define ACTION_LED 16
+
+#define SWITCH 0 // GPIO 00
+#define TOGGLE 14
+#define PUMP 13
+#define FLOW_SENSOR 4
+
+#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
+#define DS18B20_FUNC	FUNC_GPIO2
+#define DS18B20_PIN		2
+
 /*DEFAULT CONFIGURATIONS*/
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
@@ -36,8 +51,11 @@
 #define MAP_TEMP_SIZE 4
 
 #define MAX_OUTPUT 1
+#define MAX_INPUT 1
 #define SET_MINIMUM 0
 #define SET_MAXIMUM 60000
+
+#define INPUT_SENSOR_ID_START 10
 #define OUTPUT_SENSOR_ID_START 10
 
 #define SET_T0 0

@@ -17,7 +17,32 @@
 #include "debug.h"
 
 static os_timer_t flowCheck_timer;
+static uint8  cloud[3] = { 10, 10, 10 };
+static int sunAzimuth, sunAltitdude;
+
+
 void stopPumpOverride(void);
+
+void ICACHE_FLASH_ATTR setCloud(int idx, int c) {
+	if (0 <= idx && idx < sizeof(cloud)) {
+		if (0 <= c && c <= 10) {
+			cloud[idx] = c;
+		}
+	}
+}
+
+void ICACHE_FLASH_ATTR setSun(int az, int alt) {
+	if (-180 <= az && az <= 180) sunAzimuth = az;
+	if (-45 <= alt && alt <= 45) sunAltitdude = alt;
+}
+
+bool ICACHE_FLASH_ATTR sunnyEnough(void) {
+	if (cloud[0] <= 7 || cloud[1] <= 7) {
+		if (-40 <= sunAltitdude && sunAltitdude <= 40)
+			return true;
+	}
+	return false;
+}
 
 void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
 	TESTP("*");

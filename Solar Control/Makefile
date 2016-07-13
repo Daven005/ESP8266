@@ -26,8 +26,8 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user mqtt modules driver
-EXTRA_INCDIR    = include $(SDK_BASE)/include
+MODULES		= user common/mqtt common/driver common/temperature
+EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl pwm smartconfig

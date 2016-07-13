@@ -17,7 +17,7 @@
 #include "user_interface.h"
 
 #include "espconn.h"
-#include "gpio.h"
+#include "user_config.h"
 #include "ds18b20.h"
 
 // global search state

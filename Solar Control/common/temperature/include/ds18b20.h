@@ -4,7 +4,8 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "gpio.h"
-#include "IOdefs.h"
+
+// Pin definitions in user_config.h
 
 #define DS1820_WRITE_SCRATCHPAD 	0x4E
 #define DS1820_READ_SCRATCHPAD      0xBE
