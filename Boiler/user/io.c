@@ -18,7 +18,6 @@ extern void publishError(uint8 err, int info);
 extern void publishInput(uint8 idx, uint8 val);
 extern void publishOutput(uint8 idx, uint8 val);
 
-#define IP4 16
 
 typedef enum { OR_NOT_SET, OR_OFF, OR_ON } override;
 int currentInputs[MAX_INPUT];

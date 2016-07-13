@@ -13,11 +13,14 @@
 #include "espconn.h"
 #include "debug.h"
 #include "config.h"
+#include "flash.h"
+#include "http.h"
 
 #include "espmissingincludes.h"
 
 #define HTTPD_METHOD_GET 1
 #define HTTPD_METHOD_POST 2
+bool httpSetupMode = false;
 
 typedef struct HttpdConnData {
 	struct espconn *conn;
@@ -32,8 +35,9 @@ typedef struct HttpdConnData {
 
 static struct espconn httpConn;
 static esp_tcp httpTcp;
-extern bool setupMode;
+extern bool httpSetupMode;
 static bool reboot = false;
+static os_timer_t setup_timer;
 
 static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 	int i;
@@ -83,7 +87,7 @@ static int ICACHE_FLASH_ATTR httpdHexVal(char c) {
 	return 0;
 }
 
-int ICACHE_FLASH_ATTR httpdUrlDecode(char *val, int valLen, char *ret, int retLen) {
+static int ICACHE_FLASH_ATTR httpdUrlDecode(char *val, int valLen, char *ret, int retLen) {
 	int s=0, d=0;
 	int esced=0, escVal=0;
 	while (s<valLen && d<retLen) {
@@ -107,7 +111,7 @@ int ICACHE_FLASH_ATTR httpdUrlDecode(char *val, int valLen, char *ret, int retLe
 	return d;
 }
 
-int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLen) {
+static int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLen) {
 	char *p, *e;
 	if (line==NULL) return 0;
 	p = line;
@@ -127,13 +131,13 @@ int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLe
 	return -1; //not found
 }
 
-void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg) {
+static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg) {
 	struct espconn *conn = (struct espconn*) arg;
 	TESTP("Sent CB\n");
 	espconn_disconnect(conn);
 }
 
-void ICACHE_FLASH_ATTR replyFail(struct espconn *conn) {
+static void ICACHE_FLASH_ATTR replyFail(struct espconn *conn) {
 	char bfr[2048];
 	int l;
 	l = os_sprintf(bfr, "HTTP/1.0 404 Not Found\r\nServer: esp8266-http/0.4\r\n"
@@ -142,7 +146,7 @@ void ICACHE_FLASH_ATTR replyFail(struct espconn *conn) {
 	espconn_sent(conn, bfr, l);
 }
 
-void ICACHE_FLASH_ATTR replyOK(struct espconn *conn) {
+static void ICACHE_FLASH_ATTR replyOK(struct espconn *conn) {
 	char bfr[2048];
 	int l;
 	l = os_sprintf(bfr, "HTTP/1.0 %d OK\r\nServer: esp8266-http/0.4\r\nConnection: close\r\n\r\n", 200);
@@ -159,14 +163,14 @@ void ICACHE_FLASH_ATTR replyOK(struct espconn *conn) {
 	espconn_sent(conn, bfr, l);
 }
 
-void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned short len) {
+static void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned short len) {
 	HttpdConnData c;
 	char bfr[100];
 	struct espconn *conn = (struct espconn*) arg;
 
 	httpdParseHeader(pData, &c);
 	TESTP("URL=%s\n", c.url);
-	if (setupMode && os_strncmp(c.url, "/setup", 5) == 0) {
+	if (httpSetupMode && os_strncmp(c.url, "/setup", 5) == 0) {
 		if (httpdFindArg(c.getArgs, "Action", bfr, sizeof(bfr)) >= 0) {
 			TESTP("Action=%s\n", bfr);
 			if (os_strncmp(bfr, "Update", 6) == 0) {
@@ -216,20 +220,20 @@ void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned short len
 	}
 }
 
-void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg) {
+static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg) {
 	struct espconn *conn = (struct espconn*) arg;
 	espconn_regist_recvcb(conn, tcp_receive_cb);
 	espconn_regist_sentcb(conn, tcp_sent_cb);
 }
 
-void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg) {
+static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg) {
 	struct espconn *conn = (struct espconn*) arg;
 	TESTP("Disconnected %s\n", reboot ? "rebooting" : "");
 	ets_delay_us(5000);
 	if (reboot) system_restart();
 }
 
-void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err) {
+static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err) {
 	TESTP("Reconnected\n");
 }
 
@@ -254,4 +258,23 @@ bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port) {
 		return false;
 	}
 	return true;
+}
+
+static void ICACHE_FLASH_ATTR setupCb(void) {
+	httpSetupMode = false;
+	stopFlash();
+}
+
+bool ICACHE_FLASH_ATTR toggleHttpSetupMode(void) {
+	httpSetupMode = !httpSetupMode;
+	if (httpSetupMode) {
+		os_timer_disarm(&setup_timer);
+		os_timer_setfn(&setup_timer, (os_timer_func_t *) setupCb, (void *) 0);
+		os_timer_arm(&setup_timer, 10 * 60 * 1000, false); // Allow 10 minutes
+		startFlash(-1, 500, 500);
+	} else {
+		os_timer_disarm(&setup_timer);
+		stopFlash();
+	}
+	return httpSetupMode;
 }

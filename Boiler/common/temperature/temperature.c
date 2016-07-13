@@ -8,17 +8,15 @@
 #include <mem.h>
 #include <os_type.h>
 #include <osapi.h>
-#include <uart.h>
 #include <ds18b20.h>
 #include "temperature.h"
 #include "config.h"
 #include "debug.h"
+#include "user_config.h"
 
-struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
+static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static os_timer_t ds18b20_timer;
-static bool publishTemperaturesSignal;
-
-extern void extraPublishTemperatures(uint8);
+static TemperatureCallback temperatureCb;
 
 static void ICACHE_FLASH_ATTR incMissed(void) {
 	uint8 idx;
@@ -65,7 +63,12 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 
 void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* sensorID) {
 	if (0 <= idx && idx < MAX_TEMPERATURE_SENSOR) {
-		INFOP("Sensor[%d] %s = %d.%d\n", idx, sensorID, val, fract);
+		if (-20 <= val && val <= 128) {
+			INFOP("Sensor[%d] %s = %d.%d\n", idx, sensorID, val, fract);
+		} else {
+			ERRORP("Sensor[%d] %s ERROR = %d.%d\n", idx, sensorID, val, fract);
+			return;
+		}
 		temperature[idx].set = true;
 		if (!temperature[idx].override) {
 			if (val < 0) {
@@ -78,6 +81,8 @@ void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* se
 			temperature[idx].fract = fract;
 			temperature[idx].missed = 0;
 		}
+	} else {
+		ERRORP("Invalid Sensor[%d]\n", idx);
 	}
 }
 
@@ -134,7 +139,7 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 				INFOP( "Device is DS18B20 family.\n" );
 				break;
 			default:
-				INFOP("Device is unknown family.\n");
+				ERRORP("Device is unknown family.\n");
 				return;
 			}
 		} else {
@@ -164,14 +169,14 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 		idx = setUnmappedSensorTemperature(bfr, SENSOR, (tSign=='+') ? tVal : -tVal, tFract);
 		INFO(if (idx != 0xff) {printTemperature(idx); os_printf("\n");});
 	} while (true);
-	if (publishTemperaturesSignal) {
-		publishTemperaturesSignal = false;
-		extraPublishTemperatures(0xff);
+	if (temperatureCb) {
+		temperatureCb();
 	}
 	return;
 }
 
-void ICACHE_FLASH_ATTR ds18b20StartScan(void) {
+void ICACHE_FLASH_ATTR ds18b20StartScan(TemperatureCallback tempCb) {
+	temperatureCb = tempCb;
 	ds_init();
 	reset();
 	write(DS1820_SKIP_ROM, 1);
@@ -221,8 +226,6 @@ int ICACHE_FLASH_ATTR clearTemperatureOverride(char *sensorID) {
 	if (0 <= idx && idx <= MAX_TEMPERATURE_SENSOR) {
 		temperature[idx].set = false;
 		temperature[idx].override = false;
-		publishTemperaturesSignal = true; // Now get temperatures republished once they have been read
-		ds18b20StartScan();
 	}
 	return idx;
 }

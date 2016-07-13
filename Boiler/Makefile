@@ -26,8 +26,8 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user mqtt modules driver
-EXTRA_INCDIR    = include $(SDK_BASE)/include
+MODULES		= user common/mqtt common/temperature common/driver
+EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
@@ -71,7 +71,7 @@ LD_SCRIPT	:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 INCDIR	:= $(addprefix -I,$(SRC_DIR))
 EXTRA_INCDIR	:= $(addprefix -I,$(EXTRA_INCDIR))
 MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
-VERBOSE := 1
+VERBOSE := 0
 
 V ?= $(VERBOSE)
 ifeq ("$(V)","1")
@@ -86,7 +86,7 @@ vpath %.c $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	echo "CC $$< $(MODULE_INCDIR)"
+	$(vecho) "CC $$< $(MODULE_INCDIR)"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 

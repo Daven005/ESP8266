@@ -1,5 +1,5 @@
 write-host "incVersion"
-$file = "include/version.h"
+$file = "user/include/version.h"
 if (!(Test-Path $file)) {
     write-host $File" doesn't exist"
     exit

@@ -390,12 +390,12 @@ void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
 
 void ICACHE_FLASH_ATTR initBoilerControl() {
 	checkInputs(false);
-	ds18b20StartScan();
 	// Allocate derived unmapped temperatures
 	setUnmappedSensorTemperature("CH setpoint", DERIVED, 0, 0);
 	setUnmappedSensorTemperature("DHW setpoint", DERIVED, sysCfg.settings[SETTING_DHW_SET_POINT], 0);
 	setUnmappedSensorTemperature("Outside", DERIVED, 0, 0);
 	os_timer_disarm(&TemperatureMonitor_timer);
 	os_timer_setfn(&TemperatureMonitor_timer, (os_timer_func_t *) TemperatureMonitor_cb, (void *) 0);
-	os_timer_arm(&TemperatureMonitor_timer, 10*1000, false); // Start up within 10 secs
+	os_timer_arm(&TemperatureMonitor_timer, 10*1000, false);
+	// Start checking temperature validities after 10secs
 }

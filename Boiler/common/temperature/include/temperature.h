@@ -8,8 +8,8 @@
 #ifndef INCLUDE_TEMPERATURE_H_
 #define INCLUDE_TEMPERATURE_H_
 
-#define MAX_TEMPERATURE_SENSOR 15
 enum temperatureType_t { NOT_SET, SENSOR, DERIVED };
+typedef void (*TemperatureCallback)(void);
 
 struct Temperature {
 	bool set;
@@ -23,7 +23,7 @@ struct Temperature {
 };
 
 bool getUnmappedTemperature(int i, struct Temperature **t);
-void ds18b20StartScan(void);
+void ds18b20StartScan(TemperatureCallback tempCb);
 int sensorIdx(char* sensorID);
 bool printTemperature(int);
 bool printMappedTemperature(int);

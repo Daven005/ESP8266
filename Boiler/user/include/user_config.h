@@ -5,7 +5,15 @@
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
-#define SLEEP_MODE 0
+#define TEST_OP 2
+#define SWITCH 0 // GPI00
+#define LED 5 // NB same as an_t t);
+
+#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
+#define DS18B20_FUNC	FUNC_GPIO2
+#define DS18B20_PIN		2
+
+#define IP4 16
 
 /*DEFAULT CONFIGURATIONS*/
 
@@ -37,6 +45,7 @@
 #define MAX_INPUT 5
 #define REQUIRED_SENSORS 6
 
+#define MAX_TEMPERATURE_SENSOR 15
 #define INPUT_SENSOR_ID_START 10
 #define OUTPUT_SENSOR_ID_START 20
 
