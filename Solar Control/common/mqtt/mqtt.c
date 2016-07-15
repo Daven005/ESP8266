@@ -310,7 +310,7 @@ mqtt_tcpclient_connect_cb(void *arg)
 	espconn_regist_disconcb(client->pCon, mqtt_tcpclient_discon_cb);
 	espconn_regist_recvcb(client->pCon, mqtt_tcpclient_recv);////////
 	espconn_regist_sentcb(client->pCon, mqtt_tcpclient_sent_cb);///////
-	INFOP("MQTT: Connected to broker %s:%d\n", client->host, client->port);
+	TESTP("MQTT: Connected to broker %s:%d\n", client->host, client->port);
 
 	mqtt_msg_init(&client->mqtt_state.mqtt_connection, client->mqtt_state.out_buffer, client->mqtt_state.out_buffer_length);
 	client->mqtt_state.outbound_message = mqtt_msg_connect(&client->mqtt_state.mqtt_connection, client->mqtt_state.connect_info);
@@ -319,7 +319,7 @@ mqtt_tcpclient_connect_cb(void *arg)
 
 
 	client->sendTimeout = MQTT_SEND_TIMOUT;
-	INFOP("MQTT: Sending, type: %d, id: %04X\n",client->mqtt_state.pending_msg_type, client->mqtt_state.pending_msg_id);
+	TESTP("MQTT: Sending, type: %d, id: %04X\n",client->mqtt_state.pending_msg_type, client->mqtt_state.pending_msg_id);
 	if (client->security){
 		espconn_secure_sent(client->pCon, client->mqtt_state.outbound_message->data, client->mqtt_state.outbound_message->length);
 	}
@@ -349,6 +349,17 @@ mqtt_tcpclient_recon_cb(void *arg, sint8 errType)
 
 }
 
+bool ICACHE_FLASH_ATTR checkMQTTi(MQTT_Client *client, int i) {
+	mqtt_connection_t *connection = &client->mqtt_state.mqtt_connection;
+	INFOP("%x ", client);
+	if (0x3fff0000 <= (uint32) connection->buffer && (uint32) connection->buffer <= 0x3fffffff) {
+		TESTP("%d.", i);
+		return true;
+	}
+	ERRORP("MQTT connection bfr error %x: %d\n", connection->buffer, i);
+	return false;
+}
+
 /**
   * @brief  MQTT publish function.
   * @param  client: 	MQTT_Client reference
@@ -359,7 +370,7 @@ mqtt_tcpclient_recon_cb(void *arg, sint8 errType)
   * @param  retain:		retain
   * @retval TRUE if success queue
   */
-BOOL ICACHE_FLASH_ATTR
+bool ICACHE_FLASH_ATTR
 MQTT_Publish(MQTT_Client *client, const char* topic, const char* data, int data_length, int qos, int retain)
 {
 	uint8_t dataBuffer[MQTT_BUF_SIZE];
@@ -369,7 +380,7 @@ MQTT_Publish(MQTT_Client *client, const char* topic, const char* data, int data_
 										 qos, retain,
 										 &client->mqtt_state.pending_msg_id);
 	if (client->mqtt_state.outbound_message->length == 0){
-		ERRORP("MQTT: Queuing publish failed\n");
+		ERRORP("MQTT: Queuing publish failed (%s)\n", topic);
 		return FALSE;
 	}
 	INFOP("MQTT: queueing publish, length: %d, queue size (%d/%d)\n",
@@ -427,6 +438,7 @@ MQTT_Task(os_event_t *e)
 	uint16_t dataLen;
 	if (e->par == 0)
 		return;
+	INFOP("MQTT_Task %d\n", client->connState);
 	switch(client->connState) {
 	case TCP_RECONNECT_REQ:
 		break;
@@ -492,7 +504,7 @@ void ICACHE_FLASH_ATTR
 MQTT_InitClient(MQTT_Client *mqttClient, uint8_t* client_id, uint8_t* client_user, uint8_t* client_pass, uint32_t keepAliveTime, uint8_t cleanSession)
 {
 	uint32_t temp;
-	INFOP("MQTT_InitClient\n");
+	TESTP("MQTT_InitClient\n");
 
 	os_memset(&mqttClient->connect_info, 0, sizeof(mqtt_connect_info_t));
 

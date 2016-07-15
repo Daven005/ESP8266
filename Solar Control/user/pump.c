@@ -15,13 +15,49 @@
 #include "config.h"
 #include "user_config.h"
 #include "debug.h"
+#include "mqtt.h"
 
 static os_timer_t flowCheck_timer;
 static uint8  cloud[3] = { 10, 10, 10 };
 static int sunAzimuth, sunAltitdude;
+static float lastSupplyTemperature = 0;
 
+void ICACHE_FLASH_ATTR checkPumpActionFlash(void) {
+	static pumpState_t lastPumpState = PUMP_UNKNOWN;
+	pumpState_t thisPumpState = pumpState();
+	static bool lastConfigMode;
 
-void stopPumpOverride(void);
+	if (switchInConfigMode()) { // Don't flash in Config Mode
+		easygpio_outputSet(ACTION_LED, 1);
+		lastConfigMode = true;
+		return;
+	} else {
+		easygpio_outputSet(ACTION_LED, 0); // If flashing in progress this will be overridden
+	}
+	// Don't restart Action Flash unless configMode switch just turned off
+	if (lastConfigMode == false) {
+		if (thisPumpState == lastPumpState) return;
+		lastPumpState = thisPumpState;
+	}
+	lastConfigMode = false;
+	TESTP("Pump state: %d. ", thisPumpState);
+	switch (thisPumpState) {
+	case PUMP_OFF_NORMAL:
+		startActionFlash(-1, 200, 1800);
+		break;
+	case PUMP_ON_NORMAL:
+		startActionFlash(-1, 1800, 200);
+		break;
+	case PUMP_OFF_OVERRIDE:
+		startActionFlash(-1, 1000, 2000);
+		break;
+	case PUMP_ON_OVERRIDE :
+		startActionFlash(-1, 2000, 1000);
+		break;
+	}
+}
+
+void ICACHE_FLASH_ATTR stopPumpOverride(void);
 
 void ICACHE_FLASH_ATTR setCloud(int idx, int c) {
 	if (0 <= idx && idx < sizeof(cloud)) {
@@ -64,7 +100,7 @@ void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
 
 void ICACHE_FLASH_ATTR turnOffOverride() {
 	clearPumpOverride();
-	checkActionFlash();
+	checkPumpActionFlash();
 }
 
 void ICACHE_FLASH_ATTR startPumpNormal(void) {
@@ -80,7 +116,7 @@ void ICACHE_FLASH_ATTR startPumpNormal(void) {
 		return;
 	}
 	os_timer_disarm(&flowCheck_timer);
-	os_timer_arm(&flowCheck_timer, PROCESS_REPEAT-500, 0);
+	os_timer_arm(&flowCheck_timer, PROCESS_REPEAT-2000, 0); // Allow time for temp readings
 }
 
 void ICACHE_FLASH_ATTR startPumpOverride(void) {
@@ -124,30 +160,38 @@ void ICACHE_FLASH_ATTR stopPumpOverride(void) {
 		return;
 	}
 	os_timer_disarm(&flowCheck_timer);
-	overrideSetOutput(OP_PUMP, 0);
 }
 
 void ICACHE_FLASH_ATTR processPump(void) {
 	static pumpDelayOn = 0;
 	static pumpDelayOff = 0;
-	bool startPump = false;
+	bool runPump = false;
 
-	printFlows();
 	switch (pumpState()) {
 	case PUMP_OFF_NORMAL:
 		if (mappedTemperature(MAP_TEMP_SUPPLY) > mappedTemperature(MAP_TEMP_TS_BOTTOM)) {
 			// Already heat in supply pipe
-			startPump = mappedTemperature(MAP_TEMP_PANEL)
+			runPump = mappedTemperature(MAP_TEMP_PANEL)
 					> (mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP]);
 		} else {
 			// Get extra heat to warm pipe
-			startPump = mappedTemperature(MAP_TEMP_PANEL)
+			runPump = mappedTemperature(MAP_TEMP_PANEL)
 					> (mappedTemperature(MAP_TEMP_TS_BOTTOM) + 2 * sysCfg.settings[SET_PANEL_TEMP]);
 		}
 		break;
 	case PUMP_ON_NORMAL:
-		// Keep pumping until supply gets 'colder'
-		startPump = mappedTemperature(MAP_TEMP_SUPPLY) > (1+mappedTemperature(MAP_TEMP_TS_BOTTOM));
+		do { // Keep pumping until supply gets 'colder'
+			float newSupplyTemperature = mappedFloatTemperature(MAP_TEMP_SUPPLY);
+			// Panel is still hot enough to get started
+			runPump = mappedTemperature(MAP_TEMP_PANEL)
+					> (mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP]);
+			// Supply temperature above tank
+			runPump |= (mappedTemperature(MAP_TEMP_SUPPLY)
+					> (1 + mappedTemperature(MAP_TEMP_TS_BOTTOM)));
+			// Keep running if supply temperature is still increasing
+			runPump |= (newSupplyTemperature > lastSupplyTemperature);
+			lastSupplyTemperature = newSupplyTemperature;
+		} while (false);
 		break;
 	case PUMP_OFF_OVERRIDE:
 		stopPumpOverride();
@@ -156,7 +200,7 @@ void ICACHE_FLASH_ATTR processPump(void) {
 		startPumpOverride();
 		return;
 	}
-	if (startPump) {
+	if (runPump) {
 		pumpDelayOff = 0;
 		if (pumpDelayOn < sysCfg.settings[SET_PUMP_DELAY]) {
 			pumpDelayOn++;
@@ -171,7 +215,7 @@ void ICACHE_FLASH_ATTR processPump(void) {
 			stopPumpNormal();
 		}
 	}
-	checkActionFlash();
+	checkPumpActionFlash();
 }
 
 void ICACHE_FLASH_ATTR initPump(void) {

@@ -1,7 +1,18 @@
-#include <stdlib.h>
+#include <c_types.h>
+#include <mem.h>
+#include <os_type.h>
+#include <osapi.h>
 
 #include "jsmn.h"
 
+
+bool ICACHE_FLASH_ATTR jsoneq(const char *json, jsmntok_t *tok, const char *s) {
+	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start
+			&& os_strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+		return true;
+	}
+	return false;
+}
 /**
  * Allocates a fresh unused token from the token pull.
  */
@@ -81,7 +92,7 @@ found:
 }
 
 /**
- * Filsl next token with JSON string.
+ * Fills next token with JSON string.
  */
 static jsmnerr_t jsmn_parse_string(jsmn_parser *parser, const char *js,
 		size_t len, jsmntok_t *tokens, size_t num_tokens) {

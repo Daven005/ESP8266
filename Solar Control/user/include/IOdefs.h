@@ -21,7 +21,4 @@
 #define DS18B20_FUNC	FUNC_GPIO2
 #define DS18B20_PIN		2
 
-#define SELECT_PTC easygpio_outputSet(ANALOGUE_SELECT, 0);
-#define SELECT_PRESSURE easygpio_outputSet(ANALOGUE_SELECT, 1);
-
 #endif /* INCLUDE_IODEFS_H_ */

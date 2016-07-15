@@ -7,7 +7,7 @@
 
 #ifndef COMMON_DRIVER_INCLUDE_DOSMARTCONFIG_H_
 #define COMMON_DRIVER_INCLUDE_DOSMARTCONFIG_H_
-
+#include "smartConfig.h"
 enum SmartConfigAction {
 	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
 };

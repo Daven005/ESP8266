@@ -36,6 +36,10 @@ void ICACHE_FLASH_ATTR clearPumpOverride() {
 	overrideClearOutput(OP_PUMP);
 }
 
+bool ICACHE_FLASH_ATTR switchInConfigMode(void) {
+	return easygpio_inputGet(TOGGLE);
+}
+
 void ICACHE_FLASH_ATTR initIO(void) {
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);

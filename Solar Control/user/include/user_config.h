@@ -1,24 +1,15 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A3	/* Change this value to load default configurations */
+#include "IOdefs.h"
+
+#define CFG_HOLDER	0x00FF55A6	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
 #define MAX_DS18B20_SENSOR 3
 #define MAX_TEMPERATURE_SENSOR 5
 
-#define LED 5
-#define ACTION_LED 16
-
-#define SWITCH 0 // GPIO 00
-#define TOGGLE 14
-#define PUMP 13
-#define FLOW_SENSOR 4
-
-#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
-#define DS18B20_FUNC	FUNC_GPIO2
-#define DS18B20_PIN		2
 
 /*DEFAULT CONFIGURATIONS*/
 
@@ -38,7 +29,7 @@
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
 
 #define DEFAULT_SECURITY	0
-#define QUEUE_BUFFER_SIZE		 		2048
+#define QUEUE_BUFFER_SIZE		 		4096
 
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/

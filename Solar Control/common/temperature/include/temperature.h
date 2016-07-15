@@ -27,7 +27,9 @@ void ds18b20StartScan(TemperatureCallback tempCb);
 int sensorIdx(char* sensorID);
 bool printTemperature(int);
 bool printMappedTemperature(int);
-bool mappedTemperatureIsSet(int name);
+float mappedFloatTemperature(uint8 name);
+int  mappedTemperature(uint8 name);
+bool mappedTemperatureIsSet(uint8 name);
 int setUnmappedSensorTemperature(char *sensorID, enum temperatureType_t temperatureType, int val, int fract);
 
 // Override used for testing

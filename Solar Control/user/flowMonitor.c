@@ -103,8 +103,9 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 }
 
 void ICACHE_FLASH_ATTR printFlows(void) {
-	TESTP("o:%d p:%d e:%d ts:%d tb:%d\n",
-			oneSecFlowCount, power, energy, mappedTemperature(MAP_TEMP_SUPPLY), mappedTemperature(MAP_TEMP_TS_BOTTOM));
+	TESTP("fl:%d p:%d e:%d tp:%d ts:%d tb:%d\n", oneSecFlowCount, power, energy,
+			mappedTemperature(MAP_TEMP_PANEL), mappedTemperature(MAP_TEMP_SUPPLY),
+			mappedTemperature(MAP_TEMP_TS_BOTTOM));
 }
 
 void ICACHE_FLASH_ATTR initFlowMonitor(void) {

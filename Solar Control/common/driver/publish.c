@@ -20,27 +20,18 @@
 
 static MQTT_Client *mqttClient;
 
-void ICACHE_FLASH_ATTR publishTemperatures(uint8 idx) {
+void ICACHE_FLASH_ATTR publishAllTemperatures(void) {
 	struct Temperature *t;
+	int idx;
 
 	if (mqttIsConnected()) {
 		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
 		if (topic == NULL || data == NULL) {
+			TESTP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
-		if (idx == 0xff) {
-			for (idx = 0; idx < MAX_TEMPERATURE_SENSOR; idx++) {
-				if (getUnmappedTemperature(idx, &t)) {
-					os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id,
-							t->address);
-					os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}",
-							t->sign, t->val, t->fract);
-					MQTT_Publish(mqttClient, topic, data, strlen(data), 0, 0);
-					INFOP("%s=>%s\n", topic, data);
-				}
-			}
-		} else {
+		for (idx = 0; idx < MAX_TEMPERATURE_SENSOR; idx++) {
 			if (getUnmappedTemperature(idx, &t)) {
 				os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id, t->address);
 				os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}",
@@ -55,6 +46,29 @@ void ICACHE_FLASH_ATTR publishTemperatures(uint8 idx) {
 	}
 }
 
+void ICACHE_FLASH_ATTR publishTemperature(int idx) {
+	struct Temperature *t;
+
+	if (mqttIsConnected()) {
+		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
+		if (topic == NULL || data == NULL) {
+			TESTP("malloc err %s/%s\n", topic, data);
+			startFlash(-1, 50, 50); // fast
+			return;
+		}
+		if (getUnmappedTemperature(idx, &t)) {
+			os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id, t->address);
+			os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}", t->sign,
+					t->val, t->fract);
+			MQTT_Publish(mqttClient, topic, data, strlen(data), 0, 0);
+			INFOP("%s=>%s\n", topic, data);
+		}
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
+	}
+}
+
 void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	static uint8 last_err = 0xff;
 	static int last_info = -1;
@@ -62,6 +76,7 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 		return; // Ignore repeated errors
 	char *topic = (char*) os_malloc(50), *data = (char*) os_malloc(100);
 	if (topic == NULL || data == NULL) {
+		TESTP("malloc err %s/%s\n", topic, data);
 		startFlash(-1, 50, 50); // fast
 		return;
 	}
@@ -82,6 +97,11 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	last_info = info;
 	char *topic = (char*) os_malloc(50);
 	char *data = (char*) os_malloc(100);
+	if (topic == NULL || data == NULL) {
+		TESTP("malloc err %s/%s\n", topic, data);
+		startFlash(-1, 50, 50); // fast
+		return;
+	}
 	os_sprintf(topic, (const char*) "/Raw/%s/alarm", sysCfg.device_id);
 	os_sprintf(data, (const char*) "{ \"alarm\":%d, \"info\":%d}", alarm, info);
 	MQTT_Publish(mqttClient, topic, data, strlen(data), 0, 0);
@@ -98,6 +118,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 		char *data = (char *) os_zalloc(200);
 		int idx;
 		if (topic == NULL || data == NULL) {
+			TESTP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -122,6 +143,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 		int idx;
 		struct ip_info ipConfig;
 		if (topic == NULL || data == NULL) {
+			TESTP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -150,13 +172,14 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 	}
 }
 
-void ICACHE_FLASH_ATTR publishMapping(MQTT_Client* client) {
+void ICACHE_FLASH_ATTR publishMapping(void) {
 	if (mqttIsConnected()) {
 		char *topic = (char *) os_zalloc(50);
 		char *data = (char *) os_zalloc(500);
 		int idx;
 
 		if (topic == NULL || data == NULL) {
+			TESTP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -170,7 +193,7 @@ void ICACHE_FLASH_ATTR publishMapping(MQTT_Client* client) {
 		}
 		os_sprintf(data + strlen(data), "]");
 		MQTT_Publish(mqttClient, topic, data, strlen(data), 0, true);
-		TESTP("%s=>%s\n", topic, data);
+		INFOP("%s=>%s\n", topic, data);
 		checkMinHeap();
 		os_free(topic);
 		os_free(data);
@@ -179,36 +202,46 @@ void ICACHE_FLASH_ATTR publishMapping(MQTT_Client* client) {
 
 void ICACHE_FLASH_ATTR publishInput(uint8 idx, uint8 val) {
 	if (mqttIsConnected()) {
-		char *topicBuf = (char*) os_malloc(50), *dataBuf = (char*) os_malloc(100);
+		char *topic = (char*) os_malloc(50), *data = (char*) os_malloc(100);
+		if (topic == NULL || data == NULL) {
+			TESTP("malloc err %s/%s\n", topic, data);
+			startFlash(-1, 50, 50); // fast
+			return;
+		}
 
-		os_sprintf(topicBuf, (const char*) "/Raw/%s/%d/info", sysCfg.device_id,
+		os_sprintf(topic, (const char*) "/Raw/%s/%d/info", sysCfg.device_id,
 				idx + INPUT_SENSOR_ID_START);
-		os_sprintf(dataBuf,
+		os_sprintf(data,
 				(const char*) "{\"Name\":\"IP%d\", \"Type\":\"Input\", \"Value\":\"%d\"}", idx,
 				val);
-		MQTT_Publish(mqttClient, topicBuf, dataBuf, strlen(dataBuf), 0, 0);
+		MQTT_Publish(mqttClient, topic, data, strlen(data), 0, 0);
 		checkMinHeap();
-		os_free(topicBuf);
-		os_free(dataBuf);
+		os_free(topic);
+		os_free(data);
 	}
 }
 
 void ICACHE_FLASH_ATTR publishOutput(uint8 idx, uint8 val) {
 	if (mqttIsConnected()) {
-		char *topicBuf = (char*) os_malloc(50), *dataBuf = (char*) os_malloc(100);
+		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(200);
+		if (topic == NULL || data == NULL) {
+			INFOP("malloc err %s/%s\n", topic, data);
+			startFlash(-1, 20, 20); // fast
+			return;
+		}
 
-		os_sprintf(topicBuf, (const char*) "/Raw/%s/%d/info", sysCfg.device_id,
+		os_sprintf(topic, (const char*) "/Raw/%s/%d/info", sysCfg.device_id,
 				idx + OUTPUT_SENSOR_ID_START);
-		os_sprintf(dataBuf,
+		os_sprintf(data,
 				(const char*) "{\"Name\":\"OP%d\", \"Type\":\"Output\", \"Value\":\"%d\"}", idx,
 				val);
-		MQTT_Publish(mqttClient, topicBuf, dataBuf, strlen(dataBuf), 0, 0);
-		INFOP("%s--->%s\n", topicBuf, dataBuf);
+		if (!MQTT_Publish(mqttClient, topic, data, strlen(data), 0, 0))
+			ERRORP("Error with %s--->%s\n", topic, data);
 		checkMinHeap();
-		os_free(topicBuf);
-		os_free(dataBuf);
+		os_free(topic);
+		os_free(data);
 	} else {
-		INFOP("o/p %d--->%d\n", idx, val);
+		TESTP("o/p %d--->%d\n", idx, val);
 	}
 }
 

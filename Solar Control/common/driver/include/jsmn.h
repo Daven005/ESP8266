@@ -60,7 +60,7 @@ typedef struct {
  * Create JSON parser over an array of tokens
  */
 void jsmn_init(jsmn_parser *parser);
-
+bool jsoneq(const char *json, jsmntok_t *tok, const char *s);
 /**
  * Run JSON parser. It parses a JSON data string into and array of tokens, each describing
  * a single JSON object.

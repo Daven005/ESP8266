@@ -67,7 +67,7 @@ CFG_Save() {
 
 void ICACHE_FLASH_ATTR CFG_Load() {
 
-	ets_uart_printf("\r\nload ...\r\n");
+	os_printf("\nload ...\n");
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE, (uint32 *) &saveFlag,
 			sizeof(SAVE_FLAG));
 	if (saveFlag.flag == 0) {
@@ -115,10 +115,14 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 
 		os_sprintf(sysCfg.deviceName, "Solar Control");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
-		ets_uart_printf(" default configuration\r\n");
+		os_printf(" default configuration\n");
 
 		CFG_Save();
 	}
+}
+uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {
+	if (sysCfg.updates) return sysCfg.updates;
+	return UPDATES;
 }
 
 void ICACHE_FLASH_ATTR CFG_print(void) {

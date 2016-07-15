@@ -71,7 +71,7 @@ LD_SCRIPT	:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 INCDIR	:= $(addprefix -I,$(SRC_DIR))
 EXTRA_INCDIR	:= $(addprefix -I,$(EXTRA_INCDIR))
 MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
-VERBOSE := 1
+VERBOSE := 0
 
 V ?= $(VERBOSE)
 ifeq ("$(V)","1")
@@ -86,7 +86,7 @@ vpath %.c $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	echo "CC $$< $(MODULE_INCDIR)"
+	$(vecho) "CC $$< $(MODULE_INCDIR)"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
@@ -117,14 +117,14 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
 	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
 	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-	$(vecho) "objcopy done"
+#	$(Q) $(OBJDUMP) -S -l $@ >obj.txt
 	$(vecho) "Run gen_appbin.exe"
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
-#	$(Q) rm eagle.app.sym
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
+	$(Q) rm eagle.app.sym
+	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder " $(FW_BASE)
 	$(vecho) "eagle.flash.bin-------->0x00000"
 	$(vecho) "eagle.irom0text.bin---->$(ROM0_ADDR)"
 	$(vecho) "Done"

@@ -186,6 +186,14 @@ void ICACHE_FLASH_ATTR ds18b20StartScan(TemperatureCallback tempCb) {
 	os_timer_arm(&ds18b20_timer, 750, false);
 }
 
+float ICACHE_FLASH_ATTR mappedFloatTemperature(uint8 name) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(sysCfg.mapping[name], &t)) {
+		return (float) t->val + (float)t->fract/100.0;
+	}
+	return -99.0;
+}
+
 int ICACHE_FLASH_ATTR mappedTemperature(uint8 name) {
 	struct Temperature *t;
 	if (getUnmappedTemperature(sysCfg.mapping[name], &t))
@@ -194,7 +202,7 @@ int ICACHE_FLASH_ATTR mappedTemperature(uint8 name) {
 	return -99;
 }
 
-bool ICACHE_FLASH_ATTR mappedTemperatureIsSet(int name) {
+bool ICACHE_FLASH_ATTR mappedTemperatureIsSet(uint8 name) {
 	return temperature[sysCfg.mapping[name]].set;
 }
 

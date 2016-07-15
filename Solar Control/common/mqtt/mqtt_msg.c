@@ -31,7 +31,10 @@
 
 #include <string.h>
 #include "mqtt_msg.h"
+#include "user_interface.h"
+#include "osapi.h"
 #include "user_config.h"
+#include "debug.h"
 #define MQTT_MAX_FIXED_HEADER_SIZE 3
 
 enum mqtt_connect_flag
@@ -60,33 +63,42 @@ struct __attribute((__packed__)) mqtt_connect_variable_header
   uint8_t keepaliveLsb;
 };
 
-static int ICACHE_FLASH_ATTR append_string(mqtt_connection_t* connection, const char* string, int len)
-{
-  if(connection->message.length + len + 2 > connection->buffer_length)
-    return -1;
+static int ICACHE_FLASH_ATTR append_string(mqtt_connection_t* connection, const char* string,
+		int len) {
+	if (!(0x3fff0000 <= (uint32)connection->buffer && (uint32)connection->buffer <= 0x3fffffff)) {
+		ERRORP("mq_as %x  ", connection->buffer);
+		return -1;
+	}
 
-  connection->buffer[connection->message.length++] = len >> 8;
-  connection->buffer[connection->message.length++] = len & 0xff;
-  memcpy(connection->buffer + connection->message.length, string, len);
-  connection->message.length += len;
+	if (connection->message.length + len + 2 > connection->buffer_length)
+		return -1;
 
-  return len + 2;
+	connection->buffer[connection->message.length++] = len >> 8;
+	connection->buffer[connection->message.length++] = len & 0xff;
+	memcpy(connection->buffer + connection->message.length, string, len);
+	connection->message.length += len;
+
+	return len + 2;
 }
 
-static uint16_t ICACHE_FLASH_ATTR append_message_id(mqtt_connection_t* connection, uint16_t message_id)
-{
-  // If message_id is zero then we should assign one, otherwise
-  // we'll use the one supplied by the caller
-  while(message_id == 0)
-    message_id = ++connection->message_id;
+static uint16_t ICACHE_FLASH_ATTR append_message_id(mqtt_connection_t* connection,
+		uint16_t message_id) {
+	// If message_id is zero then we should assign one, otherwise
+	// we'll use the one supplied by the caller
+	if (!connection->buffer) {
+		ERRORP("mq_am %x  ", connection->buffer);
+		return 0;
+	}
+	while (message_id == 0)
+		message_id = ++connection->message_id;
 
-  if(connection->message.length + 2 > connection->buffer_length)
-    return 0;
+	if (connection->message.length + 2 > connection->buffer_length)
+		return 0;
 
-  connection->buffer[connection->message.length++] = message_id >> 8;
-  connection->buffer[connection->message.length++] = message_id & 0xff;
+	connection->buffer[connection->message.length++] = message_id >> 8;
+	connection->buffer[connection->message.length++] = message_id & 0xff;
 
-  return message_id;
+	return message_id;
 }
 
 static int ICACHE_FLASH_ATTR init_message(mqtt_connection_t* connection)
@@ -125,11 +137,13 @@ static mqtt_message_t* ICACHE_FLASH_ATTR fini_message(mqtt_connection_t* connect
   return &connection->message;
 }
 
-void ICACHE_FLASH_ATTR mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer, uint16_t buffer_length)
-{
-  memset(connection, 0, sizeof(connection));
-  connection->buffer = buffer;
-  connection->buffer_length = buffer_length;
+void ICACHE_FLASH_ATTR mqtt_msg_init(mqtt_connection_t* connection, uint8_t* buffer,
+		uint16_t buffer_length) {
+	if (!buffer)
+		TESTP("mqtt_msg_init buffer == 0 \n");
+	memset(connection, 0, sizeof(connection));
+	connection->buffer = buffer;
+	connection->buffer_length = buffer_length;
 }
 
 int ICACHE_FLASH_ATTR mqtt_get_total_length(uint8_t* buffer, uint16_t length)

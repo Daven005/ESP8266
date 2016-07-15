@@ -14,7 +14,7 @@ typedef enum { PUMP_UNKNOWN, PUMP_OFF_NORMAL, PUMP_ON_NORMAL, PUMP_OFF_OVERRIDE,
 pumpState_t pumpState(void);
 void clearPumpOverride(void);
 bool outputState(uint8 id);
-
+bool switchInConfigMode(void);
 void checkSetOutput(uint8 op, uint8 set);
 void overrideSetOutput(uint8 op, uint8 set);
 void overrideClearOutput(uint8 id);
