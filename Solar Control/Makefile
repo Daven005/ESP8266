@@ -13,7 +13,7 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_151
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
@@ -26,14 +26,14 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user common/mqtt common/driver common/temperature
+MODULES		= user common/mqtt common/temperature common/driver
 EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl pwm smartconfig
+LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -Wno-implicit -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wmissing-prototypes -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -Wl,-M=SolarControl.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -74,7 +74,7 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 VERBOSE := 0
 
 V ?= $(VERBOSE)
-ifeq ("$(V)","1")
+ifeq ("$(V)","0")
 Q :=
 vecho := @true
 else
@@ -117,7 +117,7 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
 	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
 	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-#	$(Q) $(OBJDUMP) -S -l $@ >obj.txt
+	$(Q) $(OBJDUMP) -S -l $@ >obj.txt
 	$(vecho) "Run gen_appbin.exe"
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin

@@ -41,8 +41,7 @@
 SYSCFG sysCfg;
 SAVE_FLAG saveFlag;
 
-void ICACHE_FLASH_ATTR
-CFG_Save() {
+void ICACHE_FLASH_ATTR CFG_Save(void) {
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE, (uint32 *) &saveFlag,
 			sizeof(SAVE_FLAG));
 
@@ -120,6 +119,7 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		CFG_Save();
 	}
 }
+
 uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {
 	if (sysCfg.updates) return sysCfg.updates;
 	return UPDATES;

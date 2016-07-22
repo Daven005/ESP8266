@@ -6,6 +6,24 @@
 #include "jsmn.h"
 
 
+static char *typeStr(int t) {
+	switch (t) {
+	case JSMN_PRIMITIVE: return "prim  ";
+	case JSMN_OBJECT: return "obj   ";
+	case JSMN_ARRAY: return "array ";
+	case JSMN_STRING: return "string";
+	}
+	return "?";
+}
+
+void ICACHE_FLASH_ATTR printJSMN(char *s, int start, jsmntok_t *t, int tCount) {
+	int idx;
+	os_printf("%s:\nobj[%d] type: %s, size: %d @:%d-%d\n", s, start, typeStr(t[0].type), t[0].size, t[0].start, t[0].end);
+	for (idx=1; idx<=tCount; idx++) {
+		os_printf("tok[%d] type: %s, size: %d @%d-%d\n", idx, typeStr(t[idx].type), t[idx].size, t[idx].start, t[idx].end);
+	}
+}
+
 bool ICACHE_FLASH_ATTR jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 	if (tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start
 			&& os_strncmp(json + tok->start, s, tok->end - tok->start) == 0) {

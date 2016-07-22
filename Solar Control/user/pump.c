@@ -16,13 +16,16 @@
 #include "user_config.h"
 #include "debug.h"
 #include "mqtt.h"
+#include "pump.h"
 
 static os_timer_t flowCheck_timer;
 static uint8  cloud[3] = { 10, 10, 10 };
-static int sunAzimuth, sunAltitdude;
+typedef struct { int sunAzimuth; int sunAltitdude; } sunPosition_t;
+static sunPosition_t sunPosition[3];
+
 static float lastSupplyTemperature = 0;
 
-void ICACHE_FLASH_ATTR checkPumpActionFlash(void) {
+static void ICACHE_FLASH_ATTR checkPumpActionFlash(void) {
 	static pumpState_t lastPumpState = PUMP_UNKNOWN;
 	pumpState_t thisPumpState = pumpState();
 	static bool lastConfigMode;
@@ -67,20 +70,24 @@ void ICACHE_FLASH_ATTR setCloud(int idx, int c) {
 	}
 }
 
-void ICACHE_FLASH_ATTR setSun(int az, int alt) {
-	if (-180 <= az && az <= 180) sunAzimuth = az;
-	if (-45 <= alt && alt <= 45) sunAltitdude = alt;
+void ICACHE_FLASH_ATTR setSun(int idx, int az, int alt) {
+	TESTP("Sun[%d] az:%d alt:%d", idx, az, alt);
+	if (idx >= 3) return;
+	if (-90 <= az && az <= 90) sunPosition[idx].sunAzimuth = az;
+	if (-45 <= alt && alt <= 45) sunPosition[idx].sunAltitdude = alt;
 }
 
 bool ICACHE_FLASH_ATTR sunnyEnough(void) {
 	if (cloud[0] <= 7 || cloud[1] <= 7) {
-		if (-40 <= sunAltitdude && sunAltitdude <= 40)
+		if (-40 <= sunPosition[0].sunAltitdude && sunPosition[0].sunAltitdude <= 40)
+			return true;
+		if (-40 <= sunPosition[1].sunAltitdude && sunPosition[1].sunAltitdude <= 40)
 			return true;
 	}
 	return false;
 }
 
-void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
+static void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
 	TESTP("*");
 	if (flowAverageReading() <= 1) {
 		switch (pumpState()) {
@@ -98,12 +105,12 @@ void ICACHE_FLASH_ATTR flowCheck_cb(uint32_t *args) {
 	}
 }
 
-void ICACHE_FLASH_ATTR turnOffOverride() {
+void ICACHE_FLASH_ATTR turnOffOverride(void) {
 	clearPumpOverride();
 	checkPumpActionFlash();
 }
 
-void ICACHE_FLASH_ATTR startPumpNormal(void) {
+static void ICACHE_FLASH_ATTR startPumpNormal(void) {
 	switch (pumpState()) {
 	case PUMP_OFF_NORMAL:
 		TESTP("Start Pump\n");
@@ -134,7 +141,7 @@ void ICACHE_FLASH_ATTR startPumpOverride(void) {
 	os_timer_arm(&flowCheck_timer, 100000, 0); // Allow to run for 10S if override
 }
 
-void ICACHE_FLASH_ATTR stopPumpNormal(void) {
+static void ICACHE_FLASH_ATTR stopPumpNormal(void) {
 	switch (pumpState()) {
 	case PUMP_OFF_NORMAL:
 	case PUMP_OFF_OVERRIDE:
@@ -166,28 +173,33 @@ void ICACHE_FLASH_ATTR processPump(void) {
 	static pumpDelayOn = 0;
 	static pumpDelayOff = 0;
 	bool runPump = false;
+	int tempBottom = mappedTemperature(MAP_TEMP_TS_BOTTOM);
+	int tempSupply = mappedTemperature(MAP_TEMP_SUPPLY);
+	int tempPanel = mappedTemperature(MAP_TEMP_PANEL);
+
+	if (tempBottom == -99) tempBottom = 60; // Use default if not yet received it
 
 	switch (pumpState()) {
 	case PUMP_OFF_NORMAL:
-		if (mappedTemperature(MAP_TEMP_SUPPLY) > mappedTemperature(MAP_TEMP_TS_BOTTOM)) {
+		if (tempSupply > tempBottom) {
 			// Already heat in supply pipe
-			runPump = mappedTemperature(MAP_TEMP_PANEL)
-					> (mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP]);
+			runPump = tempPanel
+					> (tempBottom + sysCfg.settings[SET_PANEL_TEMP]);
 		} else {
 			// Get extra heat to warm pipe
-			runPump = mappedTemperature(MAP_TEMP_PANEL)
-					> (mappedTemperature(MAP_TEMP_TS_BOTTOM) + 2 * sysCfg.settings[SET_PANEL_TEMP]);
+			runPump = tempPanel
+					> (tempBottom + 2 * sysCfg.settings[SET_PANEL_TEMP]);
 		}
 		break;
 	case PUMP_ON_NORMAL:
 		do { // Keep pumping until supply gets 'colder'
 			float newSupplyTemperature = mappedFloatTemperature(MAP_TEMP_SUPPLY);
 			// Panel is still hot enough to get started
-			runPump = mappedTemperature(MAP_TEMP_PANEL)
-					> (mappedTemperature(MAP_TEMP_TS_BOTTOM) + sysCfg.settings[SET_PANEL_TEMP]);
+			runPump = tempPanel
+					> (tempBottom + sysCfg.settings[SET_PANEL_TEMP]);
 			// Supply temperature above tank
-			runPump |= (mappedTemperature(MAP_TEMP_SUPPLY)
-					> (1 + mappedTemperature(MAP_TEMP_TS_BOTTOM)));
+			runPump |= (tempSupply
+					> (1 + tempBottom));
 			// Keep running if supply temperature is still increasing
 			runPump |= (newSupplyTemperature > lastSupplyTemperature);
 			lastSupplyTemperature = newSupplyTemperature;

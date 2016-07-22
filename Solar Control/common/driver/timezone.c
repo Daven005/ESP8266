@@ -19,9 +19,9 @@
 #include <os_type.h>
 #include <osapi.h>
 #include "time.h"
+#include "timezone.h"
 
 void ICACHE_FLASH_ATTR applyDST(struct tm *time) {
-
 	bool dst = false;
 
 	// apply base timezone offset

@@ -165,7 +165,7 @@ static void ICACHE_FLASH_ATTR replyOK(struct espconn *conn) {
 
 static void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned short len) {
 	HttpdConnData c;
-	char bfr[100];
+	char bfr[100] = { 0 };
 	struct espconn *conn = (struct espconn*) arg;
 
 	httpdParseHeader(pData, &c);

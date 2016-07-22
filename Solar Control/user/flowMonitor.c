@@ -17,21 +17,26 @@
 #include "user_config.h"
 #include "IOdefs.h"
 #include "debug.h"
+#include "dtoa.h"
 #include "flowMonitor.h"
 
+#define round(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
+
 LOCAL os_timer_t flow_timer;
-static uint16 oneSecFlowCount;
+uint16 oneSecFlowCount;
 static uint16 oneSecCount;
 static uint16 flowCount; // Interrupt variable
 static uint16 flowCountPerReading;
 static uint16 flowMax;
 static uint16 flowMin;
 static uint16 flowAverage; // NB is * 16
-static int32 power; // watts
-static int32 energy; // wattSeconds
+static double power; // watts
+static double energy; // wattSeconds
+static double flow; // l/s
 
  void ICACHE_FLASH_ATTR resetFlowReadings(void) {
-	flowCountPerReading = oneSecCount = flowMax = energy = 0;
+	flowCountPerReading = oneSecCount = flowMax = 0;
+	energy = 0.0;
 	flowMin = 60000;
 }
 
@@ -76,8 +81,20 @@ static void flowIntrHandler(void *arg) {
 	}
 }
 
-int32 ICACHE_FLASH_ATTR energyReading(void) {
+float ICACHE_FLASH_ATTR energyReading(void) {
 	return energy;
+}
+
+void ICACHE_FLASH_ATTR calcFlows(void) {
+#define SH 4.2 // Specific Heat = 4.2 KJ/K°C = KJ/l°C = KW/l°C
+	double tp, ts, tb;
+	mappedFloatPtrTemperature(MAP_TEMP_PANEL, &tp);
+	mappedFloatPtrTemperature(MAP_TEMP_SUPPLY, &ts);
+	mappedFloatPtrTemperature(MAP_TEMP_TS_BOTTOM, &tb);
+
+	flow = (double) oneSecFlowCount / sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]; // in litres/sec
+	power = SH * flow * (ts - tb); // KW
+	energy += power; // KWs
 }
 
 static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
@@ -96,16 +113,19 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 		flowMax = oneSecFlowCount;
 	}
 	oneSecCount++;
-	power = oneSecFlowCount * 60 * 1000;
-	power = power * (mappedTemperature(MAP_TEMP_SUPPLY) - mappedTemperature(MAP_TEMP_TS_BOTTOM));
-	power = power / (14 * sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]);
-	energy += power;
+	calcFlows();
 }
 
 void ICACHE_FLASH_ATTR printFlows(void) {
-	TESTP("fl:%d p:%d e:%d tp:%d ts:%d tb:%d\n", oneSecFlowCount, power, energy,
-			mappedTemperature(MAP_TEMP_PANEL), mappedTemperature(MAP_TEMP_SUPPLY),
-			mappedTemperature(MAP_TEMP_TS_BOTTOM));
+	char s0[50], s1[50], s2[50];
+	TESTP("fl:%s p:%s e:%s ",
+			dtoStr(flow, 6, 3, s0),
+			dtoStr(power, 10, 2, s1),
+			dtoStr(energy, 12, 2, s2));
+	TESTP("tp:%s ts:%s tb:%s\n",
+			mappedStrTemperature(MAP_TEMP_PANEL, s0),
+			mappedStrTemperature(MAP_TEMP_SUPPLY, s1),
+			mappedStrTemperature(MAP_TEMP_TS_BOTTOM, s2));
 }
 
 void ICACHE_FLASH_ATTR initFlowMonitor(void) {

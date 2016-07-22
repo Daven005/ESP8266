@@ -15,7 +15,7 @@
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
-#define MQTT_BUF_SIZE		512
+#define MQTT_BUF_SIZE		750 // Allow for initial bunch of retained messages
 #define MQTT_KEEPALIVE		120	 /*second*/
 
 #define MQTT_CLIENT_ID		"Hollies%lx"

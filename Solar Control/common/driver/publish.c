@@ -17,6 +17,8 @@
 #include "config.h"
 #include "mqtt.h"
 #include "temperature.h"
+#include "publish.h"
+#include "check.h"
 
 static MQTT_Client *mqttClient;
 
@@ -27,7 +29,7 @@ void ICACHE_FLASH_ATTR publishAllTemperatures(void) {
 	if (mqttIsConnected()) {
 		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
 		if (topic == NULL || data == NULL) {
-			TESTP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -52,7 +54,7 @@ void ICACHE_FLASH_ATTR publishTemperature(int idx) {
 	if (mqttIsConnected()) {
 		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
 		if (topic == NULL || data == NULL) {
-			TESTP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -76,7 +78,7 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 		return; // Ignore repeated errors
 	char *topic = (char*) os_malloc(50), *data = (char*) os_malloc(100);
 	if (topic == NULL || data == NULL) {
-		TESTP("malloc err %s/%s\n", topic, data);
+		ERRORP("malloc err %s/%s\n", topic, data);
 		startFlash(-1, 50, 50); // fast
 		return;
 	}
@@ -98,7 +100,7 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	char *topic = (char*) os_malloc(50);
 	char *data = (char*) os_malloc(100);
 	if (topic == NULL || data == NULL) {
-		TESTP("malloc err %s/%s\n", topic, data);
+		ERRORP("malloc err %s/%s\n", topic, data);
 		startFlash(-1, 50, 50); // fast
 		return;
 	}
@@ -118,7 +120,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 		char *data = (char *) os_zalloc(200);
 		int idx;
 		if (topic == NULL || data == NULL) {
-			TESTP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -143,7 +145,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 		int idx;
 		struct ip_info ipConfig;
 		if (topic == NULL || data == NULL) {
-			TESTP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -179,7 +181,7 @@ void ICACHE_FLASH_ATTR publishMapping(void) {
 		int idx;
 
 		if (topic == NULL || data == NULL) {
-			TESTP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -204,7 +206,7 @@ void ICACHE_FLASH_ATTR publishInput(uint8 idx, uint8 val) {
 	if (mqttIsConnected()) {
 		char *topic = (char*) os_malloc(50), *data = (char*) os_malloc(100);
 		if (topic == NULL || data == NULL) {
-			TESTP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 50, 50); // fast
 			return;
 		}
@@ -225,7 +227,7 @@ void ICACHE_FLASH_ATTR publishOutput(uint8 idx, uint8 val) {
 	if (mqttIsConnected()) {
 		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(200);
 		if (topic == NULL || data == NULL) {
-			INFOP("malloc err %s/%s\n", topic, data);
+			ERRORP("malloc err %s/%s\n", topic, data);
 			startFlash(-1, 20, 20); // fast
 			return;
 		}

@@ -17,5 +17,8 @@ uint16 flowAverageReading(void);
 uint16 flowCurrentReading(void);
 uint16 flowInLitresPerHour(void);
 void initFlowMonitor(void);
+float energyReading(void);
+void printFlows(void);
+void calcFlows(void);
 
 #endif /* USER_INCLUDE_FLOWMONITOR_H_ */

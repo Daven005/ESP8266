@@ -11,6 +11,7 @@
 #include <user_interface.h>
 #include "user_config.h"
 #include "debug.h"
+#include "flash.h"
 
 #ifdef LED
 static os_timer_t flash_timer;

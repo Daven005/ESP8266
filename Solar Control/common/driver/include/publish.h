@@ -9,7 +9,8 @@
 #define USER_PUBLISH_H_
 
 #include "mqtt.h"
-void publishTemperatures(uint8 idx);
+void publishAllTemperatures(void);
+void publishTemperature(int idx);
 void publishError(uint8 err, int info);
 void publishAlarm(uint8 alarm, int info);
 void publishDeviceReset(char *version, int lastAction);

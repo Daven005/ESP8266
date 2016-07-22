@@ -20,7 +20,7 @@ void overrideSetOutput(uint8 op, uint8 set);
 void overrideClearOutput(uint8 id);
 void checkOutputs(void);
 override_t getOverride(uint8);
-
+void initIO(void);
 void printOutput(uint8 op);
 
 #endif /* INCLUDE_OVERRIDEIO_H_ */

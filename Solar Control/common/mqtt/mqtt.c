@@ -110,9 +110,7 @@ deliver_publish(MQTT_Client* client, uint8_t* message, int length)
   * @param  len: the lenght of received data
   * @retval None
   */
-void ICACHE_FLASH_ATTR
-mqtt_tcpclient_recv(void *arg, char *pdata, unsigned short len)
-{
+static void ICACHE_FLASH_ATTR mqtt_tcpclient_recv(void *arg, char *pdata, unsigned short len) {
 	uint8_t msg_type;
 	uint8_t msg_qos;
 	uint16_t msg_id;
@@ -222,7 +220,7 @@ READPACKET:
 			break;
 		}
 	} else {
-		ERRORP("MQTT: Message too long\n");
+		ERRORP("MQTT: Message too long (%d)\n", len);
 	}
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t)client);
 }
@@ -232,9 +230,7 @@ READPACKET:
   * @param  arg: contain the ip link information
   * @retval None
   */
-void ICACHE_FLASH_ATTR
-mqtt_tcpclient_sent_cb(void *arg)
-{
+static void ICACHE_FLASH_ATTR mqtt_tcpclient_sent_cb(void *arg) {
 	struct espconn *pCon = (struct espconn *)arg;
 	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
 	INFOP("TCP: Sent\n");
@@ -246,7 +242,7 @@ mqtt_tcpclient_sent_cb(void *arg)
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t)client);
 }
 
-void ICACHE_FLASH_ATTR mqtt_timer(void *arg)
+static void ICACHE_FLASH_ATTR mqtt_timer(void *arg)
 {
 	MQTT_Client* client = (MQTT_Client*)arg;
 
@@ -282,9 +278,7 @@ void ICACHE_FLASH_ATTR mqtt_timer(void *arg)
 		client->sendTimeout --;
 }
 
-void ICACHE_FLASH_ATTR
-mqtt_tcpclient_discon_cb(void *arg)
-{
+static void ICACHE_FLASH_ATTR mqtt_tcpclient_discon_cb(void *arg) {
 
 	struct espconn *pespconn = (struct espconn *)arg;
 	MQTT_Client* client = (MQTT_Client *)pespconn->reverse;
@@ -301,9 +295,7 @@ mqtt_tcpclient_discon_cb(void *arg)
   * @param  arg: contain the ip link information
   * @retval None
   */
-void ICACHE_FLASH_ATTR
-mqtt_tcpclient_connect_cb(void *arg)
-{
+static void ICACHE_FLASH_ATTR mqtt_tcpclient_connect_cb(void *arg) {
 	struct espconn *pCon = (struct espconn *)arg;
 	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
 
@@ -337,9 +329,7 @@ mqtt_tcpclient_connect_cb(void *arg)
   * @param  arg: contain the ip link information
   * @retval None
   */
-void ICACHE_FLASH_ATTR
-mqtt_tcpclient_recon_cb(void *arg, sint8 errType)
-{
+static void ICACHE_FLASH_ATTR mqtt_tcpclient_recon_cb(void *arg, sint8 errType) {
 	struct espconn *pCon = (struct espconn *)arg;
 	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
 
@@ -349,7 +339,7 @@ mqtt_tcpclient_recon_cb(void *arg, sint8 errType)
 
 }
 
-bool ICACHE_FLASH_ATTR checkMQTTi(MQTT_Client *client, int i) {
+static bool ICACHE_FLASH_ATTR checkMQTTi(MQTT_Client *client, int i) {
 	mqtt_connection_t *connection = &client->mqtt_state.mqtt_connection;
 	INFOP("%x ", client);
 	if (0x3fff0000 <= (uint32) connection->buffer && (uint32) connection->buffer <= 0x3fffffff) {
@@ -430,9 +420,7 @@ MQTT_Subscribe(MQTT_Client *client, char* topic, uint8_t qos)
 	return TRUE;
 }
 
-void ICACHE_FLASH_ATTR
-MQTT_Task(os_event_t *e)
-{
+static void ICACHE_FLASH_ATTR MQTT_Task(os_event_t *e) {
 	MQTT_Client* client = (MQTT_Client*)e->par;
 	uint8_t dataBuffer[MQTT_BUF_SIZE];
 	uint16_t dataLen;
