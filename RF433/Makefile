@@ -26,14 +26,14 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user mqtt modules driver
-EXTRA_INCDIR    = include $(SDK_BASE)/include
+MODULES		= user common/mqtt common/temperature common/driver
+EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wmissing-prototypes -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -Wl,-M=RF433.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -90,14 +90,17 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean newversion newbuild newrevision
+.PHONY: all checkdirs clean newversion newbuild newrevision size fread fread1
 
 all: checkdirs $(TARGET_OUT)
+
+size:
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 flash_id
 
 newversion:
 	incVersion 0
 	touch user/user_main.c
-	
+
 newbuild:
 	incVersion 3
 	touch user/user_main.c
@@ -114,14 +117,14 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
 	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
 	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-	$(vecho) "objcopy done"
+#	$(Q) $(OBJDUMP) -S -l $@ >obj.txt
 	$(vecho) "Run gen_appbin.exe"
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
-#	$(Q) rm eagle.app.sym
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
+	$(Q) rm eagle.app.sym
+	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder " $(FW_BASE)
 	$(vecho) "eagle.flash.bin-------->0x00000"
 	$(vecho) "eagle.irom0text.bin---->$(ROM0_ADDR)"
 	$(vecho) "Done"
@@ -160,6 +163,12 @@ flashonefile: all
 
 flash: all
 	$(ESPTOOL) -p $(ESPPORT) -b 115200 write_flash 0x00000 firmware/eagle.flash.bin $(ROM0_ADDR) firmware/eagle.irom0text.bin
+
+fread:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 read_flash  0x00000  0x1000  firmware/eagle.flashRead.bin
+
+fread1:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 read_flash  $(ROM0_ADDR) 0x1000 firmware/eagle.irom0textRead.bin
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."

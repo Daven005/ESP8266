@@ -18,73 +18,57 @@
 #include "debug.h"
 #include "mqtt.h"
 #include "jsmn.h"
+#include "switch.h"
+#include "flash.h"
+#include "check.h"
+#include "http.h"
+#include "publish.h"
 #include "smartconfig.h"
+#include "doSmartConfig.h"
+#include "user_main.h"
 #include "version.h"
-#ifdef USE_TEMPERATURE
-#include "temperature.h"
-#endif
 #include "time.h"
+#include "xmit.h"
 
-enum SmartConfigAction {
-	SC_CHECK, SC_HAS_STOPPED, SC_TOGGLE
-};
-static os_timer_t switch_timer;
-static os_timer_t flash_timer;
-static os_timer_t transmit_timer;
-static os_timer_t date_timer;
-static os_timer_t process_timer;
-static os_timer_t setup_timer;
-static os_timer_t mqtt_timer;
-
+os_timer_t transmit_timer;
+os_timer_t date_timer;
 static uint8 wifiChannel = 255;
-static int flashCount;
-static unsigned int switchCount;
+
 uint8 mqttConnected;
-enum {
+enum lastAction_t {
 	IDLE, RESTART, FLASH, IPSCAN, SWITCH_SCAN,
-	INIT_DONE, MQTT_DATA_CB, MQTT_CONNECTED_CB, MQTT_DISCONNECTED_CB, SMART_CONFIG
+	INIT_DONE, MQTT_DATA_CB, MQTT_DATA_FUNC, MQTT_CONNECTED_CB, MQTT_CONNECTED_FUNC,
+	MQTT_DISCONNECTED_CB, SMART_CONFIG,
+	PROCESS_CB, PROCESS_FUNC, DS18B20_CB, WIFI_CONNECT_CHANGE=100
 } lastAction __attribute__ ((section (".noinit")));
+enum lastAction_t savedLastAction;
+
+typedef struct { MQTT_Client *mqttClient; char *topic; char *data; } mqttData_t;
+#define QUEUE_SIZE 20
+static os_event_t taskQueue[QUEUE_SIZE];
+#define EVENT_MQTT_CONNECTED 1
+#define EVENT_MQTT_DATA 2
+#define EVENT_PROCESS_TIMER 3
+#define EVENT_TRANSMIT 4
+
 MQTT_Client mqttClient;
 bool setupMode = false;
 static char bestSSID[33];
 
-static bool checkSmartConfig(enum SmartConfigAction action);
-void publishError(uint8 err, int info);
+void user_rf_pre_init(void);
 
-void checkCanSleep();
 void user_rf_pre_init(void) {}
 
-uint32 ICACHE_FLASH_ATTR checkMinHeap(void) {
-	static uint32 minHeap = 0xffffffff;
-	uint32 heap = system_get_free_heap_size();
-	if (heap < minHeap)
-		minHeap = heap;
-	return minHeap;
+bool ICACHE_FLASH_ATTR mqttIsConnected(void) {
+	return mqttConnected;
 }
 
-int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[]) {
-	char *endString;
-	char *startString;
+void ICACHE_FLASH_ATTR stopConnection(void) {
+	MQTT_Disconnect(&mqttClient);
+}
 
-	startString = string;
-	while (*string) {
-		if (*string == delim)
-			*string = '\0';
-		string++;
-	}
-	endString = string;
-	string = startString;
-	int idx = 0;
-	if (*string == '\0')
-		string++; // Ignore 1st leading delimiter
-	while (string < endString) {
-		tokens[idx] = string;
-		string++;
-		idx++;
-		while (*string++)
-			;
-	}
-	return idx;
+void ICACHE_FLASH_ATTR startConnection(void) {
+	MQTT_Connect(&mqttClient);
 }
 
 static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in BYTES
@@ -97,63 +81,18 @@ static size_t ICACHE_FLASH_ATTR fs_size() { // returns the flash chip's size, in
   return 1 << size_id;
 }
 
-#ifdef LED
-void ICACHE_FLASH_ATTR stopFlash(void) {
-	easygpio_outputSet(LED, 0);
-	os_timer_disarm(&flash_timer);
-}
-
-void ICACHE_FLASH_ATTR flash_cb(void) {
-	easygpio_outputSet(LED, !easygpio_inputGet(LED));
-	if (flashCount > 0)
-		flashCount--;
-	else if (flashCount == 0)
-		stopFlash();
-	// else -ve => continuous
-}
-
-void ICACHE_FLASH_ATTR startFlashCount(int t, unsigned int f) {
-	easygpio_outputSet(LED, 1);
-	flashCount = f * 2;
-	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
-	os_timer_arm(&flash_timer, t, true);
-}
-
-void ICACHE_FLASH_ATTR startFlash(int t, int repeat) {
-	easygpio_outputSet(LED, 1);
-	flashCount = -1;
-	os_timer_disarm(&flash_timer);
-	os_timer_setfn(&flash_timer, (os_timer_func_t *) flash_cb, (void *) 0);
-	os_timer_arm(&flash_timer, t, true);
-}
-#endif
-
-void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
-	static uint8 last_err = 0xff;
-	static int last_info = -1;
-	if (err == last_err && info == last_info)
-		return; // Ignore repeated errors
-	char *topic = (char*) os_malloc(50), *data = (char*) os_malloc(100);
-	if (topic == NULL || data == NULL) {
-		startFlash(50, true); // fast
-		return;
-	}
-	os_sprintf(topic, (const char*) "/Raw/%s/error", sysCfg.device_id);
-	os_sprintf(data, (const char*) "{ \"error\":%d, \"info\":%d}", err, info);
-	MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, 0);
-	checkMinHeap();
-	os_free(topic);
-	os_free(data);
-}
-
-void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
+static void ICACHE_FLASH_ATTR publishData(void) {
 	if (mqttConnected) {
 		char *topic = (char *) os_zalloc(100);
 		char *data = (char *) os_zalloc(100);
+		if (topic == NULL || data == NULL) {
+			ERRORP("malloc err %s/%s\n", topic, data);
+			startFlash(-1, 50, 50); // fast
+			return;
+		}
 		os_sprintf(topic, (const char*) "/Raw/%s/0/info", sysCfg.device_id);
 		os_sprintf(data, (const char*) "{ \"Type\":\"Level\", \"Value\":%d}", system_adc_read());
-		MQTT_Publish(client, topic, data, strlen(data), 0, false);
+		MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, false);
 		TESTP("%s=>%s\n", topic, data);
 		checkMinHeap();
 		os_free(topic);
@@ -161,185 +100,45 @@ void ICACHE_FLASH_ATTR publishData(MQTT_Client* client) {
 	}
 }
 
-void ICACHE_FLASH_ATTR publishDeviceInfo(MQTT_Client* client) {
-	if (mqttConnected) {
-		char *topic = (char *) os_zalloc(50);
-		char *data = (char *) os_zalloc(300);
-		int idx;
-		struct ip_info ipConfig;
-#if SLEEP_MODE == 1
-#define MODE "s"
-#else
-#define MODE "a"
-#endif
-		if (topic == NULL || data == NULL) {
-			startFlash(50, true); // fast
-			return;
-		}
-		wifi_get_ip_info(STATION_IF, &ipConfig);
-
-		os_sprintf(topic, "/Raw/%10s/info", sysCfg.device_id);
-		os_sprintf(data,
-				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s(%s)\", "
-				"\"Updates\":%d, \"Inputs\":%d, \"RSSI\":%d, \"Channel\": %d, \"Attempts\": %d, ",
-				sysCfg.deviceName, sysCfg.deviceLocation, version, MODE, sysCfg.updates,
-				sysCfg.inputs, wifi_station_get_rssi(), wifiChannel, WIFI_Attempts());
-		os_sprintf(data + strlen(data), "\"IPaddress\":\"%d.%d.%d.%d\"", IP2STR(&ipConfig.ip.addr));
-		os_sprintf(data + strlen(data),", \"AP\":\"%s\"", bestSSID);
-		os_sprintf(data + strlen(data),", \"Settings\":[");
-		for (idx = 0; idx < SETTINGS_SIZE; idx++) {
-			if (idx != 0)
-				os_sprintf(data + strlen(data), ", ");
-			os_sprintf(data + strlen(data), "%d", sysCfg.settings[idx]);
-		}
-		os_sprintf(data + strlen(data), "]}");
-		MQTT_Publish(client, topic, data, strlen(data), 0, true);
-		INFOP("%s=>%s\n", topic, data);
-		checkMinHeap();
-		os_free(topic);
-		os_free(data);
-	}
+void ICACHE_FLASH_ATTR _publishDeviceInfo(void) {
+	publishDeviceInfo(version, "RF433", wifiChannel, WIFI_Attempts(), getBestSSID(), 0);
 }
 
-void ICACHE_FLASH_ATTR publishDeviceReset(MQTT_Client* client) {
-	if (mqttConnected) {
-		char *topic = (char *) os_zalloc(50);
-		char *data = (char *) os_zalloc(100);
-		int idx;
-
-		os_sprintf(topic, "/Raw/%10s/reset", sysCfg.device_id);
-		os_sprintf(data,
-				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":%d, \"LastAction\":%d}",
-				sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason,
-				lastAction);
-		INFOP("%s=>%s\n", topic, data);
-		MQTT_Publish(client, topic, data, strlen(data), 0, false);
-		checkMinHeap();
-		os_free(topic);
-		os_free(data);
-	}
-}
-
-#ifdef USE_SMART_CONFIG
-void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
-	switch (status) {
-	case SC_STATUS_WAIT:
-		INFOP("SC_STATUS_WAIT\n");
-		break;
-	case SC_STATUS_FIND_CHANNEL:
-		INFOP("SC_STATUS_FIND_CHANNEL\n");
-		break;
-	case SC_STATUS_GETTING_SSID_PSWD:
-		INFOP("SC_STATUS_GETTING_SSID_PSWD\n");
-		break;
-	case SC_STATUS_LINK:
-		INFOP("SC_STATUS_LINK\n");
-		struct station_config *sta_conf = pdata;
-		wifi_station_set_config(sta_conf);
-		INFOP("Connected to %s (%s) %d", sta_conf->ssid, sta_conf->password, sta_conf->bssid_set);
-		strcpy(sysCfg.sta_ssid, sta_conf->ssid);
-		strcpy(sysCfg.sta_pwd, sta_conf->password);
-		wifi_station_disconnect();
-		wifi_station_connect();
-		break;
-	case SC_STATUS_LINK_OVER:
-		INFOP("SC_STATUS_LINK_OVER\n");
-		smartconfig_stop();
-		checkSmartConfig(SC_HAS_STOPPED);
-		break;
-	}
-}
-
-bool ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction action) {
-	static bool doingSmartConfig = false;
-
-	switch (action) {
-	case SC_CHECK:
-		break;
-	case SC_HAS_STOPPED:
-		INFOP("Finished smartConfig\n");
-		stopFlash();
-		doingSmartConfig = false;
-		MQTT_Connect(&mqttClient);
-		break;
-	case SC_TOGGLE:
-		if (doingSmartConfig) {
-			INFOP("Stop smartConfig\n");
-			stopFlash();
-			smartconfig_stop();
-			doingSmartConfig = false;
-			wifi_station_disconnect();
-			wifi_station_connect();
-			MQTT_Connect(&mqttClient);
-		} else {
-			INFOP("Start smartConfig\n");
-			MQTT_Disconnect(&mqttClient);
-			mqttConnected = false;
-			startFlash(100, true);
-			doingSmartConfig = true;
-			smartconfig_start(smartConfig_done, true);
-		}
-		break;
-	}
-	return doingSmartConfig;
-}
-#endif
-
-void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
-	MQTT_Client* client = (MQTT_Client*) args;
+static void ICACHE_FLASH_ATTR transmitCb(uint32_t args) { // Depends on Update period
 	if (!checkSmartConfig(SC_CHECK)) {
-		publishData(client);
+		if (!system_os_post(USER_TASK_PRIO_1, EVENT_TRANSMIT, 0))
+			ERRORP("Can't post EVENT_TRANSMIT\n");
+	}
+}
+
+static void ICACHE_FLASH_ATTR transmitFunc(void) {
+	if (!checkSmartConfig(SC_CHECK)) {
+		publishData();
 		checkMinHeap();
 	}
 }
 
-void ICACHE_FLASH_ATTR processCb() {
-
-}
-
-void ICACHE_FLASH_ATTR printAll() {
+static void ICACHE_FLASH_ATTR printAll() {
 	os_printf("Test\n");
 }
 
-#ifdef USE_WEB_CONFIG
-void ICACHE_FLASH_ATTR setup_cb(void) {
-	setupMode = false;
-	stopFlash();
-}
-
-void ICACHE_FLASH_ATTR toggleSetupMode(void) {
-	setupMode = !setupMode;
-	if (setupMode) {
-		os_timer_disarm(&setup_timer);
-		os_timer_setfn(&setup_timer, (os_timer_func_t *) setup_cb, (void *) 0);
-		os_timer_arm(&setup_timer, 10 * 60 * 1000, false); // Allow 10 minutes
-		startFlash(500, true);
-	} else {
-		os_timer_disarm(&setup_timer);
-		stopFlash();
-		checkCanSleep();
-	}
-}
-#endif
-
-#ifdef SWITCH
-void ICACHE_FLASH_ATTR switchAction(int action) {
+static void ICACHE_FLASH_ATTR switchAction(int action) {
 	static bool socketOn = false;
-	startFlashCount(100, action);
+	startFlash(action, 50, 100);
 	switch (action) {
 	case 1:
-		setGate(1);
-		break;
-	case 2:
-		setSocket(3, socketOn = !socketOn);
-		break;
-	case 3:
 		printAll();
 		os_printf("minHeap: %d\n", checkMinHeap());
 		break;
+	case 2:
+		setGate(1);
+		break;
+	case 3:
+		setSocket(3, socketOn = !socketOn);
+		break;
 	case 4:
 		if (!checkSmartConfig(SC_CHECK))
-			toggleSetupMode();
+			toggleHttpSetupMode();
 		break;
 	case 5:
 		checkSmartConfig(SC_TOGGLE);
@@ -347,145 +146,73 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 	}
 }
 
-void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) {
-	const int swOnMax = 100;
-	const int swOffMax = 5;
-	static int switchPulseCount;
-	static enum {
-		IDLE, ON, OFF
-	} switchState = IDLE;
-
-	if (!easygpio_inputGet(SWITCH)) { // Switch is active LOW
-		switch (switchState) {
-		case IDLE:
-			switchState = ON;
-			switchCount++;
-			switchPulseCount = 1;
-			break;
-		case ON:
-			if (++switchCount > swOnMax)
-				switchCount = swOnMax;
-			break;
-		case OFF:
-			switchState = ON;
-			switchCount = 0;
-			switchPulseCount++;
-			break;
-		default:
-			switchState = IDLE;
-			break;
-		}
-	} else {
-		switch (switchState) {
-		case IDLE:
-			break;
-		case ON:
-			switchCount = 0;
-			switchState = OFF;
-			break;
-		case OFF:
-			if (++switchCount > swOffMax) {
-				switchState = IDLE;
-				switchAction(switchPulseCount);
-				switchPulseCount = 0;
-			}
-			break;
-		default:
-			switchState = IDLE;
-			break;
-		}
-	}
-}
-#endif
-
-void ICACHE_FLASH_ATTR mqttPublishedCb(uint32_t *args) {
-	os_timer_disarm(&mqtt_timer);
-	os_timer_setfn(&mqtt_timer, (os_timer_func_t *) checkCanSleep, NULL);
-	os_timer_arm(&mqtt_timer, 2000, false); // Allow time for subscribed messages to arrive
-}
-
-void ICACHE_FLASH_ATTR checkCanSleep(void) {
-#if SLEEP_MODE == 1
-	if (!checkSmartConfig(SC_CHECK) && !setupMode) {
-		TESTP("Sleep %dS\n", sysCfg.updates);
-		system_deep_sleep_set_option(1); // Do RF calibration on wake up
-		system_deep_sleep(sysCfg.updates * 1000 * 1000);
-	} else {
-		mqttPublishedCb(NULL);
-	}
-#endif
-}
-
-void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
+static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	os_printf("WiFi status: %d\r\n", status);
 	if (status == STATION_GOT_IP) {
 		MQTT_Connect(&mqttClient);
-#ifdef WEB_CONFIG
 		tcp_listen(80);
-#endif
+		wifiChannel = wifi_get_channel();
 	} else {
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
 	}
 }
 
-void ICACHE_FLASH_ATTR dateTimerCb(void) {
+static void ICACHE_FLASH_ATTR dateTimerCb(void) {
 	os_printf("Nothing heard so restarting...\n");
 	system_restart();
 }
 
-void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
-	char *topic = (char*) os_zalloc(100), *data = (char*) os_zalloc(150 + 1);
+static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
+	if (!system_os_post(USER_TASK_PRIO_1, EVENT_MQTT_CONNECTED, (os_param_t) args))
+		ERRORP("Can't post EVENT_MQTT_CONNECTED\n");
+}
 
-	if (topic == NULL || data == NULL) {
-		startFlash(50, true); // fast
-		return;
-	}
-	MQTT_Client* client = (MQTT_Client*) args;
-	mqttConnected = true;
-	TESTP("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
+static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
+	uint32 t = system_get_time();
+	char *topic = (char*) os_zalloc(100);
+	static int reconnections = 0;
+
+	os_printf("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
 
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
 	INFOP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
+
 	os_sprintf(topic, "/Raw/%s/+/set/#", sysCfg.device_id);
 	INFOP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
-	os_sprintf(topic, "/Raw/%s/+/clear/#", sysCfg.device_id);
-	INFOP("Subscribe to: %s\n", topic);
-	MQTT_Subscribe(client, topic, 0);
+
 
 	MQTT_Subscribe(client, "/App/date", 0);
+	MQTT_Subscribe(client, "/App/refresh", 0);
 
-	publishDeviceReset(client);
-	publishDeviceInfo(client);
+	if (mqttConnected) { // Has REconnected
+		_publishDeviceInfo();
+		reconnections++;
+		publishError(51, reconnections);
+	} else {
+		publishDeviceReset(version, lastAction);
+		_publishDeviceInfo();
+		publishMapping();
 
-	os_timer_disarm(&switch_timer);
-	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
-	os_timer_arm(&switch_timer, 100, true);
+		os_timer_disarm(&date_timer);
+		os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
+		os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 
-	os_timer_disarm(&date_timer);
-	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
-	os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
-
-	os_timer_disarm(&transmit_timer);
-	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) client);
-	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
-
-	os_timer_disarm(&process_timer);
-	os_timer_setfn(&process_timer, (os_timer_func_t *) processCb, NULL);
-	os_timer_arm(&process_timer, 1000, true); // 1S
-
+		os_timer_disarm(&transmit_timer);
+		os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
+		os_timer_arm(&transmit_timer, sysCfgUpdates() * 1000, true);
+	}
 	checkMinHeap();
 	os_free(topic);
-	os_free(data);
-#ifdef LED
-	easygpio_outputSet(LED, 0);
-#endif
-	lastAction = MQTT_CONNECTED_CB;
+	easygpio_outputSet(LED, 0); // Turn LED off when connected
+	lastAction = MQTT_CONNECTED_FUNC;
+	mqttConnected = true;
+	checkTimeFunc("mqttConnectedFunc", t);
 }
 
-void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
+static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 //	MQTT_Client* client = (MQTT_Client*)args;
 	os_printf("MQTT Disconnected\n");
 	mqttConnected = false;
@@ -494,87 +221,44 @@ void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	}
 }
 
-static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_Client* client) {
-	if (strcmp("name", param) == 0) {
-		strcpy(sysCfg.deviceName, dataBuf);
-	} else if (strcmp("location", param) == 0) {
-		strcpy(sysCfg.deviceLocation, dataBuf);
-	} else if (strcmp("updates", param) == 0) {
-		sysCfg.updates = atoi(dataBuf);
-		os_timer_disarm(&mqtt_timer);
-		os_timer_arm(&mqtt_timer, sysCfg.updates * 1000, true);
-	} else if (strcmp("inputs", param) == 0) {
-		sysCfg.inputs = atoi(dataBuf);
-	}
-	publishDeviceInfo(client);
-	CFG_Save();
-}
-
-static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *param,
-		MQTT_Client* client) {
-	int id = atoi(idPtr);
-	int value = atoi(valPtr);
-	if (strcmp("setting", param) == 0) {
-		if (0 <= id && id < SETTINGS_SIZE) {
-			if (SET_MINIMUM <= value && value <= SET_MAXIMUM) {
-				sysCfg.settings[id] = value;
-				CFG_Save();
-				TESTP("Setting %d = %d\n", id, sysCfg.settings[id]);
-				publishDeviceInfo(client);
-			}
-		}
-	} else if (strcmp("socket", param) == 0) {
-		if (0 <= id && id < MAX_OUTPUT) {
-			setSocket(id, value);
-		}
-	} else if (strcmp("gate", param) == 0) {
-		if (0 <= id && id < MAX_OUTPUT) {
-			setGate(id);
-		}
-	}
-}
-
-void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
+static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
 		const char *data, uint32_t data_len) {
-	char *topicBuf = (char*) os_zalloc(topic_len + 1), *dataBuf = (char*) os_zalloc(data_len + 1);
-	char *tokens[10];
+	char *topicBuf = (char*) os_malloc(topic_len + 1), *dataBuf = (char*) os_malloc(data_len + 1);
+	if (topicBuf == NULL || dataBuf == NULL) {
+		TESTP("malloc error %x %x\n", topicBuf, dataBuf);
+		startFlash(-1, 50, 50); // fast
+		return;
+	}
 
-	MQTT_Client* client = (MQTT_Client*) args;
-
+	mqttData_t *params = (mqttData_t *)os_malloc(sizeof(mqttData_t));
 	os_memcpy(topicBuf, topic, topic_len);
 	topicBuf[topic_len] = 0;
 	os_memcpy(dataBuf, data, data_len);
 	dataBuf[data_len] = 0;
-	os_printf("Receive topic: %s, data: %s \r\n", topicBuf, dataBuf);
 
-	int tokenCount = splitString((char *) topicBuf, '/', tokens);
-
-	if (tokenCount > 0) {
-		if (strcmp("Raw", tokens[0]) == 0) {
-			if (tokenCount == 4 && strcmp(sysCfg.device_id, tokens[1]) == 0
-					&& strcmp("set", tokens[2]) == 0) {
-				if (strlen(dataBuf) < NAME_SIZE - 1) {
-					decodeDeviceSet(tokens[3], dataBuf, client);
-				}
-			} else if (tokenCount == 5 && strcmp(sysCfg.device_id, tokens[1]) == 0) {
-				if (strcmp("set", tokens[3]) == 0) {
-					decodeSensorSet(dataBuf, tokens[2], tokens[4], client);
-				}
-			}
-		} else if (strcmp("App", tokens[0]) == 0) {
-			if (tokenCount >= 2 && strcmp("date", tokens[1]) == 0) {
-				os_timer_disarm(&date_timer); // Restart it
-				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
-			}
-		}
-		checkMinHeap();
-		os_free(topicBuf);
-		os_free(dataBuf);
-		lastAction = MQTT_DATA_CB;
-	}
+	INFOP("Receive topic: %s, data: %s\n", topicBuf, dataBuf);
+	params->mqttClient = (MQTT_Client*) args;
+	params->topic = topicBuf;
+	params->data = dataBuf;
+	if (!system_os_post(USER_TASK_PRIO_1, EVENT_MQTT_DATA, (os_param_t) params))
+		ERRORP("Can't post EVENT_MQTT_DATA\n");
+	lastAction = MQTT_DATA_CB;
 }
 
-void ICACHE_FLASH_ATTR showSysInfo() {
+static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *data) {
+	uint32 t = system_get_time();
+
+	lastAction = MQTT_DATA_FUNC;
+	TESTP("mqd topic %s; data %s\n", topic, data);
+
+	decodeMessage(client, topic, data);
+	checkMinHeap();
+	os_free(topic);
+	os_free(data);
+	checkTimeFunc("mqttDataFunc", t);
+}
+
+static void ICACHE_FLASH_ATTR showSysInfo() {
 	INFOP("SDK version is: %s\n", system_get_sdk_version());
 	INFOP("Smart-Config version is: %s\n", smartconfig_get_version());
 	system_print_meminfo();
@@ -583,6 +267,24 @@ void ICACHE_FLASH_ATTR showSysInfo() {
 			spi_flash_get_id(), sz, sz / 8);
 	INFOP("Boot mode: %d, version %d. Userbin %lx\n", system_get_boot_mode(),
 			system_get_boot_version(), system_get_userbin_addr());
+}
+
+static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
+	mqttData_t *mqttData;
+	INFOP("Background task %d; minHeap: %d\n", e->sig, checkMinHeap());
+	switch (e->sig) {
+	case EVENT_MQTT_CONNECTED:
+		mqttConnectedFunction((MQTT_Client *) e->par);
+		break;
+	case EVENT_MQTT_DATA:
+		mqttData = (mqttData_t *) e->par;
+		mqttDataFunction(mqttData->mqttClient, mqttData->topic, mqttData->data);
+		os_free(mqttData);
+		break;
+	case EVENT_TRANSMIT:
+		transmitFunc();
+		break;
+	}
 }
 
 static void ICACHE_FLASH_ATTR startUp() {
@@ -601,77 +303,36 @@ static void ICACHE_FLASH_ATTR startUp() {
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	showSysInfo();
+	INFO(showSysInfo());
 	if (strncmp(bestSSID, sysCfg.sta_ssid, 5) != 0) { // Dissimilar SSID
 		strcpy(bestSSID, sysCfg.sta_ssid); // Use stored SSID; nb assumes same password
 	}
+
+	if ( !system_os_task(backgroundTask, USER_TASK_PRIO_1, taskQueue, QUEUE_SIZE))
+		TESTP("Can't set up background task\n");
 	WIFI_Connect(bestSSID, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 
-	os_timer_disarm(&switch_timer);
-	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
-	os_timer_arm(&switch_timer, 100, true);
+	initSwitch(switchAction);
+	publishInit(&mqttClient);
 
-
-#ifdef USE_TEMPERATURE
-	ds18b20StartScan();
-#endif
 	lastAction = INIT_DONE;
 }
 
-#ifdef USE_WIFI_SCAN
-static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
-  uint8 ssid[33];
-  int8 bestRSSI = -100;
-
-  if (status == OK) {
-    struct bss_info *bss_link = (struct bss_info *)arg;
-
-    while (bss_link != NULL) {
-      os_memset(ssid, 0, 33);
-      if (os_strlen(bss_link->ssid) <= 32) {
-        os_memcpy(ssid, bss_link->ssid, os_strlen(bss_link->ssid));
-      } else {
-        os_memcpy(ssid, bss_link->ssid, 32);
-      }
-      if (bss_link->rssi > bestRSSI) {
-    	  bestRSSI = bss_link->rssi;
-    	  strcpy(bestSSID, ssid);
-      }
-      TESTP("WiFi Scan: (%d,\"%s\",%d)\n", bss_link->authmode, ssid, bss_link->rssi);
-      bss_link = bss_link->next.stqe_next;
-    }
-  } else {
-	  os_printf("wifi_station_scan fail %d\n", status);
-  }
-  startUp();
-}
-
 static void ICACHE_FLASH_ATTR initDone_cb() {
-	TESTP("Start WiFi Scan\n");
-	wifi_set_opmode(STATION_MODE);
-	wifi_station_scan(NULL, wifi_station_scan_done);
+	INFOP("Start WiFi Scan\n");
+	initWiFi(startUp);
 }
-#endif
 
 void ICACHE_FLASH_ATTR user_init(void) {
 	stdout_init();
 	gpio_init();
 
-#ifdef SWITCH
 	easygpio_pinMode(SWITCH, EASYGPIO_PULLUP, EASYGPIO_INPUT);
 	easygpio_outputDisable(SWITCH);
-#endif
-#ifdef LED
 	easygpio_pinMode(LED, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);
-#endif
 	easygpio_pinMode(RF433_TX, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputSet(RF433_TX, 0);
-	wifi_station_set_auto_connect(false);
-	wifi_station_set_reconnect_policy(true);
-#ifdef USE_WIFI_SCAN
+	savedLastAction = lastAction;
 	system_init_done_cb(&initDone_cb);
-#else
-	system_init_done_cb(&startUp);
-#endif
 }
