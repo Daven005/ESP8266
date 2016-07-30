@@ -124,3 +124,8 @@ void ICACHE_FLASH_ATTR CFG_print(void) {
 	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
 	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
 }
+
+uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {
+	if (sysCfg.updates) return sysCfg.updates;
+	return UPDATES;
+}

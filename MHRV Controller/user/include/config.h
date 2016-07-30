@@ -52,7 +52,9 @@ typedef struct{
 	char deviceID_prefix[8];
 	char deviceName[NAME_SIZE];
 	char deviceLocation[NAME_SIZE];
-	uint8_t settings[SETTINGS_SIZE];
+	uint16_t settings[SETTINGS_SIZE];
+	uint8_t mapping[MAP_TEMP_SIZE];
+	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
 } SYSCFG;
 
 typedef struct {

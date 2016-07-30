@@ -10,6 +10,17 @@
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
+#include "IOdefs.h"
+
+// MQTT sensor IDs
+#define SENSOR_TEMPERATURE1 0
+#define SENSOR_TEMPERATURE2 1
+#define SENSOR_HUMIDITY1 2
+#define SENSOR_HUMIDITY2 3
+#define SENSOR_PIR1 4
+#define SENSOR_PIR2 5
+
+
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
 #define MQTT_BUF_SIZE		512
@@ -36,6 +47,9 @@
 #define MAP_TEMP_SIZE 1
 #define SETTINGS_SIZE 15
 #define MAX_OUTPUT 4
+#define MAX_TEMPERATURE_SENSOR 2
+#define INPUT_SENSOR_ID_START 10
+#define OUTPUT_SENSOR_ID_START 20
 
 #define SETTING_HUMIDTY1 0
 #define SETTING_HUMIDTY2 1

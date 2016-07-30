@@ -26,8 +26,8 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user mqtt modules driver
-EXTRA_INCDIR    = include $(SDK_BASE)/include
+MODULES		= user common/mqtt common/temperature common/driver
+EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto
@@ -120,7 +120,7 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
-#	$(Q) rm eagle.app.sym
+	$(Q) rm eagle.app.sym
 	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
 	$(vecho) "eagle.flash.bin-------->0x00000"
 	$(vecho) "eagle.irom0text.bin---->$(ROM0_ADDR)"
