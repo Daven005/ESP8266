@@ -6,7 +6,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A5	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A8	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
@@ -37,7 +37,7 @@
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
 
 #define DEFAULT_SECURITY	0
-#define QUEUE_BUFFER_SIZE		 		2048
+#define QUEUE_BUFFER_SIZE	4096
 
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/
@@ -71,7 +71,7 @@
 #define DEFAULT_FINISH_ON 22
 #define DEFAULT_PIR1_ON_TIME 20
 #define DEFAULT_PIR2_ON_TIME 20
-#define DEFAULT_DHT1 DHT11
+#define DEFAULT_DHT1 DHT22
 #define DEFAULT_DHT2 DHT22
 #define DEFAULT_PIR_ACTION 1
 

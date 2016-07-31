@@ -1,3 +1,5 @@
+//#define DEBUG_OVERRIDE 1
+
 #include <c_types.h>
 #include <mem.h>
 #include <os_type.h>
@@ -22,6 +24,7 @@
 #include "check.h"
 #include "dht22.h"
 #include "time.h"
+#include "user_main.h"
 
 os_timer_t transmit_timer;
 static os_timer_t time_timer;
@@ -106,12 +109,12 @@ void ICACHE_FLASH_ATTR publishData(void) {
 	}
 }
 
-void ICACHE_FLASH_ATTR printAll(void) {
-	uint8 idx;
+static void ICACHE_FLASH_ATTR printAll(void) {
 	struct dht_sensor_data* r1 = dhtRead(1);
 	struct dht_sensor_data* r2 = dhtRead(2);
 
 	printOutputs();
+	CFG_printSettings();
 	if (r1->success) {
 		os_printf("Temp 1: %d", (int)r1->temperature);
 		os_printf(" Hum 1: %d\n", (int)r1->humidity);
@@ -126,7 +129,7 @@ void ICACHE_FLASH_ATTR printAll(void) {
 	}
 }
 
-bool ICACHE_FLASH_ATTR checkHumidityHigh(void) {
+static bool ICACHE_FLASH_ATTR checkHumidityHigh(void) {
 	struct dht_sensor_data* r1 = dhtRead(1);
 	struct dht_sensor_data* r2 = dhtRead(2);
 	if (r1->success && r1->avgHumidity > sysCfg.settings[SETTING_HUMIDTY1])
@@ -136,7 +139,7 @@ bool ICACHE_FLASH_ATTR checkHumidityHigh(void) {
 	return false;
 }
 
-bool ICACHE_FLASH_ATTR checkTemperatureHigh(void) {
+static bool ICACHE_FLASH_ATTR checkTemperatureHigh(void) {
 	struct dht_sensor_data* r1 = dhtRead(1);
 	struct dht_sensor_data* r2 = dhtRead(2);
 	if (r1->success && r1->avgTemperature > sysCfg.settings[SETTING_TEMPERATURE1]
@@ -148,11 +151,11 @@ bool ICACHE_FLASH_ATTR checkTemperatureHigh(void) {
 	return false;
 }
 
-void ICACHE_FLASH_ATTR processData(void) { // Called every 500mS
+static void ICACHE_FLASH_ATTR processData(void) {
 	if (checkPirActive(sysCfg.settings[SETTING_PIR_ACTION])) {
 		INFOP("<PIR>");
 		setSpeed(FAST);
-		setLED(RED);
+		setLED(YELLOW);
 	} else if (checkHumidityHigh()) {
 		INFOP("<humidity>");
 		setSpeed(FAST);
@@ -160,7 +163,7 @@ void ICACHE_FLASH_ATTR processData(void) { // Called every 500mS
 	} else if (checkTemperatureHigh()) {
 		INFOP("<temperature>");
 		setSpeed(FAST);
-		setLED(YELLOW);
+		setLED(RED);
 	} else if (timeIsON) {
 		INFOP("<TIME>");
 		setSpeed(SLOW);
@@ -172,7 +175,7 @@ void ICACHE_FLASH_ATTR processData(void) { // Called every 500mS
 	}
 }
 
-static void ICACHE_FLASH_ATTR processTimerCb(uint32_t *args) {
+static void ICACHE_FLASH_ATTR processTimerCb(uint32_t *args) { // Called every 500mS
 	if (!system_os_post(USER_TASK_PRIO_1, EVENT_PROCESS_TIMER, 0))
 		ERRORP("Can't post EVENT_PROCESS_TIMER\n");
 }
@@ -191,22 +194,29 @@ static void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
 
 static void ICACHE_FLASH_ATTR transmitFunc(void) {
 	uint32 t = system_get_time();
-	processData();
 	publishData();
 	lastAction = TRANSMIT_FUNC;
 	checkTimeFunc("transmitFunc", t);
 }
 
-void ICACHE_FLASH_ATTR switchAction(int pressCount) {
+static void ICACHE_FLASH_ATTR switchAction(int pressCount) {
+	startFlash(pressCount, 50, 100);
 	switch (pressCount) {
 	case 1:
 		setPirActive(sysCfg.settings[SETTING_PIR_ACTION]);
+		processData();
 		break;
 	case 2:
 		clearPirActive(sysCfg.settings[SETTING_PIR_ACTION]);
+		processData();
 		break;
 	case 3:
 		printAll();
+		break;
+	case 4:
+		if (!checkSmartConfig(SC_CHECK)) {
+			toggleHttpSetupMode();
+		}
 		break;
 	case 5:
 		checkSmartConfig(SC_TOGGLE);
@@ -214,48 +224,33 @@ void ICACHE_FLASH_ATTR switchAction(int pressCount) {
 	}
 }
 
-void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
-	ets_uart_printf("WiFi status: %d\r\n", status);
+static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
+	os_printf("WiFi status: %d\n", status);
 	if (status == STATION_GOT_IP) {
 		MQTT_Connect(&mqttClient);
+		wifiChannel = wifi_get_channel();
 	} else {
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
 	}
 }
 
-void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
+static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 //	MQTT_Client* client = (MQTT_Client*)args;
 	MQTT_Connect(&mqttClient);
 	mqttConnected = false;
 }
 
-void ICACHE_FLASH_ATTR dateTimerCb(void) {
+static void ICACHE_FLASH_ATTR dateTimerCb(void) {
 	os_printf("Nothing heard so restarting...\n");
 	system_restart();
-}
-
-void ICACHE_FLASH_ATTR setDeviceParameters(char* dataBuf, char* function, MQTT_Client* client) {
-	if (strlen(dataBuf) < NAME_SIZE - 1) {
-		if (strcmp("name", function) == 0) {
-			strcpy(sysCfg.deviceName, dataBuf);
-		} else if (strcmp("location", function) == 0) {
-			strcpy(sysCfg.deviceLocation, dataBuf);
-		} else if (strcmp("updates", function) == 0) {
-			sysCfg.updates = atoi(dataBuf);
-			os_timer_disarm(&transmit_timer);
-			os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true);
-		}
-		_publishDeviceInfo();
-		CFG_Save();
-	}
 }
 
 void ICACHE_FLASH_ATTR setExternalTemperature(char* dataBuf) {
 	externalTemperature = atoi(dataBuf);
 }
 
-void ICACHE_FLASH_ATTR timeOnCb(void) {
+static void ICACHE_FLASH_ATTR timeOnCb(void) {
 	ERRORP("time Timeout\n");
 	timeIsON = true; // default to ON if no time message being received
 	externalTemperature = 0.0; // Assume if date not sent then nor is Temp
@@ -272,20 +267,6 @@ void ICACHE_FLASH_ATTR setTime(char* dataBuf) {
 	os_timer_disarm(&time_timer);
 	os_timer_setfn(&time_timer, (os_timer_func_t *) timeOnCb, NULL);
 	os_timer_arm(&time_timer, 6 * 60 * 1000, false);
-}
-
-void ICACHE_FLASH_ATTR outputOverride(int id, int value) {
-	if (0 <= id && id < MAX_OUTPUT) {
-		switch (value) {
-		case 0:
-		case 1:
-			forceOutput(id, value);
-			break;
-		case -1:
-			clrOverride(id);
-			break;
-		}
-	}
 }
 
 static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
@@ -345,16 +326,9 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	INFOP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
 
-	os_sprintf(topic, "/App/+/+/TS Bottom/#");
-	INFOP("Subscribe to: %s\n", topic);
-	MQTT_Subscribe(client, topic, 0);
-
 	MQTT_Subscribe(client, "/App/date", 0);
+	MQTT_Subscribe(client, "/App/Temp/current", 0);
 	MQTT_Subscribe(client, "/App/refresh", 0);
-	MQTT_Subscribe(client, "/App/Cloud/hourly", 0);
-	MQTT_Subscribe(client, "/App/Sun/+", 0);
-
-	MQTT_Publish(client, "/App/refresh", "", 0, 0, false); // To get TS_BOTTOM
 
 	if (mqttConnected) { // Has REconnected
 		_publishDeviceInfo();
@@ -420,19 +394,18 @@ static void ICACHE_FLASH_ATTR startUp() {
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
-	os_timer_disarm(&process_timer);
-	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
-	os_timer_arm(&process_timer, 5000, false); // 500mS
-
 	WIFI_Connect(getBestSSID(), sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 
 	if ( !system_os_task(backgroundTask, USER_TASK_PRIO_1, taskQueue, QUEUE_SIZE))
 		TESTP("Can't set up background task\n");
 
+	os_timer_disarm(&process_timer);
+	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
+	os_timer_arm(&process_timer, 500, true); // repeat every 500mS
+
 	initSwitch(switchAction);
-	publishInit(&mqttClient);
+	initPublish(&mqttClient);
 	lastAction = INIT_DONE;
-	INFO(showSysInfo());
 }
 
 static void ICACHE_FLASH_ATTR initDone_cb() {

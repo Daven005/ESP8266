@@ -19,7 +19,13 @@
 #define LED_RED LED2
 #define LED_GREEN LED1
 
+#define PIN_LED1 2
+#define PIN_LED2 15
+#define PIN_RELAY1 4
+#define PIN_RELAY2 5
+
 #define SWITCH 0 // GPIO 00
+#define LED PIN_LED1
 #define PIN_DHT1 12
 #define PIN_DHT2 14
 #define PIN_PIR1 13

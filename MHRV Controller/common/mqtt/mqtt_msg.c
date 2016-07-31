@@ -73,7 +73,7 @@ static int ICACHE_FLASH_ATTR append_string(mqtt_connection_t* connection, const 
 
 	connection->buffer[connection->message.length++] = len >> 8;
 	connection->buffer[connection->message.length++] = len & 0xff;
-	memcpy(connection->buffer + connection->message.length, string, len);
+	os_memcpy(connection->buffer + connection->message.length, string, len);
 	connection->message.length += len;
 
 	return len + 2;
@@ -297,7 +297,7 @@ mqtt_message_t* ICACHE_FLASH_ATTR mqtt_msg_connect(mqtt_connection_t* connection
 	variable_header->lengthMsb = 0;
 #if defined(PROTOCOL_NAMEv31)
 	variable_header->lengthLsb = 6;
-	memcpy(variable_header->magic, "MQIsdp", 6);
+	os_memcpy(variable_header->magic, "MQIsdp", 6);
 	variable_header->version = 3;
 #elif defined(PROTOCOL_NAMEv311)
 	variable_header->lengthLsb = 4;
@@ -368,7 +368,7 @@ mqtt_message_t* ICACHE_FLASH_ATTR mqtt_msg_publish(mqtt_connection_t* connection
 
 	if (connection->message.length + data_length > connection->buffer_length)
 		return fail_message(connection);
-	memcpy(connection->buffer + connection->message.length, data, data_length);
+	os_memcpy(connection->buffer + connection->message.length, data, data_length);
 	connection->message.length += data_length;
 
 	return fini_message(connection, MQTT_MSG_TYPE_PUBLISH, 0, qos, retain);

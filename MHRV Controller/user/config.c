@@ -37,7 +37,7 @@
 #include <spi_flash.h>
 #include <user_interface.h>
 #include "dht22.h"
-
+#include "config.h"
 #include "debug.h"
 
 SYSCFG sysCfg;
@@ -112,7 +112,7 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		sysCfg.updates = UPDATES;
 		sysCfg.inputs = INPUTS;
 
-		os_sprintf(sysCfg.deviceName, "Not Set");
+		os_sprintf(sysCfg.deviceName, "MHRV");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");
 
 		CFG_Save();
@@ -123,6 +123,15 @@ void ICACHE_FLASH_ATTR CFG_print(void) {
 	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
 	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
 	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
+}
+
+void ICACHE_FLASH_ATTR CFG_printSettings(void) {
+	int idx;
+	os_printf("Settings: ");
+	for (idx=0; idx < SETTINGS_SIZE; idx++) {
+		os_printf("%d ", sysCfg.settings[idx]);
+	}
+	os_printf("\n");
 }
 
 uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {

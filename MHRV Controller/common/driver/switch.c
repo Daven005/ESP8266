@@ -68,7 +68,7 @@ static void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) { // 100mS
 	}
 }
 
-void initSwitch(SwitchActionCb_t cb) {
+void ICACHE_FLASH_ATTR initSwitch(SwitchActionCb_t cb) {
 	SwitchActionCb = cb;
 	os_timer_disarm(&switch_timer);
 	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);

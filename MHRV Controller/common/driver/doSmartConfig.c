@@ -34,8 +34,8 @@ void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {
 		struct station_config *sta_conf = pdata;
 		wifi_station_set_config(sta_conf);
 		INFOP("Connected to %s (%s) %d", sta_conf->ssid, sta_conf->password, sta_conf->bssid_set);
-		strcpy(sysCfg.sta_ssid, sta_conf->ssid);
-		strcpy(sysCfg.sta_pwd, sta_conf->password);
+		os_strcpy(sysCfg.sta_ssid, sta_conf->ssid);
+		os_strcpy(sysCfg.sta_pwd, sta_conf->password);
 		wifi_station_disconnect();
 		wifi_station_connect();
 		break;

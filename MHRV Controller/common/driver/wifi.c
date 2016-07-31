@@ -47,8 +47,8 @@ static void ICACHE_FLASH_ATTR wifi_station_scan_done(void *arg, STATUS status) {
       } else {
         os_memcpy(ssid, bss_link->ssid, 32);
       }
-      if (bss_link->rssi > bestRSSI && (strncmp(STA_SSID, ssid, strlen(STA_SSID)) == 0)) {
-    	  strcpy(bestSSID, ssid);
+      if (bss_link->rssi > bestRSSI && (strncmp(STA_SSID, ssid, os_strlen(STA_SSID)) == 0)) {
+    	  os_strcpy(bestSSID, ssid);
     	  bestRSSI = bss_link->rssi;
       }
       TESTP("WiFi Scan: (%d,\"%s\",%d) best is %s\n", bss_link->authmode, ssid, bss_link->rssi, bestSSID);

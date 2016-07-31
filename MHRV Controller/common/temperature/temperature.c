@@ -55,7 +55,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 	for (i = 0; i < MAX_TEMPERATURE_SENSOR; i++) {
 		if (temperature[i].temperatureType == NOT_SET) {
 			temperature[i].temperatureType = temperatureType;
-			strcpy(temperature[i].address, sensorID);
+			os_strcpy(temperature[i].address, sensorID);
 			INFOP("New ");
 			return i;
 		}

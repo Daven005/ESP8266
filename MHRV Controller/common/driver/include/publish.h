@@ -19,6 +19,6 @@ void publishDeviceInfo(char *version, char *mode, uint8 wifiChannel,
 void publishMapping(void);
 void publishOutput(uint8 idx, uint8 val);
 void publishInput(uint8 idx, uint8 val);
-void publishInit(MQTT_Client* client);
+void initPublish(MQTT_Client* client);
 
 #endif /* USER_PUBLISH_H_ */

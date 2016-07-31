@@ -86,7 +86,7 @@ static void saveMapName(uint8 sensorID, char *bfr) {
 		}
 	}
 	if (mapIdx < MAP_TEMP_SIZE && name != NULL) {
-		strcpy(sysCfg.mappingName[mapIdx], name);
+		os_strcpy(sysCfg.mappingName[mapIdx], name);
 		CFG_Save();
 		printMappedTemperature(mapIdx);
 		TESTP("\n");
@@ -135,14 +135,14 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 
 static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_Client* client) {
 	if (strcmp("name", param) == 0) {
-		strcpy(sysCfg.deviceName, dataBuf);
-	} else if (strcmp("location", param) == 0) {
-		strcpy(sysCfg.deviceLocation, dataBuf);
-	} else if (strcmp("updates", param) == 0) {
+		os_strcpy(sysCfg.deviceName, dataBuf);
+	} else if (os_strcmp("location", param) == 0) {
+		os_strcpy(sysCfg.deviceLocation, dataBuf);
+	} else if (os_strcmp("updates", param) == 0) {
 		sysCfg.updates = atoi(dataBuf);
 		os_timer_disarm(&transmit_timer);
 		os_timer_arm(&transmit_timer, sysCfgUpdates() * 1000, true);
-	} else if (strcmp("inputs", param) == 0) {
+	} else if (os_strcmp("inputs", param) == 0) {
 		sysCfg.inputs = atoi(dataBuf);
 	}
 	_publishDeviceInfo();

@@ -16,13 +16,14 @@
 #include "config.h"
 #include "io.h"
 #include "debug.h"
+#include "user_main.h"
 
 bool pirStatus[3] = { false, false, false };
 bool oldPIRstatus[3] = { false, false, false };
 uint8 pirPins[3] = {0, PIN_PIR1, PIN_PIR2 };
 static os_timer_t pir_timer[3];
 
-const uint8 outputMap[MAX_OUTPUT] = { 2, 15, 4, 5 }; // LED1, LED2, RELAY1, RELAY2
+const uint8 outputMap[MAX_OUTPUT] = { PIN_LED1, PIN_LED2, PIN_RELAY1, PIN_RELAY2 };
 
 static bool currentOutputs[MAX_OUTPUT];
 static bool outputOverrides[MAX_OUTPUT];
@@ -55,7 +56,7 @@ void ICACHE_FLASH_ATTR forceOutput(uint8 id, bool set) { // Sets override
 	if (id < MAX_OUTPUT) {
 		outputOverrides[id] = true;
 		easygpio_outputSet(outputMap[id], set);
-		INFOP("o/p %d(%d)->%d\n", id, outputMap[id], set);
+		TESTP("o/p %d(%d)-->%d\n", id, outputMap[id], set);
 	}
 }
 
@@ -63,7 +64,7 @@ void ICACHE_FLASH_ATTR clrOverride(uint8 id) {
 	if (id < MAX_OUTPUT) {
 		outputOverrides[id] = false;
 		easygpio_outputSet(outputMap[id], currentOutputs[id]);
-		INFOP("o/p %d(%d)-->%d\n", id, outputMap[id], currentOutputs[id]);
+		TESTP("o/p %d(%d)x->%d\n", id, outputMap[id], currentOutputs[id]);
 	}
 }
 
@@ -122,7 +123,7 @@ void ICACHE_FLASH_ATTR printOutputs(void) {
 	}
 	os_printf("OP: ");
 	for (idx = 0; idx < MAX_OUTPUT; idx++) {
-		os_printf(" %d", currentOutputs[idx]);
+		os_printf("%d [%d] ", currentOutputs[idx], outputOverrides[idx]);
 	}
 	os_printf("\n");
 }
@@ -156,13 +157,17 @@ void ICACHE_FLASH_ATTR clearPirActive(enum pir_t pir) {
 }
 
 void ICACHE_FLASH_ATTR setPirActive(enum pir_t pir) {
-	pirStatus[pir] = true;
-	if (pirStatus[pir] != oldPIRstatus[pir]) {
-		TESTP("PIR:%d ", pir);
-		publishSensorData(SENSOR_PIR1-1+pir, "PIR", 1);
-		oldPIRstatus[pir] = true;
+	if (PIR1 <= pir && pir <= PIR2) {
+		pirStatus[pir] = true;
+		if (pirStatus[pir] != oldPIRstatus[pir]) {
+			TESTP("PIR:%d ", pir);
+			publishSensorData(SENSOR_PIR1 - 1 + pir, "PIR", 1);
+			oldPIRstatus[pir] = true;
+		}
+		os_timer_disarm(&pir_timer[pir]);
+		os_timer_setfn(&pir_timer[pir], (os_timer_func_t *) pirCb, pir);
+		os_timer_arm(&pir_timer[pir], sysCfg.settings[SETTING_PIR1_ON_TIME-1+pir]*1000*60, false); // Minutes
+	} else  {
+		ERRORP("Bad PIR # %d", pir);
 	}
-	os_timer_disarm(&pir_timer[pir]);
-	os_timer_setfn(&pir_timer[pir], (os_timer_func_t *) pirCb, pir);
-	os_timer_arm(&pir_timer[pir], sysCfg.settings[SETTING_PIR1_ON_TIME-1+pir]*1000*60, false); // Minutes
 }
