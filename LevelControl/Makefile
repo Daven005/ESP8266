@@ -13,7 +13,7 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_151
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
@@ -26,11 +26,11 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user mqtt modules driver
-EXTRA_INCDIR    = include $(SDK_BASE)/include
+MODULES		= user common/mqtt common/temperature common/driver
+EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
+LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
@@ -75,7 +75,7 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 VERBOSE := 1
 
 V ?= $(VERBOSE)
-ifeq ("$(V)","1")
+ifeq ("$(V)","0")
 Q :=
 vecho := @true
 else
@@ -85,12 +85,9 @@ endif
 
 vpath %.c $(SRC_DIR)
 
-user_main.o: include/user_config.h include/driver/ds18b20.h
-config.c: include/user_config.h
-
 define compile-objects
 $1/%.o: %.c
-	echo "CC $$< $(MODULE_INCDIR)"
+	$(Q) echo "CC $$< $(MODULE_INCDIR)"
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
