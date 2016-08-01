@@ -29,11 +29,10 @@
 os_timer_t transmit_timer;
 static os_timer_t time_timer;
 static os_timer_t process_timer;
-os_timer_t date_timer;
 
 static uint8 wifiChannel = 255;
 static float externalTemperature = 10.0; // default to cool
-static bool timeIsON = true; // Default to ON, ie daytime
+static bool inWorkingHours = true; // Default to ON, ie daytime
 
 MQTT_Client mqttClient;
 uint8 mqttConnected;
@@ -164,7 +163,7 @@ static void ICACHE_FLASH_ATTR processData(void) {
 		INFOP("<temperature>");
 		setSpeed(FAST);
 		setLED(RED);
-	} else if (timeIsON) {
+	} else if (inWorkingHours) {
 		INFOP("<TIME>");
 		setSpeed(SLOW);
 		setLED(DARK);
@@ -229,6 +228,7 @@ static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	if (status == STATION_GOT_IP) {
 		MQTT_Connect(&mqttClient);
 		wifiChannel = wifi_get_channel();
+		tcp_listen(80); // for setting up SSID/PW
 	} else {
 		mqttConnected = false;
 		MQTT_Disconnect(&mqttClient);
@@ -241,18 +241,13 @@ static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	mqttConnected = false;
 }
 
-static void ICACHE_FLASH_ATTR dateTimerCb(void) {
-	os_printf("Nothing heard so restarting...\n");
-	system_restart();
-}
-
 void ICACHE_FLASH_ATTR setExternalTemperature(char* dataBuf) {
 	externalTemperature = atoi(dataBuf);
 }
 
 static void ICACHE_FLASH_ATTR timeOnCb(void) {
-	ERRORP("time Timeout\n");
-	timeIsON = true; // default to ON if no time message being received
+	ERRORP("setTime Timeout\n");
+	inWorkingHours = true; // default to ON if no time message being received
 	externalTemperature = 0.0; // Assume if date not sent then nor is Temp
 }
 
@@ -260,10 +255,10 @@ void ICACHE_FLASH_ATTR setTime(char* dataBuf) {
 	time_t t = atoi(dataBuf);
 	struct tm* timeInfo = localtime(&t);
 //	applyDST(timeInfo);  //Not required and uses too much iRAM
-	timeIsON = (sysCfg.settings[SETTING_START_ON] <= timeInfo->tm_hour
+	inWorkingHours = (sysCfg.settings[SETTING_START_ON] <= timeInfo->tm_hour
 			&& timeInfo->tm_hour <= sysCfg.settings[SETTING_FINISH_ON]);
 	TESTP("time - %02d:%02d <%02d-%02d> [%d]\n", timeInfo->tm_hour, timeInfo->tm_min,
-			sysCfg.settings[SETTING_START_ON], sysCfg.settings[SETTING_FINISH_ON], timeIsON);
+			sysCfg.settings[SETTING_START_ON], sysCfg.settings[SETTING_FINISH_ON], inWorkingHours);
 	os_timer_disarm(&time_timer);
 	os_timer_setfn(&time_timer, (os_timer_func_t *) timeOnCb, NULL);
 	os_timer_arm(&time_timer, 6 * 60 * 1000, false);
@@ -271,6 +266,7 @@ void ICACHE_FLASH_ATTR setTime(char* dataBuf) {
 
 static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
 		const char *data, uint32_t data_len) {
+	lastAction = MQTT_DATA_CB;
 	char *topicBuf = (char*) os_malloc(topic_len + 1), *dataBuf = (char*) os_malloc(data_len + 1);
 	if (topicBuf == NULL || dataBuf == NULL) {
 		TESTP("malloc error %x %x\n", topicBuf, dataBuf);
@@ -290,7 +286,6 @@ static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint
 	params->data = dataBuf;
 	if (!system_os_post(USER_TASK_PRIO_1, EVENT_MQTT_DATA, (os_param_t) params))
 		ERRORP("Can't post EVENT_MQTT_DATA\n");
-	lastAction = MQTT_DATA_CB;
 }
 
 static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *data) {
@@ -312,6 +307,7 @@ static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 }
 
 static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
+	lastAction = MQTT_CONNECTED_FUNC;
 	uint32 t = system_get_time();
 	char *topic = (char*) os_zalloc(100);
 	static int reconnections = 0;
@@ -338,13 +334,7 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 		mqttConnected = true;
 		publishDeviceReset(version, lastAction);
 		_publishDeviceInfo();
-		publishMapping();
-		dhtInit(1, sysCfg.settings[SETTING_DHT1], PIN_DHT1, 2000);
-		dhtInit(2, sysCfg.settings[SETTING_DHT2], PIN_DHT2, 2000);
-
-		os_timer_disarm(&date_timer);
-		os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
-		os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
+		// publishMapping();
 
 		os_timer_disarm(&transmit_timer);
 		os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
@@ -353,7 +343,6 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	checkMinHeap();
 	os_free(topic);
 	easygpio_outputSet(LED2, 0); // Turn LED off when connected
-	lastAction = MQTT_CONNECTED_FUNC;
 	checkTimeFunc("mqttConnectedFunc", t);
 }
 
@@ -379,6 +368,7 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 }
 
 static void ICACHE_FLASH_ATTR startUp() {
+	lastAction = INIT_DONE;
 	CFG_Load();
 	CFG_print();
 
@@ -399,13 +389,15 @@ static void ICACHE_FLASH_ATTR startUp() {
 	if ( !system_os_task(backgroundTask, USER_TASK_PRIO_1, taskQueue, QUEUE_SIZE))
 		TESTP("Can't set up background task\n");
 
+	dhtInit(1, sysCfg.settings[SETTING_DHT1], PIN_DHT1, 2000);
+	dhtInit(2, sysCfg.settings[SETTING_DHT2], PIN_DHT2, 2000);
+	initSwitch(switchAction);
+	initPublish(&mqttClient);
+
 	os_timer_disarm(&process_timer);
 	os_timer_setfn(&process_timer, (os_timer_func_t *) processTimerCb, NULL);
 	os_timer_arm(&process_timer, 500, true); // repeat every 500mS
 
-	initSwitch(switchAction);
-	initPublish(&mqttClient);
-	lastAction = INIT_DONE;
 }
 
 static void ICACHE_FLASH_ATTR initDone_cb() {

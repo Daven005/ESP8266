@@ -42,6 +42,7 @@
 
 SYSCFG sysCfg;
 SAVE_FLAG saveFlag;
+static uint32 lastSaved = 0;
 
 void ICACHE_FLASH_ATTR CFG_Save() {
 	 spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
@@ -64,6 +65,7 @@ void ICACHE_FLASH_ATTR CFG_Save() {
 		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	}
+	lastSaved = system_get_time();
 }
 
 void ICACHE_FLASH_ATTR CFG_Load() {
@@ -132,6 +134,10 @@ void ICACHE_FLASH_ATTR CFG_printSettings(void) {
 		os_printf("%d ", sysCfg.settings[idx]);
 	}
 	os_printf("\n");
+}
+
+uint32 ICACHE_FLASH_ATTR CFG_lastSaved(void) {
+	return lastSaved;
 }
 
 uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {

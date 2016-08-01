@@ -169,8 +169,6 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 		} else if (strcmp("App", tokens[0]) == 0) {
 			if (tokenCount == 2 && strcmp("date", tokens[1]) == 0) {
 				setTime(data);
-				os_timer_disarm(&date_timer); // Restart it
-				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 			} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
 				publishData((void*) client); // publish all I/O & temps
 			} else if (tokenCount >= 3 && strcmp("Temp", tokens[1]) == 0
