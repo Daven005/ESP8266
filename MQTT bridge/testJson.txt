@@ -1,0 +1,11 @@
+{"cmd":"MQTT_InitConnection","params":{"host":"192.168.1.100","port":1883}}
+{"cmd":"MQTT_InitClient","params":{"clientID":"abc123"}}
+{"cmd":"MQTT_InitLWT","params":{"topic":"/Raw/abc123/offline", "msg":"offline"}}
+{"cmd":"MQTT_Connect"}
+{"cmd":"MQTT_Subscribe","params":{"topic":"/Raw/abc123/#", "qos":0}}
+{"cmd":"MQTT_SubscribeXX","params":{"topic":"/App/#", "qos":0}}
+{"cmd":"MQTT_Publish","params":{"topic":"/Raw/abc123/test", "data":"hello1", "qos":0, , "retain":false}}
+{"cmd":"MQTT_Publish","params":{"topic":"/Raw/abc123/test", "data":"hello2", "qos":0, , "retain":false}}
+{"cmd":"MQTT_Publish","params":{"topic":"/Raw/abc123/test", "data":"hello3", "qos":0, , "retain":false}}
+{"cmd":"MQTT_Publish","params":{"topic":"/Raw/abc123/test", "data":"hello4", "qos":0, , "retain":false}}
+{"cmd":"MQTT_Disconnect"}
