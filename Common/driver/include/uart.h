@@ -50,8 +50,8 @@ typedef enum {
 
 typedef enum {
     EMPTY,
-    UNDER_WRITE,
-    WRITE_OVER
+    WRITE_LINE,
+	WRITE_PARTIAL
 } RcvMsgBuffState;
 
 typedef struct {
@@ -60,6 +60,7 @@ typedef struct {
     uint8     *pWritePos;
     uint8     *pReadPos;
     uint8      TrigLvl; //JLU: may need to pad
+    int 	   count;
     RcvMsgBuffState  BuffState;
 } RcvMsgBuff;
 
@@ -92,6 +93,7 @@ typedef struct {
 
 void uart_init(UartBautRate uart0_br, UartBautRate uart1_br);
 void ICACHE_FLASH_ATTR uart0_write_char(char c);
+void uart0_tx_buffer(uint8 *buf, uint16 len);
 
 #endif
 

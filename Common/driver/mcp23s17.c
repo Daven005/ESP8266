@@ -40,7 +40,7 @@
 //				 
 ////////////////////////////////////////////////////////////////////////////////
 
-void mcp23s17_init(){
+void ICACHE_FLASH_ATTR mcp23s17_init(void){
 	//init SPI bus
 	spi_init_gpio(SPI_DEV, SPI_CLK_USE_DIV);
 	spi_clock(SPI_DEV, 16, 4);// 4, 2); //10MHz
@@ -64,7 +64,7 @@ void mcp23s17_init(){
 //				 
 ////////////////////////////////////////////////////////////////////////////////
 
-void mcp23s17_REG_SET(uint8 ctrl_reg, uint8 port, uint16 value){
+void ICACHE_FLASH_ATTR mcp23s17_REG_SET(uint8 ctrl_reg, uint8 port, uint16 value){
 	uint8 cmd = (0x20|(port>>2))<<1; //0b0100[Address][WRITE]
 
 	if (port & 0x02){
@@ -84,7 +84,7 @@ void mcp23s17_REG_SET(uint8 ctrl_reg, uint8 port, uint16 value){
 //				 
 ////////////////////////////////////////////////////////////////////////////////
 
-uint16 mcp23s17_REG_GET(uint8 ctrl_reg, uint8 port){
+uint16 ICACHE_FLASH_ATTR mcp23s17_REG_GET(uint8 ctrl_reg, uint8 port){
 	uint8 cmd = ((0x20|(port>>2))<<1)|0x01; //0b0100[Address][READ]
 
 	if (port & 0x02) {
@@ -107,7 +107,7 @@ uint16 mcp23s17_REG_GET(uint8 ctrl_reg, uint8 port){
 //				 
 ////////////////////////////////////////////////////////////////////////////////
 
-void mcp23s17_REG_SET_MASK(uint8 ctrl_reg, uint8 port, uint16 value, uint16 bitmask){
+void ICACHE_FLASH_ATTR mcp23s17_REG_SET_MASK(uint8 ctrl_reg, uint8 port, uint16 value, uint16 bitmask){
 	uint16 current_value = ~bitmask & mcp23s17_REG_GET(ctrl_reg, port);
 	uint16 set_value = bitmask & value;
 

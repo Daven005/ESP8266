@@ -28,7 +28,7 @@
 #include "spi.h"
 #include "mcp23s17_register.h"
 
-void mcp23s17_init();
+void mcp23s17_init(void);
 void mcp23s17_REG_SET(uint8 ctrl_reg, uint8 port, uint16 value);
 uint16 mcp23s17_REG_GET(uint8 ctrl_reg, uint8 port);
 void mcp23s17_REG_SET_MASK(uint8 ctrl_reg, uint8 port, uint16 value, uint16 bitmask);

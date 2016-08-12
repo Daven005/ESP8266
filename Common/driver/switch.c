@@ -11,11 +11,14 @@
 #include <osapi.h>
 #include <user_interface.h>
 #include "user_config.h"
+#include "switch.h"
 
+#ifdef SWITCH
 static os_timer_t switch_timer;
 static unsigned int switchCount;
+static SwitchActionCb_t SwitchActionCb = NULL;
 
-void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) { // 100mS
+static void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) { // 100mS
 	const int swOnMax = 100;
 	const int swOffMax = 5;
 	static int switchPulseCount;
@@ -54,7 +57,7 @@ void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) { // 100mS
 		case OFF:
 			if (++switchCount > swOffMax) {
 				switchState = IDLE;
-				switchAction(switchPulseCount);
+				if (SwitchActionCb) SwitchActionCb(switchPulseCount);
 				switchPulseCount = 0;
 			}
 			break;
@@ -65,8 +68,10 @@ void ICACHE_FLASH_ATTR switchTimerCb(uint32_t *args) { // 100mS
 	}
 }
 
-void initSwitch(void) {
+void ICACHE_FLASH_ATTR initSwitch(SwitchActionCb_t cb) {
+	SwitchActionCb = cb;
 	os_timer_disarm(&switch_timer);
 	os_timer_setfn(&switch_timer, (os_timer_func_t *) switchTimerCb, NULL);
 	os_timer_arm(&switch_timer, 100, true);
 }
+#endif
