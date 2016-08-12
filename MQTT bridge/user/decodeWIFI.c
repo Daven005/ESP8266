@@ -92,6 +92,10 @@ static void ICACHE_FLASH_ATTR WiFiConnectCb(uint8_t status) {
 }
 
 static void ICACHE_FLASH_ATTR initWiFiScanCb(void) {
+	if (WiFiScanStatus() == OK) {
+		os_strcpy(ssid, getBestSSID());
+		os_printf("ssid %s, getBestSSID %s\n", ssid, getBestSSID());
+	}
 	wifiParamsMessage("WiFi_ScanComplete");
 	startFlash(-1, 500, 1000);
 }

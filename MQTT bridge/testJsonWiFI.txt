@@ -1,0 +1,9 @@
+{"cmd":"WiFi_GetParams"}
+{"cmd":"WiFi_SetParams","params":{"name":"test123","phymode":1,"ssidprefix":"EE-berry"}}
+{"cmd":"WiFi_GetParams"}
+{"cmd":"WiFi_Scan"}
+{"cmd":"WiFi_Status"}
+{"cmd":"WiFi_Status"}
+{"cmd":"WiFi_Status"}
+{"cmd":"WiFi_Status"}
+{"cmd":"WiFi_Connect","params":{"password":"fog-phone-deep"}}

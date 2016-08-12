@@ -22,8 +22,9 @@
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
 void saveChar(RcvMsgBuff *pRxBuff, char RcvChar);
+#ifdef USE_RX
 LOCAL void uart0_rx_intr_handler(void *para);
-
+#endif
 /******************************************************************************
  * FunctionName : uart_config
  * Description  : Internal used function
@@ -37,13 +38,15 @@ uart_config(uint8 uart_no)
 {
     if (uart_no == UART1) {
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
-    } else {
+    }
+#ifdef USE_RX
+    else {
         /* rcv_buff size if 0x100 */
         ETS_UART_INTR_ATTACH(uart0_rx_intr_handler,  &(UartDev.rcv_buff));
         PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0TXD_U);
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD);
     }
-
+#endif
     uart_div_modify(uart_no, UART_CLK_FREQ / (UartDev.baut_rate));
 
     WRITE_PERI_REG(UART_CONF0(uart_no),    UartDev.exist_parity
@@ -124,6 +127,7 @@ void saveChar(RcvMsgBuff *pRxBuff, char RcvChar) {
 	}
 }
 
+#ifdef USE_RX
 void uart0_rx_intr_handler(void *para) {
     RcvMsgBuff *pRxBuff = (RcvMsgBuff *)para;
     uint8 RcvChar;
@@ -156,6 +160,7 @@ void uart0_rx_intr_handler(void *para) {
 		}
 	}
 }
+#endif
 
 void ICACHE_FLASH_ATTR uart0_write_char(char c) {
   if (c == '\n') {

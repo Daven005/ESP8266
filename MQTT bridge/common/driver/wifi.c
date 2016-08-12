@@ -159,8 +159,8 @@ void ICACHE_FLASH_ATTR initWiFi(enum phy_mode phyMode, char *deviceName, char *s
 //	}
 //}
 
-uint16 ICACHE_FLASH_ATTR WIFI_ConnectTime(void) {
-	return connectTime;
+uint32 ICACHE_FLASH_ATTR WIFI_ConnectTime(void) { // mS
+	return connectTime/1000;
 }
 
 void ICACHE_FLASH_ATTR WIFI_Connect(uint8_t* ssid, uint8_t* pass, uint8_t* deviceName, WifiCallback cb) {

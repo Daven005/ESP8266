@@ -125,7 +125,7 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 }
 
 static void ICACHE_FLASH_ATTR startUp() {
-	INFOP("\n%s ( %s ) starting ...\n", "MQTT Bridge", version);
+	TESTP("\n%s ( %s - %s ) starting ...\n", "MQTT Bridge", wifi_station_get_hostname(), version);
 	INFOP("wifi_get_phy_mode = %d\n", wifi_get_phy_mode());
 
 //	os_timer_disarm(&uartTimer);

@@ -19,7 +19,7 @@
 #include "temperature.h"
 #include "publish.h"
 
-#include "../user/include/config_.h"
+#include "config.h"
 #include "check.h"
 
 static MQTT_Client *mqttClient;
@@ -140,7 +140,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 }
 
 void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
-		uint8 wifiChannel, uint16 wifiAttempts, char *bestSSID, uint16 vcc) {
+		uint8 wifiChannel, uint16 wifiConnectTime, char *bestSSID, uint16 vcc) {
 	if (mqttIsConnected()) {
 		char *topic = (char *) os_zalloc(50);
 		char *data = (char *) os_zalloc(500);
@@ -170,7 +170,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 #else
 				0,
 #endif
-				wifi_station_get_rssi(), wifiChannel, WIFI_Attempts(), vcc);
+				wifi_station_get_rssi(), wifiChannel, wifiConnectTime, vcc);
 		os_sprintf(data + os_strlen(data), "\"IPaddress\":\"%d.%d.%d.%d\"", IP2STR(&ipConfig.ip.addr));
 		os_sprintf(data + os_strlen(data), ", \"AP\":\"%s\"", bestSSID);
 		os_sprintf(data + os_strlen(data), ", \"Settings\":[");
