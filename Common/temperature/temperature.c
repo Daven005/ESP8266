@@ -15,7 +15,7 @@
 #include "dtoa.h"
 #include "publish.h"
 #include "assert.h"
-#include "../../user/include/config_.h"
+#include "config.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static os_timer_t ds18b20_timer;
