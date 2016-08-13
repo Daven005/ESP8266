@@ -10,7 +10,7 @@
 #include <osapi.h>
 #include <user_interface.h>
 #include "debug.h"
-#include "user_configuration.h"
+#include "user_conf.h"
 #include "flash.h"
 
 #ifdef LED

@@ -38,7 +38,7 @@
 #include "mem.h"
 #include "mqtt_msg.h"
 #include "debug.h"
-#include "../../user/include/user_configuration.h"
+#include "user_conf.h"
 #include "mqtt.h"
 #include "queue.h"
 

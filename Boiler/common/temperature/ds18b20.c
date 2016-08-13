@@ -18,7 +18,7 @@
 
 #include "espconn.h"
 #include "ds18b20.h"
-#include "../../user/include/user_configuration.h"
+#include "user_conf.h"
 
 // global search state
 static unsigned char address[8];

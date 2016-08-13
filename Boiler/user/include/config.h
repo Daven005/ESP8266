@@ -32,7 +32,7 @@
 #define USER_CONFIG_H_
 #include "os_type.h"
 
-#include "user_configuation.h"
+#include "user_conf.h"
 typedef struct{
 	uint32_t cfg_holder;
 	uint8_t device_id[16];
@@ -65,9 +65,10 @@ typedef struct {
     uint8 pad[3];
 } SAVE_FLAG;
 
-void ICACHE_FLASH_ATTR CFG_Save();
-void ICACHE_FLASH_ATTR CFG_Load();
-
+void ICACHE_FLASH_ATTR CFG_Save(void);
+void ICACHE_FLASH_ATTR CFG_Load(void);
+void CFG_print(void);
+uint16 sysCfgUpdates(void);
 extern SYSCFG sysCfg;
 
 #endif /* USER_CONFIG_H_ */

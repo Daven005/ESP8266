@@ -13,7 +13,7 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_151
 
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
@@ -30,21 +30,21 @@ MODULES		= user common/mqtt common/temperature common/modules common/driver
 EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig
+LIBS		= c gcc hal phy pp net80211 lwip wpa main upgrade ssl smartconfig crypto
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wmissing-prototypes -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 
 # linker flags used to generate the main object file
 LDFLAGS		= -Wl,-M=Boiler.map -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
-# linker script used for the above linkier step
+# linker script used for the above linker step
 LD_SCRIPT	= eagle.app.v6.ld
 
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
-SDK_INCDIR	= include include/driver driver
+SDK_INCDIR	= include 
 
 # select which tools to use as compiler, librarian and linker
 CC		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
@@ -86,11 +86,11 @@ vpath %.c $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	$(vecho) "CC $$< $(MODULE_INCDIR)"
-	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
+	$(vecho) "CC $$< $(CONFIG) $(MODULE_INCDIR)"
+	$(Q) $(CC) $(CONFIG) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean newversion newbuild newrevision
+.PHONY: all checkdirs clean newversion newbuild newrevision fsize
 
 all: checkdirs $(TARGET_OUT)
 
@@ -109,7 +109,6 @@ newpatch:
 newbuild:
 	$(Q) powershell -file $(realpath ../buildCmds/incVersion.ps1) build $(realpath user/include/version.h)
 	touch user/user_main.c
-
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"  -L$(SDK_LIBDIR) $(LD_SCRIPT)
@@ -156,7 +155,7 @@ flashonefile: all
 	rm -f eagle.app.v6.irom0text.bin
 	rm -f eagle.app.v6.rodata.bin
 	rm -f eagle.app.v6.text.bin
-#	rm -f eagle.app.sym
+	rm -f eagle.app.sym
 	mv eagle.app.flash.bin firmware/
 	$(vecho) "No boot needed."
 	$(vecho) "Generate eagle.app.flash.bin successully in folder firmware."
@@ -170,8 +169,11 @@ flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
+fread:
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 read_flash  0x00000  0x1000  $(FW_BASE)/eagle.flashRead.bin
+
 fsize:
-	$(ESPTOOL) -p $(ESPPORT) flash_id
+	$(ESPTOOL) -p $(ESPPORT) -b 115200 flash_id
 
 rebuild: clean all
 

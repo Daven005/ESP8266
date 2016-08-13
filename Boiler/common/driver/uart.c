@@ -15,7 +15,7 @@
 #include <os_type.h>
 #include <user_interface.h>
 
-#include "../../user/include/user_configuration.h"
+#include "user_conf.h"
 
 #define UART0   0
 #define UART1   1

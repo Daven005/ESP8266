@@ -12,7 +12,8 @@
 #include "easygpio.h"
 #include "mcp23s17.h"
 #include "io.h"
-#include "include/user_configuation.h"
+
+#include "include/user_conf.h"
 
 extern void publishError(uint8 err, int info);
 extern void publishInput(uint8 idx, uint8 val);
@@ -35,7 +36,7 @@ void ICACHE_FLASH_ATTR initIO(void) {
 	sGPIO_SET(PORTA, 0); // All outputs OFF
 }
 
-void checkUpDown(int *val, bool ip) {
+static void checkUpDown(int *val, bool ip) {
 	if (ip) {
 		if (*val < 10) (*val)++;
 	} else {

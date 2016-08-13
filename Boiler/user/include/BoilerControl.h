@@ -12,6 +12,9 @@ void setOutsideTemp(int idx, int val);
 void printDHW(void);
 void printBCinfo(void);
 void checkControl(void);
-void initBoilerControl();
+void initBoilerControl(void);
+void boilerSwitchAction(void);
+void incTime(void);
+void setTime(time_t t);
 
 #endif /* INCLUDE_BOILERCONTROL_H_ */

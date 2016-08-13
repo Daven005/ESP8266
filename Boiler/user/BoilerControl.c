@@ -10,7 +10,8 @@
 #include "timezone.h"
 #include "temperature.h"
 #include "debug.h"
-#include "include/user_configuation.h"
+#include "BoilerControl.h"
+#include "include/user_conf.h"
 
 static enum { DHW_AUTO = 0, DHW_AUTO_MAX, DHW_OFF, DHW_ON } dhwOverride;
 static uint8 currentHour;
@@ -94,7 +95,6 @@ void ICACHE_FLASH_ATTR setTime(time_t t) {
 
 	currentTime = t;
 	tm = localtime(&t);
-	applyDST(tm);
 	boilerSetCurrentTime(tm->tm_hour, tm->tm_min);
 }
 
@@ -108,13 +108,13 @@ void ICACHE_FLASH_ATTR incTime(void) { // By 1S
 	setTime(currentTime + 1);
 }
 
-void ICACHE_FLASH_ATTR firing_cb(void) {
+static void ICACHE_FLASH_ATTR firing_cb(void) {
 	TESTP("OB starting complete\n");
 	firingState = OB_ON;
 	checkSetOutput(OP_OB_CIRC_ON, true);
 }
 
-void ICACHE_FLASH_ATTR OB_processFiring(bool OBrequest) {
+static void ICACHE_FLASH_ATTR OB_processFiring(bool OBrequest) {
 	switch (firingState) {
 	case OB_OFF:
 		if (OBrequest) {
@@ -156,7 +156,7 @@ void ICACHE_FLASH_ATTR OB_processFiring(bool OBrequest) {
 	}
 }
 
-uint8 ICACHE_FLASH_ATTR checkCH_Logic(WB_IsHot, OB_IsOn, CH_CallForHeat, TS_MiddleHigh, TS_BottomHigh) {
+static uint8 ICACHE_FLASH_ATTR checkCH_Logic(WB_IsHot, OB_IsOn, CH_CallForHeat, TS_MiddleHigh, TS_BottomHigh) {
 	static const uint8 chLogic[] = {
 			0b00, 0b00, 0b00, 0b00, 0b10, 0b01, 0b01, 0b01,
 			0b10, 0b10, 0b00, 0b00, 0b10, 0b10, 0b10, 0b01,
@@ -183,7 +183,7 @@ uint8 ICACHE_FLASH_ATTR checkCH_Logic(WB_IsHot, OB_IsOn, CH_CallForHeat, TS_Midd
 	return (result);
 }
 
-uint8 ICACHE_FLASH_ATTR checkDHW_Logic(WB_IsHot, OB_IsOn, DHW_CallForHeat, TS_TopHigh, TS_MiddleHigh) {
+static uint8 ICACHE_FLASH_ATTR checkDHW_Logic(WB_IsHot, OB_IsOn, DHW_CallForHeat, TS_TopHigh, TS_MiddleHigh) {
 	static const uint8 dhwLogic[] = {
 			0b0, 0b0, 0b0, 0b0, 0b1, 0b1, 0b0, 0b0,
 			0b1, 0b1, 0b0, 0b0, 0b1, 0b1, 0b1, 0b0,
@@ -208,7 +208,7 @@ uint8 ICACHE_FLASH_ATTR checkDHW_Logic(WB_IsHot, OB_IsOn, DHW_CallForHeat, TS_To
 	return dhwLogic[idx];
 }
 
-void ICACHE_FLASH_ATTR boost_cb(void) {
+static void ICACHE_FLASH_ATTR boost_cb(void) {
 	if (boostInProgress) {
 		if (boostHadCFH) {
 			if (++boostCount > 100) {
@@ -226,7 +226,7 @@ void ICACHE_FLASH_ATTR boost_cb(void) {
 	TESTP("Boost %d\n", boostCount);
 }
 
-void ICACHE_FLASH_ATTR validateOutputs(void) {
+static void ICACHE_FLASH_ATTR validateOutputs(void) {
 	if (outputState(OP_OB_ON) && outputState(OP_EMERGENCY_DUMP_ON)) {
 		publishError(80, 0); // Shouldn't have OB ON when emergency dump
 	}
@@ -347,7 +347,7 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 	validateOutputs();
 }
 
-void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
+static void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
 	int idx;
 
 	temperatureError = false;
@@ -388,7 +388,7 @@ void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
 	os_timer_arm(&TemperatureMonitor_timer, 60*1000, false); // Repeat every minute
 }
 
-void ICACHE_FLASH_ATTR initBoilerControl() {
+void ICACHE_FLASH_ATTR initBoilerControl(void) {
 	checkInputs(false);
 	// Allocate derived unmapped temperatures
 	setUnmappedSensorTemperature("CH setpoint", DERIVED, 0, 0);

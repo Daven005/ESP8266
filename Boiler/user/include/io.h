@@ -24,5 +24,6 @@ void printInput(uint8 op);
 uint8 readOLAT(void);
 uint8 readGPIO(void);
 void printIOreg(void);
+void initIO(void);
 
 #endif /* INCLUDE_IO_H_ */

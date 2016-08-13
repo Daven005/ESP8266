@@ -35,15 +35,13 @@
 #include <osapi.h>
 #include <spi_flash.h>
 #include <user_interface.h>
-
+#include "config.h"
 #include "debug.h"
 
 SYSCFG sysCfg;
 SAVE_FLAG saveFlag;
 
-void ICACHE_FLASH_ATTR
-CFG_Save()
-{
+void ICACHE_FLASH_ATTR CFG_Save(void) {
 	 spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 	                   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 
@@ -124,4 +122,15 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 
 		CFG_Save();
 	}
+}
+
+uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {
+	if (sysCfg.updates) return sysCfg.updates;
+	return UPDATES;
+}
+
+void ICACHE_FLASH_ATTR CFG_print(void) {
+	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
+	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
 }

@@ -32,7 +32,7 @@
 #include <string.h>
 #include "mqtt_msg.h"
 
-#include "user_configuration.h"
+#include "user_conf.h"
 
 #define MQTT_MAX_FIXED_HEADER_SIZE 3
 

@@ -33,6 +33,7 @@
 #include "temperature.h"
 #include "time.h"
 #include "BoilerControl.h"
+#include "user_main.h"
 
 static os_timer_t process_timer;
 static os_timer_t time_timer;
@@ -67,6 +68,8 @@ enum lastAction_t savedLastAction;
 MQTT_Client mqttClient;
 static uint8 wifiChannel = 255;
 
+void user_rf_pre_init(void);
+
 void user_rf_pre_init(void) {
 }
 
@@ -82,14 +85,14 @@ void ICACHE_FLASH_ATTR startConnection(void) {
 	MQTT_Connect(&mqttClient);
 }
 
-void ICACHE_FLASH_ATTR publishAllInputs(MQTT_Client* client) {
+static void ICACHE_FLASH_ATTR publishAllInputs(MQTT_Client* client) {
 	uint8 idx;
 	for (idx = 0; idx < INPUTS && idx < sysCfg.inputs; idx++) {
 		publishInput(idx, input(idx));
 	}
 }
 
-void ICACHE_FLASH_ATTR publishAllOutputs(MQTT_Client* client) {
+static void ICACHE_FLASH_ATTR publishAllOutputs(MQTT_Client* client) {
 	uint8 idx;
 	for (idx = 0; idx < OUTPUTS && idx < sysCfg.outputs; idx++) {
 		publishOutput(idx, outputState(idx));
@@ -97,10 +100,10 @@ void ICACHE_FLASH_ATTR publishAllOutputs(MQTT_Client* client) {
 }
 
 void ICACHE_FLASH_ATTR _publishDeviceInfo(void) {
-	publishDeviceInfo(version, "Boiler Control", wifiChannel, WIFI_Attempts(), getBestSSID(), 0);
+	publishDeviceInfo(version, "Boiler Control", wifiChannel, WIFI_ConnectTime(), getBestSSID(), 0);
 }
 
-void ICACHE_FLASH_ATTR transmitCb(uint32_t args) { // Depends on Update period
+static void ICACHE_FLASH_ATTR transmitCb(uint32_t args) { // Depends on Update period
 	uint32 t = system_get_time();
 	if (!checkSmartConfig(SC_CHECK)) {
 		if (!system_os_post(USER_TASK_PRIO_1, EVENT_TRANSMIT, args))
@@ -125,7 +128,7 @@ void ICACHE_FLASH_ATTR publishData() {
 	checkTime("publishData", t);
 }
 
-void ICACHE_FLASH_ATTR printAll(void) {
+static void ICACHE_FLASH_ATTR printAll(void) {
 	int idx;
 	struct Temperature *t;
 
@@ -151,7 +154,7 @@ void ICACHE_FLASH_ATTR printAll(void) {
 	printBCinfo();
 }
 
-void ICACHE_FLASH_ATTR switchAction(int action) {
+static void ICACHE_FLASH_ATTR switchAction(int action) {
 	startFlash(action, 50, 100);
 	switch (action) {
 	case 1:
@@ -174,18 +177,18 @@ void ICACHE_FLASH_ATTR switchAction(int action) {
 	}
 }
 
-void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
+static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	MQTT_Client* client = (MQTT_Client*) args;
 	mqttConnected = false;
 	ERRORP("MQTT disconnected\r\n");
 	if (lastAction < WIFI_CONNECT_CHANGE) lastAction = MQTT_DISCONNECTED_CB;
 }
 
-void ICACHE_FLASH_ATTR time_cb(void *arg) { // Update every 1 second
+static void ICACHE_FLASH_ATTR time_cb(void *arg) { // Update every 1 second
 	incTime();
 }
 
-void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
+static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
 		const char *data, uint32_t data_len) {
 	char *topicBuf = (char*) os_zalloc(topic_len + 1), *dataBuf = (char*) os_zalloc(data_len + 1);
 
@@ -204,7 +207,7 @@ void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t to
 	lastAction = MQTT_DATA_CB;
 }
 
-void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *data) {
+static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *data) {
 	char *tokens[10];
 	uint32 t = system_get_time();
 
@@ -216,7 +219,7 @@ void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *
 	lastAction = MQTT_DATA_CB;
 }
 
-void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
+static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	TESTP("WiFi status: %d\n", status);
 	if (status == STATION_GOT_IP) {
 		wifiChannel = wifi_get_channel();
@@ -229,12 +232,12 @@ void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	}
 }
 
-void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
+static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 	if (!system_os_post(USER_TASK_PRIO_1, EVENT_MQTT_CONNECTED, (os_param_t) args))
 		TESTP("Can't post EVENT_MQTT_CONNECTED\n");
 }
 
-void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
+static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	uint32 t = system_get_time();
 	char *topic = (char*) os_zalloc(100);
 	static int reconnections = 0;
@@ -274,12 +277,12 @@ void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	checkTime("mqttConnectedFunc", t);
 }
 
-void ICACHE_FLASH_ATTR processTimerCb(void) { // 2 sec
+static void ICACHE_FLASH_ATTR processTimerCb(void) { // 2 sec
 	if (!system_os_post(USER_TASK_PRIO_1, EVENT_PROCESS_TIMER, 0))
 		TESTP("Can't post EVENT_MQTT_CONNECTED\n");
 }
 
-void ICACHE_FLASH_ATTR processTimerFunc(void) {
+static void ICACHE_FLASH_ATTR processTimerFunc(void) {
 	uint32 t = system_get_time();
 	lastAction = PROCESS_FUNC;
 	checkInputs(false);
@@ -289,15 +292,15 @@ void ICACHE_FLASH_ATTR processTimerFunc(void) {
 	checkTime("processTimerFunc", t);
 }
 
-void ICACHE_FLASH_ATTR dateTimerCb(void) { // 10 mins
+static void ICACHE_FLASH_ATTR dateTimerCb(void) { // 10 mins
 	os_printf("Nothing heard so restarting...\n");
 	lastAction = RESTART;
 	system_restart();
 }
 
-void ICACHE_FLASH_ATTR initTime(void) {
+static void ICACHE_FLASH_ATTR initTime(void) {
 	struct tm tm;
-	tm.tm_year = 2015;
+	tm.tm_year = 2016;
 	tm.tm_mon = 10;
 	tm.tm_mday = 1;
 	tm.tm_hour = 12;
