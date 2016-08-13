@@ -9,8 +9,8 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
-#include "user_config.h"
 #include "debug.h"
+#include "user_conf.h"
 #include "flash.h"
 
 #ifdef LED
@@ -19,6 +19,8 @@ static bool flashState;
 static int flashCount;
 static unsigned int flashOnTime;
 static unsigned int flashOffTime;
+#else
+#pragma message "No LED"
 #endif
 #ifdef ACTION_LED
 static os_timer_t flashA_timer;
@@ -52,7 +54,7 @@ static void ICACHE_FLASH_ATTR flashCb(void) {
 }
 
 void ICACHE_FLASH_ATTR startFlash(int count, unsigned int onTime, unsigned int offTime) {
-	TESTP("Start Flash %d %d/%d\n", count, onTime, offTime);
+	INFOP("Start Flash %d %d/%d\n", count, onTime, offTime);
 	easygpio_outputSet(LED, (flashState=1));
 	flashCount = count;
 	flashOnTime = onTime;

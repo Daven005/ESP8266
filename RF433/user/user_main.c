@@ -12,7 +12,6 @@
 #include <user_interface.h>
 #include "easygpio.h"
 #include "stdout.h"
-#include "user_config.h"
 #include "config.h"
 #include "wifi.h"
 #include "debug.h"
@@ -28,6 +27,8 @@
 #include "user_main.h"
 #include "version.h"
 #include "time.h"
+
+#include "include/user_conf.h"
 #include "xmit.h"
 
 os_timer_t transmit_timer;
@@ -101,7 +102,7 @@ static void ICACHE_FLASH_ATTR publishData(void) {
 }
 
 void ICACHE_FLASH_ATTR _publishDeviceInfo(void) {
-	publishDeviceInfo(version, "RF433", wifiChannel, WIFI_Attempts(), getBestSSID(), 0);
+	publishDeviceInfo(version, "RF433", wifiChannel, WIFI_ConnectTime(), getBestSSID(), 0);
 }
 
 static void ICACHE_FLASH_ATTR transmitCb(uint32_t args) { // Depends on Update period
@@ -313,14 +314,14 @@ static void ICACHE_FLASH_ATTR startUp() {
 	WIFI_Connect(bestSSID, sysCfg.sta_pwd, sysCfg.deviceName, wifiConnectCb);
 
 	initSwitch(switchAction);
-	publishInit(&mqttClient);
+	initPublish(&mqttClient);
 
 	lastAction = INIT_DONE;
 }
 
 static void ICACHE_FLASH_ATTR initDone_cb() {
 	INFOP("Start WiFi Scan\n");
-	initWiFi(startUp);
+	initWiFi(PHY_MODE_11B, sysCfg.deviceName, sysCfg.sta_ssid , startUp);
 }
 
 void ICACHE_FLASH_ATTR user_init(void) {

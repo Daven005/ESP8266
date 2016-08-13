@@ -13,10 +13,10 @@
 #include "jsmn.h"
 #include "temperature.h"
 #include "mqtt.h"
-#include "user_config.h"
 #include "config.h"
 #include "decodeMessage.h"
 #include "debug.h"
+#include "include/user_conf.h"
 #include "publish.h"
 
 extern os_timer_t date_timer;

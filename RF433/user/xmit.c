@@ -14,8 +14,8 @@
 #include "gpio.h"
 #include "debug.h"
 #include "xmit.h"
-#include "user_config.h"
 #include "config.h"
+#include "include/user_conf.h"
 
 #define A_SYNC_MIN 2500
 #define A_SYNC_XMIT 6000

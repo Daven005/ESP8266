@@ -10,12 +10,13 @@
 #include <osapi.h>
 #include <ds18b20.h>
 #include "temperature.h"
-#include "config.h"
 #include "debug.h"
-#include "user_config.h"
 #include "dtoa.h"
 #include "publish.h"
 #include "assert.h"
+
+#include "user_conf.h"
+#include "config.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static os_timer_t ds18b20_timer;
@@ -55,7 +56,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 	for (i = 0; i < MAX_TEMPERATURE_SENSOR; i++) {
 		if (temperature[i].temperatureType == NOT_SET) {
 			temperature[i].temperatureType = temperatureType;
-			strcpy(temperature[i].address, sensorID);
+			os_strcpy(temperature[i].address, sensorID);
 			INFOP("New ");
 			return i;
 		}
