@@ -11,10 +11,11 @@
 #include <ds18b20.h>
 #include "temperature.h"
 #include "debug.h"
-#include "user_config.h"
 #include "dtoa.h"
 #include "publish.h"
 #include "assert.h"
+
+#include "user_conf.h"
 #include "config.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
