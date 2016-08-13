@@ -39,7 +39,7 @@
 #define MQTT_PASS			""
 
 #define STA_SSID "EE-berry"
-#define STA_PASS "fog-phone-deep"
+#include "password.h"
 #define STA_TYPE AUTH_WPA2_PSK
 
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/

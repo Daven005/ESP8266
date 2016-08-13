@@ -11,7 +11,6 @@
 #include <osapi.h>
 #include <user_interface.h>
 #include "wifi.h"
-#include "user_config.h"
 #include "debug.h"
 #include "flash.h"
 #include "wifi.h"
@@ -19,6 +18,7 @@
 #include "temperature.h"
 #include "publish.h"
 
+#include "user_conf.h"
 #include "config.h"
 #include "check.h"
 
