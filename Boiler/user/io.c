@@ -10,9 +10,9 @@
 #include <os_type.h>
 #include <osapi.h>
 #include "easygpio.h"
-#include "user_config.h"
 #include "mcp23s17.h"
 #include "io.h"
+#include "include/user_configuation.h"
 
 extern void publishError(uint8 err, int info);
 extern void publishInput(uint8 idx, uint8 val);
@@ -20,10 +20,10 @@ extern void publishOutput(uint8 idx, uint8 val);
 
 
 typedef enum { OR_NOT_SET, OR_OFF, OR_ON } override;
-int currentInputs[MAX_INPUT];
-bool currentOutputs[MAX_OUTPUT];
-override inputOverrides[MAX_INPUT];
-override outputOverrides[MAX_OUTPUT];
+int currentInputs[INPUTS];
+bool currentOutputs[OUTPUTS];
+override inputOverrides[INPUTS];
+override outputOverrides[OUTPUTS];
 
 void ICACHE_FLASH_ATTR initIO(void) {
 	easygpio_pinMode(IP4, EASYGPIO_PULLUP, EASYGPIO_INPUT);
@@ -53,14 +53,14 @@ void ICACHE_FLASH_ATTR checkInputs(bool publish) {
 		val >>= 1;
 	}
 	if (publish) {
-		for (idx = 0; idx < MAX_INPUT; idx++) {
+		for (idx = 0; idx < INPUTS; idx++) {
 			publishInput(idx, input(idx));
 		}
 	}
 }
 
 bool ICACHE_FLASH_ATTR input(uint8 ip) {
-	if (ip < MAX_INPUT) {
+	if (ip < INPUTS) {
 		switch (inputOverrides[ip]) {
 		case OR_NOT_SET:
 			return currentInputs[ip] > 5;
@@ -74,13 +74,13 @@ bool ICACHE_FLASH_ATTR input(uint8 ip) {
 }
 
 bool ICACHE_FLASH_ATTR outputState(uint8 id) {
-	if (id < MAX_OUTPUT)
+	if (id < OUTPUTS)
 		return currentOutputs[id];
 	return false;
 }
 
 void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		if (currentOutputs[op] != newSetting) {
 			publishOutput(op, newSetting);
 			currentOutputs[op] = newSetting;
@@ -97,7 +97,7 @@ void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
 }
 
 void ICACHE_FLASH_ATTR overrideSetOutput(uint8 op, uint8 set) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		outputOverrides[op] = set ? OR_ON : OR_OFF;
 		sGPIO_SET_PIN(PORTA, op + 1, set);
 		printOutput(op);
@@ -105,7 +105,7 @@ void ICACHE_FLASH_ATTR overrideSetOutput(uint8 op, uint8 set) {
 }
 
 void ICACHE_FLASH_ATTR overrideClearOutput(uint8 op) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		outputOverrides[op] = OR_NOT_SET;
 		sGPIO_SET_PIN(PORTA, op + 1, currentOutputs[op]);
 		printOutput(op);
@@ -113,7 +113,7 @@ void ICACHE_FLASH_ATTR overrideClearOutput(uint8 op) {
 }
 
 void ICACHE_FLASH_ATTR printOutput(uint8 op) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		if (outputOverrides[op] == OR_NOT_SET) {
 			os_printf("OP[%d]=%d ", op, currentOutputs[op]);
 		} else {
@@ -124,21 +124,21 @@ void ICACHE_FLASH_ATTR printOutput(uint8 op) {
 }
 
 void ICACHE_FLASH_ATTR overrideSetInput(uint8 ip, uint8 set) {
-	if (ip < MAX_INPUT) {
+	if (ip < INPUTS) {
 		inputOverrides[ip] = set ? OR_ON : OR_OFF;
 		printInput(ip);
 	}
 }
 
 void ICACHE_FLASH_ATTR overrideClearInput(uint8 ip) {
-	if (ip < MAX_INPUT) {
+	if (ip < INPUTS) {
 		inputOverrides[ip] = OR_NOT_SET;
 		printInput(ip);
 	}
 }
 
 void ICACHE_FLASH_ATTR printInput(uint8 ip) {
-	if (ip < MAX_INPUT) {
+	if (ip < INPUTS) {
 		if (inputOverrides[ip] == OR_NOT_SET) {
 			os_printf("IP[%d]=%d ", ip, currentInputs[ip]);
 		} else {
@@ -164,7 +164,7 @@ uint8 ICACHE_FLASH_ATTR readOLAT(void) {
 
 void ICACHE_FLASH_ATTR checkOutputs(void) {
 	uint8 op;
-	for (op=0; op < MAX_OUTPUT; op++) { // Repeat outputs in case corrupted
+	for (op=0; op < OUTPUTS; op++) { // Repeat outputs in case corrupted
 		checkSetOutput(op, currentOutputs[op]);
 	}
 	if (easygpio_inputGet(2) != currentOutputs[OP_EMERGENCY_DUMP_ON]) {

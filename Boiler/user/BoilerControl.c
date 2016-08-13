@@ -5,12 +5,12 @@
 #include <ds18b20.h>
 #include "stdout.h"
 #include "config.h"
-#include "user_config.h"
 #include "io.h"
 #include "time.h"
 #include "timezone.h"
 #include "temperature.h"
 #include "debug.h"
+#include "include/user_configuation.h"
 
 static enum { DHW_AUTO = 0, DHW_AUTO_MAX, DHW_OFF, DHW_ON } dhwOverride;
 static uint8 currentHour;
@@ -59,7 +59,7 @@ void ICACHE_FLASH_ATTR printDHW() {
 			sysCfg.settings[SETTING_DHW_ON_HOUR], sysCfg.settings[SETTING_DHW_OFF_HOUR]);
 }
 
-void printBCinfo(void) {
+void ICACHE_FLASH_ATTR printBCinfo(void) {
 	os_printf("Boost: InProgress %d, hadCFH %d, Count %d\n", boostInProgress, boostHadCFH, boostCount);
 	os_printf("Monitor: radsOff %d, dhwWarning %d, chWarning %d\n", radsOffCount, dhwWarningCount, chWarningCount);
 }

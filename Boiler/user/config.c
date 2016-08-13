@@ -117,7 +117,7 @@ void ICACHE_FLASH_ATTR CFG_Load() {
 		sysCfg.settings[SETTING_DHW_OFF_HOUR] = DEFAULT_DHW_OFF_HOUR;
 
 		sysCfg.updates = UPDATES;
-		sysCfg.inputs = MAX_INPUT;
+		sysCfg.inputs = INPUTS;
 
 		os_sprintf(sysCfg.deviceName, "Boiler Control");
 		os_sprintf(sysCfg.deviceLocation, "Unknown");

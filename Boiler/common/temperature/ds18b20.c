@@ -17,8 +17,8 @@
 #include "user_interface.h"
 
 #include "espconn.h"
-#include "user_config.h"
 #include "ds18b20.h"
+#include "../../user/include/user_configuration.h"
 
 // global search state
 static unsigned char address[8];
@@ -26,8 +26,7 @@ static uint8_t LastDiscrepancy;
 static uint8_t LastFamilyDiscrepancy;
 static uint8_t LastDeviceFlag;
 
-void ICACHE_FLASH_ATTR ds_init()
-{
+void ICACHE_FLASH_ATTR ds_init(void) {
 	// Set DS18B20_PIN as gpio pin
 	PIN_FUNC_SELECT(DS18B20_MUX,  DS18B20_FUNC);
 	// Disable pull-down
@@ -173,13 +172,11 @@ void ICACHE_FLASH_ATTR select(const uint8_t *rom)
 //
 // Do a ROM skip
 //
-void ICACHE_FLASH_ATTR skip()
-{
-    write(DS1820_SKIP_ROM,0); // Skip ROM
+void ICACHE_FLASH_ATTR ds1q8B20_skip(void) {
+    write(DS1820_SKIP_ROM, 0); // Skip ROM
 }
 
-void ICACHE_FLASH_ATTR reset_search()
-{
+void ICACHE_FLASH_ATTR reset_search() {
 	int i;
 	// reset the search state
 	LastDiscrepancy = 0;
@@ -253,8 +250,7 @@ void ICACHE_FLASH_ATTR write_bit(int v)
 //
 // Read a byte
 //
-uint8_t ICACHE_FLASH_ATTR read()
-{
+uint8_t ICACHE_FLASH_ATTR read(void) {
 	uint8_t bitMask;
 	uint8_t r = 0;
 	for (bitMask = 0x01; bitMask; bitMask <<= 1) {

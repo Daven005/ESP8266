@@ -27,7 +27,7 @@
 #define MQTT_PASS			""
 
 #define STA_SSID "EE-berry"
-#define STA_PASS "fog-phone-deep"
+#include "password.h"
 #define STA_TYPE AUTH_WPA2_PSK
 
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
@@ -41,8 +41,8 @@
 #define NAME_SIZE 32
 #define MAP_TEMP_SIZE 15
 #define SETTINGS_SIZE 20
-#define MAX_OUTPUT 4
-#define MAX_INPUT 5
+#define OUTPUTS 4
+#define INPUTS 5
 #define REQUIRED_SENSORS 6
 
 #define MAX_TEMPERATURE_SENSOR 15

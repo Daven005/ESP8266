@@ -31,7 +31,8 @@
 #ifndef USER_CONFIG_H_
 #define USER_CONFIG_H_
 #include "os_type.h"
-#include "user_config.h"
+
+#include "user_configuation.h"
 typedef struct{
 	uint32_t cfg_holder;
 	uint8_t device_id[16];
@@ -55,6 +56,7 @@ typedef struct{
 	uint16_t settings[SETTINGS_SIZE];
 	uint8_t mapping[MAP_TEMP_SIZE];
 	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
+	uint8 outputs;
 
 } SYSCFG;
 

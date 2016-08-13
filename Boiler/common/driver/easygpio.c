@@ -36,8 +36,7 @@
 
 #define EASYGPIO_USE_GPIO_INPUT_GET
 
-static void ICACHE_FLASH_ATTR
-gpio16_output_conf(void) {
+static void ICACHE_FLASH_ATTR gpio16_output_conf(void) {
   WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
       (READ_PERI_REG(PAD_XPD_DCDC_CONF) & 0xffffffbcUL) | 0x1UL); // mux configuration for XPD_DCDC to output rtc_gpio0
 
@@ -48,8 +47,7 @@ gpio16_output_conf(void) {
       (READ_PERI_REG(RTC_GPIO_ENABLE) & 0xfffffffeUL) | 0x1UL); //out enable
 }
 
-static void ICACHE_FLASH_ATTR
-gpio16_input_conf(void) {
+static void ICACHE_FLASH_ATTR gpio16_input_conf(void) {
   WRITE_PERI_REG(PAD_XPD_DCDC_CONF,
       (READ_PERI_REG(PAD_XPD_DCDC_CONF) & 0xffffffbcUL) | 0x1UL); // mux configuration for XPD_DCDC and rtc_gpio0 connection
 
@@ -63,8 +61,7 @@ gpio16_input_conf(void) {
 /**
  * Returns the number of active pins in the gpioMask.
  */
-uint8_t ICACHE_FLASH_ATTR
-easygpio_countBits(uint32_t gpioMask) {
+uint8_t ICACHE_FLASH_ATTR easygpio_countBits(uint32_t gpioMask) {
 
   uint8_t i=0;
   uint8_t numberOfPins=0;
@@ -77,8 +74,7 @@ easygpio_countBits(uint32_t gpioMask) {
 /**
  * Returns the gpio name and func for a specific pin.
  */
-bool ICACHE_FLASH_ATTR
-easygpio_getGPIONameFunc(uint8_t gpio_pin, uint32_t *gpio_name, uint8_t *gpio_func) {
+bool ICACHE_FLASH_ATTR easygpio_getGPIONameFunc(uint8_t gpio_pin, uint32_t *gpio_name, uint8_t *gpio_func) {
 
   if (gpio_pin == 6 || gpio_pin == 7 || gpio_pin == 8 || gpio_pin == 11 || gpio_pin >= 17) {
     os_printf("easygpio_getGPIONameFunc Error: There is no GPIO%d, check your code\n", gpio_pin);
@@ -149,8 +145,7 @@ easygpio_getGPIONameFunc(uint8_t gpio_pin, uint32_t *gpio_name, uint8_t *gpio_fu
  * - it's always pull up for both EASYGPIO_PULLUP and EASYGPIO_PULLDOWN.
  * But that is something the SDK needs to fix.
  */
-static void ICACHE_FLASH_ATTR
-easygpio_setupPullsByName(uint32_t gpio_name, EasyGPIO_PullStatus pullStatus) {
+static void ICACHE_FLASH_ATTR easygpio_setupPullsByName(uint32_t gpio_name, EasyGPIO_PullStatus pullStatus) {
 
   if (EASYGPIO_PULLUP == pullStatus){
 //    PIN_PULLDWN_DIS(gpio_name);
@@ -167,8 +162,7 @@ easygpio_setupPullsByName(uint32_t gpio_name, EasyGPIO_PullStatus pullStatus) {
 /**
  * Sets the pull up and pull down registers for a pin.
  */
-bool ICACHE_FLASH_ATTR
-easygpio_pullMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus) {
+bool ICACHE_FLASH_ATTR easygpio_pullMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus) {
   uint32_t gpio_name;
   uint8_t gpio_func;
 
@@ -185,8 +179,7 @@ easygpio_pullMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus) {
  * pull-down registers for that pin.
  * 'pullStatus' has no effect on output pins or GPIO16
  */
-bool ICACHE_FLASH_ATTR
-easygpio_pinMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, EasyGPIO_PinMode pinMode) {
+bool ICACHE_FLASH_ATTR easygpio_pinMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, EasyGPIO_PinMode pinMode) {
   uint32_t gpio_name;
   uint8_t gpio_func;
 
@@ -218,8 +211,7 @@ easygpio_pinMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, EasyGPIO_PinM
  * Sets the 'gpio_pin' pin as a GPIO and sets the interrupt to trigger on that pin.
  * The 'interruptArg' is the function argument that will be sent to your interruptHandler
  */
-bool ICACHE_FLASH_ATTR
-easygpio_attachInterrupt(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, void (*interruptHandler)(void *arg), void *interruptArg) {
+bool ICACHE_FLASH_ATTR easygpio_attachInterrupt(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, void (*interruptHandler)(void *arg), void *interruptArg) {
   uint32_t gpio_name;
   uint8_t gpio_func;
 
@@ -255,8 +247,7 @@ easygpio_attachInterrupt(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, void 
 /**
  * Detach the interrupt handler from the 'gpio_pin' pin.
  */
-bool ICACHE_FLASH_ATTR
-easygpio_detachInterrupt(uint8_t gpio_pin) {
+bool ICACHE_FLASH_ATTR easygpio_detachInterrupt(uint8_t gpio_pin) {
 
   if (gpio_pin == 16) {
     os_printf("easygpio_setupInterrupt Error: GPIO16 does not have interrupts\n");
@@ -275,8 +266,7 @@ easygpio_detachInterrupt(uint8_t gpio_pin) {
  * You can not rely on that this function will switch the gpio to an output like GPIO_OUTPUT_SET does.
  * Use easygpio_outputEnable() to change an input gpio to output mode.
  */
-void
-easygpio_outputSet(uint8_t gpio_pin, uint8_t value) {
+void easygpio_outputSet(uint8_t gpio_pin, uint8_t value) {
   if (16==gpio_pin) {
     WRITE_PERI_REG(RTC_GPIO_OUT,
                    (READ_PERI_REG(RTC_GPIO_OUT) & 0xfffffffeUL) | (0x1UL & value));
@@ -298,8 +288,7 @@ easygpio_outputSet(uint8_t gpio_pin, uint8_t value) {
  * The pin must be initiated with easygpio_pinMode() so that the pin mux is setup as a gpio in the first place.
  * If you know that you won't be using GPIO16 then you'd better off by just using GPIO_INPUT_GET().
  */
-uint8_t
-easygpio_inputGet(uint8_t gpio_pin) {
+uint8_t easygpio_inputGet(uint8_t gpio_pin) {
   if (16==gpio_pin) {
     return (READ_PERI_REG(RTC_GPIO_IN_DATA) & 1UL);
   } else {
@@ -317,7 +306,7 @@ easygpio_inputGet(uint8_t gpio_pin) {
  * The pin must be initiated with easygpio_pinMode() so that the pin mux is setup as a gpio in the first place.
  * This function does the same thing as GPIO_DIS_OUTPUT, but works on GPIO16 too.
  */
-void easygpio_outputDisable(uint8_t gpio_pin) {
+void ICACHE_FLASH_ATTR easygpio_outputDisable(uint8_t gpio_pin) {
   if (16==gpio_pin) {
     WRITE_PERI_REG(RTC_GPIO_ENABLE,
         READ_PERI_REG(RTC_GPIO_ENABLE) & 0xfffffffeUL);  //out disable
@@ -336,7 +325,7 @@ void easygpio_outputDisable(uint8_t gpio_pin) {
  *    function to just change output value.
  *  - does the same thing as GPIO_OUTPUT_SET, but works on GPIO16 too.
  */
-void easygpio_outputEnable(uint8_t gpio_pin, uint8_t value) {
+void ICACHE_FLASH_ATTR easygpio_outputEnable(uint8_t gpio_pin, uint8_t value) {
   if (16==gpio_pin) {
     // write the value before flipping to output
     // - so we don't flash previous value for a few ns.

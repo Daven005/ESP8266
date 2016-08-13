@@ -10,9 +10,13 @@
 #include <osapi.h>
 #include <ds18b20.h>
 #include "temperature.h"
-#include "config.h"
 #include "debug.h"
-#include "user_config.h"
+#include "dtoa.h"
+#include "publish.h"
+#include "assert.h"
+
+#include "../../user/include/user_configuration.h"
+#include "config.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static os_timer_t ds18b20_timer;
@@ -52,7 +56,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 	for (i = 0; i < MAX_TEMPERATURE_SENSOR; i++) {
 		if (temperature[i].temperatureType == NOT_SET) {
 			temperature[i].temperatureType = temperatureType;
-			strcpy(temperature[i].address, sensorID);
+			os_strcpy(temperature[i].address, sensorID);
 			INFOP("New ");
 			return i;
 		}
@@ -64,9 +68,10 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* sensorID) {
 	if (0 <= idx && idx < MAX_TEMPERATURE_SENSOR) {
 		if (-20 <= val && val <= 128) {
-			INFOP("Sensor[%d] %s = %d.%d\n", idx, sensorID, val, fract);
+			INFOP("Sensor[%d] %s = %d.%02d\n", idx, sensorID, val, fract);
 		} else {
-			ERRORP("Sensor[%d] %s ERROR = %d.%d\n", idx, sensorID, val, fract);
+			ERRORP("Sensor[%d] %s ERROR = %d.%02d\n", idx, sensorID, val, fract);
+			publishAlarm(55, val);
 			return;
 		}
 		temperature[idx].set = true;
@@ -99,8 +104,8 @@ int ICACHE_FLASH_ATTR setUnmappedSensorTemperature(char *sensorID,
 bool ICACHE_FLASH_ATTR printTemperature(int idx) {
 	struct Temperature *t;
 	if (getUnmappedTemperature(idx, &t)) {
-		os_printf((const char*) "[%d]: %s  %c%d.%02d%s {%d}. ",
-			idx, t->address, t->sign, t->val, t->fract, t->override ? " (OR)" : "", t->missed);
+		os_printf((const char*) "[%d]: %s  %c%d.%02d%s {%d}. [%d %d]\n",
+			idx, t->address, t->sign, t->val, t->fract, t->override ? " (OR)" : "", t->missed, t->val, t->fract);
 	} else {
 		os_printf("[%d]. ", idx);
 		return false;
@@ -110,9 +115,10 @@ bool ICACHE_FLASH_ATTR printTemperature(int idx) {
 
 bool ICACHE_FLASH_ATTR printMappedTemperature(int idx) {
 	struct Temperature *t;
+
 	if (getUnmappedTemperature(sysCfg.mapping[idx], &t)) {
-		os_printf((const char*) "[%d]->%d {%s}: %s  %c%d.%02d%s {%d}. ", idx, sysCfg.mapping[idx],
-				sysCfg.mappingName[idx], t->address, t->sign, t->val, t->fract,
+		os_printf((const char*) "[%d]->%d {%s}: %s  %c%d.%02d%s {%d}.\n", idx,
+				sysCfg.mapping[idx], sysCfg.mappingName[idx], t->address, t->sign, t->val, t->fract,
 				t->override ? " (OR)" : "", t->missed);
 	} else {
 		os_printf("[%d]->%d. ", idx, sysCfg.mapping[idx]);
@@ -186,15 +192,78 @@ void ICACHE_FLASH_ATTR ds18b20StartScan(TemperatureCallback tempCb) {
 	os_timer_arm(&ds18b20_timer, 750, false);
 }
 
+double ICACHE_FLASH_ATTR mappedFloatTemperature(uint8 name) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(sysCfg.mapping[name], &t)) {
+		double val = (double)t->val;
+		double fract = (double)t->fract;
+		assert_equal("t->val", t->val, (uint16)val);
+		assert_equal("t->fract", t->fract, (uint16)fract);
+		double temp = val + fract/100.0;
+		assert_true("mft", temp < 200);
+		return temp;
+	}
+	return -99.0;
+}
+
+double ICACHE_FLASH_ATTR mappedFloatPtrTemperature(uint8 name, double *temp) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(sysCfg.mapping[name], &t)) {
+		double val = (double)t->val;
+		double fract = (double)t->fract;
+		assert_equal("t->val", t->val, (uint16)val);
+		assert_equal("t->fract", t->fract, (uint16)fract);
+		*temp = val + fract/100.0;
+		assert_true("mft", *temp < 200);
+		return *temp;
+	}
+	return -99.0;
+}
+
+char * ICACHE_FLASH_ATTR mappedStrTemperature(uint8 name, char *s) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(sysCfg.mapping[name], &t)) {
+		double val = (double)t->val;
+		double fract = (double)t->fract;
+		assert_equal("t->val", t->val, (uint16)val);
+		assert_equal("t->fract", t->fract, (uint16)fract);
+		return dtoStr(val + fract/100.0, 7, 2, s);
+	}
+	return dtoStr(-99, 7, 2, s);
+}
+
+void ICACHE_FLASH_ATTR checkMappedFloat(uint8 name) {
+	double test1, test2;
+	test1 = mappedFloatPtrTemperature(name, &test2);
+	assert_true("checkMappedFloat", test1 == test2);
+}
+
 int ICACHE_FLASH_ATTR mappedTemperature(uint8 name) {
 	struct Temperature *t;
-	if (getUnmappedTemperature(sysCfg.mapping[name], &t))
+	if (getUnmappedTemperature(sysCfg.mapping[name], &t)) {
+		if (t->fract > 50) return t->val+1; // Round
 		return t->val;
-	//publishError(1, name);
+	}
 	return -99;
 }
 
-bool ICACHE_FLASH_ATTR mappedTemperatureIsSet(int name) {
+char * ICACHE_FLASH_ATTR unmappedSensorID(uint8 name) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(name, &t)) {
+		return t->address;
+	}
+	return "";
+}
+
+double ICACHE_FLASH_ATTR getUnmappedFloatTemperature(uint8 name) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(name, &t)) {
+		return ((double) t->val) + (((double)t->fract)/100.0);
+	}
+	return -99.0;
+}
+
+bool ICACHE_FLASH_ATTR mappedTemperatureIsSet(uint8 name) {
 	return temperature[sysCfg.mapping[name]].set;
 }
 
