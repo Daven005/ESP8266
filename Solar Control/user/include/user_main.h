@@ -15,7 +15,7 @@ bool mqttIsConnected(void);
 void stopConnection(void);
 void startConnection(void);
 void _publishDeviceInfo(void);
-void publishData(MQTT_Client* client);
+void publishData(void);
 
 
 #endif /* USER_INCLUDE_USER_MAIN_H_ */

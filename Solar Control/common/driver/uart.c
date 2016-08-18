@@ -12,15 +12,20 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "uart.h"
+#include <os_type.h>
+#include <user_interface.h>
+
+#include "user_conf.h"
 
 #define UART0   0
 #define UART1   1
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice UartDev;
-
+void saveChar(RcvMsgBuff *pRxBuff, char RcvChar);
+#ifdef USE_RX
 LOCAL void uart0_rx_intr_handler(void *para);
-
+#endif
 /******************************************************************************
  * FunctionName : uart_config
  * Description  : Internal used function
@@ -34,13 +39,15 @@ uart_config(uint8 uart_no)
 {
     if (uart_no == UART1) {
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_U1TXD_BK);
-    } else {
+    }
+#ifdef USE_RX
+    else {
         /* rcv_buff size if 0x100 */
         ETS_UART_INTR_ATTACH(uart0_rx_intr_handler,  &(UartDev.rcv_buff));
         PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0TXD_U);
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0TXD_U, FUNC_U0TXD);
     }
-
+#endif
     uart_div_modify(uart_no, UART_CLK_FREQ / (UartDev.baut_rate));
 
     WRITE_PERI_REG(UART_CONF0(uart_no),    UartDev.exist_parity
@@ -109,42 +116,52 @@ uart1_write_char(char c)
  *                UART0 interrupt handler, add self handle code inside
  * Parameters   : void *para - point to ETS_UART_INTR_ATTACH's arg
  * Returns      : NONE
+ * uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
+ * uart1 and uart0 respectively
 *******************************************************************************/
-LOCAL void
-uart0_rx_intr_handler(void *para)
-{
-    /* uart0 and uart1 intr combine togther, when interrupt occur, see reg 0x3ff20020, bit2, bit0 represents
-     * uart1 and uart0 respectively
-     */
+void saveChar(RcvMsgBuff *pRxBuff, char RcvChar) {
+	(pRxBuff->count)++;
+	*(pRxBuff->pWritePos) = RcvChar;
+	pRxBuff->pWritePos++;
+	if (pRxBuff->pWritePos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
+		pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff;
+	}
+}
+
+#ifdef USE_RX
+void uart0_rx_intr_handler(void *para) {
     RcvMsgBuff *pRxBuff = (RcvMsgBuff *)para;
     uint8 RcvChar;
 
-    if (UART_RXFIFO_FULL_INT_ST != (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST)) {
-        return;
-    }
+	if (UART_RXFIFO_FULL_INT_ST != (READ_PERI_REG(UART_INT_ST(UART0)) & UART_RXFIFO_FULL_INT_ST)) {
+		return;
+	}
 
-    WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
+	WRITE_PERI_REG(UART_INT_CLR(UART0), UART_RXFIFO_FULL_INT_CLR);
 
-    while (READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S)) {
-        RcvChar = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-
-        /* you can add your handle code below.*/
-
-        *(pRxBuff->pWritePos) = RcvChar;
-
-        // insert here for get one command line from uart
-        if (RcvChar == '\r') {
-            pRxBuff->BuffState = WRITE_OVER;
-        }
-
-        pRxBuff->pWritePos++;
-
-        if (pRxBuff->pWritePos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
-            // overflow ...we may need more error handle here.
-            pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff ;
-        }
-    }
+	while (READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S)) {
+		RcvChar = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
+//		saveChar(pRxBuff, RcvChar);
+//		system_os_post(USER_TASK_PRIO_1, EVENT_RX, (os_param_t) para);
+		if (RcvChar == '\r' || RcvChar == '\n') {
+			saveChar(pRxBuff, RcvChar);
+			pRxBuff->BuffState = WRITE_LINE;
+			system_os_post(USER_TASK_PRIO_1, EVENT_RX, (os_param_t) para);
+		}
+		if (pRxBuff->count < 120) {
+			saveChar(pRxBuff, RcvChar);
+		} else {
+			if (pRxBuff->count >= (pRxBuff->RcvBuffSize-4)) {
+				system_os_post(USER_TASK_PRIO_1, EVENT_RX_OVERFLOW, (os_param_t) para);
+			} else if (pRxBuff->BuffState == EMPTY) {
+				saveChar(pRxBuff, RcvChar);
+				pRxBuff->BuffState = WRITE_PARTIAL;
+				system_os_post(USER_TASK_PRIO_1, EVENT_RX, (os_param_t) para);
+			}
+		}
+	}
 }
+#endif
 
 void ICACHE_FLASH_ATTR uart0_write_char(char c) {
   if (c == '\n') {
@@ -185,12 +202,13 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 {
     // rom use 74880 baut_rate, here reinitialize
     UartDev.baut_rate = uart0_br;
+    UartDev.rcv_buff.count = 0;
     uart_config(UART0);
     UartDev.baut_rate = uart1_br;
     uart_config(UART1);
     ETS_UART_INTR_ENABLE();
 
     // install uart1 putc callback
-    os_install_putc1((void *)uart1_write_char);
+    // os_install_putc1((void *)uart0_write_char);
 }
 

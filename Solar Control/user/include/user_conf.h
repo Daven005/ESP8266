@@ -2,6 +2,8 @@
 #define _USER_CONFIG_H_
 
 #include "IOdefs.h"
+#define USE_FLOWS 1
+#define USE_ENERGY 1
 
 #define CFG_HOLDER	0x00FF55A6	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
@@ -23,7 +25,7 @@
 #define MQTT_PASS			""
 
 #define STA_SSID "EE-berry"
-#define STA_PASS "fog-phone-deep"
+#include "password.h"
 #define STA_TYPE AUTH_WPA2_PSK
 
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
@@ -41,7 +43,7 @@
 #define SETTINGS_SIZE 15
 #define MAP_TEMP_SIZE 4
 
-#define MAX_OUTPUT 1
+#define OUTPUTS 1
 #define MAX_INPUT 1
 #define SET_MINIMUM 0
 #define SET_MAXIMUM 60000
@@ -55,7 +57,7 @@
 #define SET_T1_READING 3
 #define SET_FLOW_TIMER 4
 #define SET_FLOW_COUNT_PER_LITRE 5
-#define SET_PUMP_DELAY 6
+#define SET_XX 6
 #define SET_PANEL_TEMP 7
 
 #define DEFAULT_T0_READING 190
@@ -64,7 +66,7 @@
 #define DEFAULT_T1 100
 #define DEFAULT_FLOW_TIMER 10
 #define DEFAULT_FLOW_COUNT_PER_LITRE 450
-#define DEFAULT_PUMP_DELAY 12 // 1 minute
+#define DEFAULT_XX 12 // 1 minute
 #define DEFAULT_PANEL_TEMP 6
 
 #define MAP_TEMP_PANEL 0

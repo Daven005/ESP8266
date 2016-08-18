@@ -32,7 +32,7 @@ static struct dht_sensor_data reading[2] = { { .success = 0, .count = 0 }, { .su
 
 static void ICACHE_FLASH_ATTR dht_Cb(struct dht_sensor_data *reading);
 
-static inline float scale_humidity(struct dht_sensor_data *reading, int *data) {
+static inline float ICACHE_FLASH_ATTR scale_humidity(struct dht_sensor_data *reading, int *data) {
 	if (reading->sensorType == DHT11) {
 		return data[0];
 	} else {
@@ -41,7 +41,7 @@ static inline float scale_humidity(struct dht_sensor_data *reading, int *data) {
 	}
 }
 
-static inline float scale_temperature(struct dht_sensor_data *reading, int *data) {
+static inline float ICACHE_FLASH_ATTR scale_temperature(struct dht_sensor_data *reading, int *data) {
 	if (reading->sensorType == DHT11) {
 		return data[2];
 	} else {

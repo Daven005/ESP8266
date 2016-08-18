@@ -10,11 +10,13 @@
 #include <osapi.h>
 #include <ds18b20.h>
 #include "temperature.h"
-#include "config.h"
 #include "debug.h"
-#include "user_config.h"
 #include "dtoa.h"
+#include "publish.h"
 #include "assert.h"
+
+#include "user_conf.h"
+#include "config.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static os_timer_t ds18b20_timer;
@@ -54,7 +56,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 	for (i = 0; i < MAX_TEMPERATURE_SENSOR; i++) {
 		if (temperature[i].temperatureType == NOT_SET) {
 			temperature[i].temperatureType = temperatureType;
-			strcpy(temperature[i].address, sensorID);
+			os_strcpy(temperature[i].address, sensorID);
 			INFOP("New ");
 			return i;
 		}
@@ -66,9 +68,10 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, enum temperatureTyp
 void ICACHE_FLASH_ATTR checkSetTemperature(int idx, int val, int fract, char* sensorID) {
 	if (0 <= idx && idx < MAX_TEMPERATURE_SENSOR) {
 		if (-20 <= val && val <= 128) {
-			INFOP("Sensor[%d] %s = %d.%d\n", idx, sensorID, val, fract);
+			INFOP("Sensor[%d] %s = %d.%02d\n", idx, sensorID, val, fract);
 		} else {
-			ERRORP("Sensor[%d] %s ERROR = %d.%d\n", idx, sensorID, val, fract);
+			ERRORP("Sensor[%d] %s ERROR = %d.%02d\n", idx, sensorID, val, fract);
+			publishAlarm(55, val);
 			return;
 		}
 		temperature[idx].set = true;
@@ -112,15 +115,11 @@ bool ICACHE_FLASH_ATTR printTemperature(int idx) {
 
 bool ICACHE_FLASH_ATTR printMappedTemperature(int idx) {
 	struct Temperature *t;
-	char s0[50];
-	double t1 = mappedFloatTemperature(idx);
-	os_printf("%s %d\n", dtoStr(t1, 7, 3, s0), strlen(s0));
 
 	if (getUnmappedTemperature(sysCfg.mapping[idx], &t)) {
-		os_printf((const char*) "[%d]->%d {%s}: %s  %c%d.%02d%s {%d}. [%s]\n", idx,
+		os_printf((const char*) "[%d]->%d {%s}: %s  %c%d.%02d%s {%d}.\n", idx,
 				sysCfg.mapping[idx], sysCfg.mappingName[idx], t->address, t->sign, t->val, t->fract,
 				t->override ? " (OR)" : "", t->missed);
-		os_printf("%s \n", dtoStr(mappedFloatTemperature(idx), 7, 3, s0));
 	} else {
 		os_printf("[%d]->%d. ", idx, sysCfg.mapping[idx]);
 		return false;
@@ -246,6 +245,14 @@ int ICACHE_FLASH_ATTR mappedTemperature(uint8 name) {
 		return t->val;
 	}
 	return -99;
+}
+
+char * ICACHE_FLASH_ATTR unmappedSensorID(uint8 name) {
+	struct Temperature *t;
+	if (getUnmappedTemperature(name, &t)) {
+		return t->address;
+	}
+	return "";
 }
 
 double ICACHE_FLASH_ATTR getUnmappedFloatTemperature(uint8 name) {

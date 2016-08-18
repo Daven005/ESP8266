@@ -14,29 +14,48 @@
 #include "gpio.h"
 #include "easygpio.h"
 #include "config.h"
-#include "user_config.h"
-#include "IOdefs.h"
 #include "debug.h"
 #include "dtoa.h"
 #include "flowMonitor.h"
 
+#include "user_conf.h"
+
 #define round(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
 
 LOCAL os_timer_t flow_timer;
-uint16 oneSecFlowCount;
+static uint16 oneSecFlowCount;
 static uint16 oneSecCount;
-static uint16 flowCount; // Interrupt variable
+static volatile uint16 flowCount; // Interrupt variable
 static uint16 flowCountPerReading;
 static uint16 flowMax;
 static uint16 flowMin;
 static uint16 flowAverage; // NB is * 16
+static uint16 secondsNotFlowingCount;
+
+static bool flowOverridden;
+
+#ifdef USE_FLOWS // use to avoid bringing in floats
+#ifdef USE_ENERGY
 static double power; // watts
 static double energy; // wattSeconds
+#endif
 static double flow; // l/s
 
- void ICACHE_FLASH_ATTR resetFlowReadings(void) {
+void ICACHE_FLASH_ATTR overrideClearFlow(void) {
+	flowOverridden = false;
+	// Wait till next flowTimerCb to update values
+}
+
+void ICACHE_FLASH_ATTR overrideSetFlow(int value) {
+	flowOverridden = true;
+	oneSecCount = value;
+}
+
+void ICACHE_FLASH_ATTR resetFlowReadings(void) {
 	flowCountPerReading = oneSecCount = flowMax = 0;
+#ifdef USE_ENERGY
 	energy = 0.0;
+#endif
 	flowMin = 60000;
 }
 
@@ -62,14 +81,22 @@ uint16 ICACHE_FLASH_ATTR flowInLitresPerHour(void) {
 	return 0;
 }
 
-uint16 ICACHE_FLASH_ATTR flowAverageReading(void) { // ml/sec
+uint16 ICACHE_FLASH_ATTR flowAverageReading(void) { // l/sec
 	if (sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0)
-		return ((uint32)flowAverage*1000) / (16 * sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]);
+		return ((uint32)flowAverage) / (16 * sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]);
 	return 0;
 }
 
 uint16 ICACHE_FLASH_ATTR flowCurrentReading(void) {
 	return oneSecFlowCount;
+}
+
+void ICACHE_FLASH_ATTR startCheckIsFlowing(void) {
+	secondsNotFlowingCount = 0;
+}
+
+uint16 ICACHE_FLASH_ATTR secondsNotFlowing(void) {
+	return secondsNotFlowingCount;
 }
 
 static void flowIntrHandler(void *arg) {
@@ -81,6 +108,7 @@ static void flowIntrHandler(void *arg) {
 	}
 }
 
+#ifdef USE_ENERGY
 float ICACHE_FLASH_ATTR energyReading(void) {
 	return energy;
 }
@@ -96,14 +124,29 @@ void ICACHE_FLASH_ATTR calcFlows(void) {
 	power = SH * flow * (ts - tb); // KW
 	energy += power; // KWs
 }
+#else
+void ICACHE_FLASH_ATTR calcFlows(void) {
+	flow = (double) oneSecFlowCount / sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]; // in litres/sec
+}
+#endif
 
 static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 
-	ETS_GPIO_INTR_DISABLE();
-	oneSecFlowCount = flowCount;
-	flowCount = 0;
-	ETS_GPIO_INTR_ENABLE();
+	if (flowOverridden) {
+		ETS_GPIO_INTR_DISABLE();
+		flowCount = 0;
+		ETS_GPIO_INTR_ENABLE();
+	} else {
+		ETS_GPIO_INTR_DISABLE();
+		oneSecFlowCount = flowCount;
+		flowCount = 0;
+		ETS_GPIO_INTR_ENABLE();
+	}
 
+	if (oneSecFlowCount != 0) {
+		TESTP(">");
+		secondsNotFlowingCount = 0;
+	}
 	flowSetAverage(oneSecFlowCount);
 	flowCountPerReading += oneSecFlowCount;
 	if (oneSecFlowCount < flowMin) {
@@ -116,10 +159,11 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 	calcFlows();
 }
 
+#ifdef USE_ENERGY
 void ICACHE_FLASH_ATTR printFlows(void) {
 	char s0[50], s1[50], s2[50];
-	TESTP("fl:%s p:%s e:%s ",
-			dtoStr(flow, 6, 3, s0),
+	TESTP("fl:%sl/S p:%skW e:%skWS ",
+			dtoStr(flow*3600, 6, 3, s0),
 			dtoStr(power, 10, 2, s1),
 			dtoStr(energy, 12, 2, s2));
 	TESTP("tp:%s ts:%s tb:%s\n",
@@ -127,6 +171,12 @@ void ICACHE_FLASH_ATTR printFlows(void) {
 			mappedStrTemperature(MAP_TEMP_SUPPLY, s1),
 			mappedStrTemperature(MAP_TEMP_TS_BOTTOM, s2));
 }
+#else
+void ICACHE_FLASH_ATTR printFlows(void) {
+	char s0[50];
+	TESTP("fl:%s\n", dtoStr(flow*3600, 6, 3, s0));
+}
+#endif
 
 void ICACHE_FLASH_ATTR initFlowMonitor(void) {
 	easygpio_attachInterrupt(FLOW_SENSOR, EASYGPIO_PULLUP, flowIntrHandler, NULL);
@@ -138,3 +188,4 @@ void ICACHE_FLASH_ATTR initFlowMonitor(void) {
 	os_timer_setfn(&flow_timer, (os_timer_func_t *)flowTimerCb, NULL);
 	os_timer_arm(&flow_timer, 1000, true); // 1 second
 }
+#endif // USE_FLOWS

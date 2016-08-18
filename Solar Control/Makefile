@@ -26,7 +26,7 @@ ROM0_ADDR   ?= 0x10000
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user common/mqtt common/temperature common/driver
+MODULES		= user common/mqtt common/temperature common/modules common/driver
 EXTRA_INCDIR    = 
 
 # libraries used in this project, mainly provided by the SDK
@@ -74,7 +74,7 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 VERBOSE := 0
 
 V ?= $(VERBOSE)
-ifeq ("$(V)","0")
+ifeq ("$(V)","1")
 Q :=
 vecho := @true
 else
@@ -97,16 +97,20 @@ all: checkdirs $(TARGET_OUT)
 size:
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 flash_id
 
-newversion:
-	incVersion 0
+newmajor:
+	$(Q) powershell -file $(realpath ../buildCmds/incVersion.ps1) major "$(realpath user/include/version.h)"
+	touch user/user_main.c
+
+newminor:
+	$(Q) powershell -file $(realpath ../buildCmds/incVersion.ps1) minor "$(realpath user/include/version.h)"
+	touch user/user_main.c
+
+newpatch:
+	$(Q) powershell -file $(realpath ../buildCmds/incVersion.ps1) patch "$(realpath user/include/version.h)"
 	touch user/user_main.c
 	
 newbuild:
-	incVersion 3
-	touch user/user_main.c
-
-newrevision:
-	incVersion 2
+	$(Q) powershell -file $(realpath ../buildCmds/incVersion.ps1) build "$(realpath user/include/version.h)"
 	touch user/user_main.c
 
 $(TARGET_OUT): $(APP_AR)
@@ -117,7 +121,8 @@ $(TARGET_OUT): $(APP_AR)
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
 	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
 	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-	$(Q) $(OBJDUMP) -S -l $@ >obj.txt
+	$(Q) $(OBJDUMP) -S -l build/common/modules/flowMonitor.o >obj.txt
+#	$(Q) $(OBJDUMP) -S -l $@ >obj.txt
 	$(vecho) "Run gen_appbin.exe"
 	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
 	$(Q) mv eagle.app.v6.flash.bin firmware/eagle.flash.bin

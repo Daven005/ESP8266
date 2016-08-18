@@ -10,15 +10,14 @@
 #include <os_type.h>
 #include <osapi.h>
 #include "easygpio.h"
-#include "user_config.h"
 #include "overrideIO.h"
+#include "publish.h"
+
+#include "user_conf.h"
 #include "IOdefs.h"
 
-extern void publishError(uint8 err, int info);
-extern void publishOutput(uint8 idx, uint8 val);
-
-static bool currentOutputs[MAX_OUTPUT];
-static override_t outputOverrides[MAX_OUTPUT];
+static bool currentOutputs[OUTPUTS];
+static override_t outputOverrides[OUTPUTS];
 
 pumpState_t ICACHE_FLASH_ATTR pumpState(void) {
 	switch (outputOverrides[OP_PUMP]) {
@@ -60,7 +59,7 @@ void ICACHE_FLASH_ATTR initIO(void) {
 }
 
 bool ICACHE_FLASH_ATTR outputState(uint8 id) {
-	if (id < MAX_OUTPUT) {
+	if (id < OUTPUTS) {
 		switch (outputOverrides[id]) {
 		case OR_NOT_SET: return currentOutputs[id];
 		case OR_ON: return true;
@@ -71,7 +70,7 @@ bool ICACHE_FLASH_ATTR outputState(uint8 id) {
 }
 
 void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		if (currentOutputs[op] != newSetting) {
 			publishOutput(op, newSetting);
 			currentOutputs[op] = newSetting;
@@ -88,7 +87,7 @@ void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
 }
 
 void ICACHE_FLASH_ATTR overrideSetOutput(uint8 op, uint8 set) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		outputOverrides[op] = set ? OR_ON : OR_OFF;
 		easygpio_outputSet(PUMP, !set);
 		printOutput(op);
@@ -96,7 +95,7 @@ void ICACHE_FLASH_ATTR overrideSetOutput(uint8 op, uint8 set) {
 }
 
 void ICACHE_FLASH_ATTR overrideClearOutput(uint8 op) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		outputOverrides[op] = OR_NOT_SET;
 		easygpio_outputSet(PUMP, !currentOutputs[op]);
 		printOutput(op);
@@ -104,7 +103,7 @@ void ICACHE_FLASH_ATTR overrideClearOutput(uint8 op) {
 }
 
 void ICACHE_FLASH_ATTR printOutput(uint8 op) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		if (outputOverrides[op] == OR_NOT_SET) {
 			os_printf("OP[%d]=%d ", op, currentOutputs[op]);
 		} else {
@@ -116,13 +115,13 @@ void ICACHE_FLASH_ATTR printOutput(uint8 op) {
 
 void ICACHE_FLASH_ATTR checkOutputs(void) {
 	uint8 op;
-	for (op=0; op < MAX_OUTPUT; op++) { // Repeat outputs in case corrupted
+	for (op=0; op < OUTPUTS; op++) { // Repeat outputs in case corrupted
 		checkSetOutput(op, currentOutputs[op]);
 	}
 }
 
 override_t ICACHE_FLASH_ATTR getOverride(uint8 op) {
-	if (op < MAX_OUTPUT) {
+	if (op < OUTPUTS) {
 		return outputOverrides[op];
 	}
 	return OR_INVALID;

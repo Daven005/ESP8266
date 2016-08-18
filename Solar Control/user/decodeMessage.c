@@ -13,10 +13,10 @@
 #include "jsmn.h"
 #include "temperature.h"
 #include "mqtt.h"
-#include "user_config.h"
 #include "config.h"
 #include "decodeMessage.h"
 #include "debug.h"
+#include "include/user_conf.h"
 #include "publish.h"
 
 extern os_timer_t transmit_timer;
@@ -52,6 +52,8 @@ static void ICACHE_FLASH_ATTR decodeSensorClear(char *idPtr, char *param, MQTT_C
 		uint8 idx = clearTemperatureOverride(idPtr);
 	} else if (strcmp("output", param) == 0) {
 		overrideClearOutput(atoi(idPtr));
+	} else if (strcmp("flow", param) == 0) {
+		overrideClearFlow();
 	}
 }
 
@@ -122,11 +124,13 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 				_publishDeviceInfo();
 			}
 		}
+	} else if (strcmp("flow", param) == 0) {
+		overrideSetFlow(atoi(valPtr));
 	} else if (strcmp("temperature", param) == 0) {
 		uint8 idx = setTemperatureOverride(idPtr, valPtr);
 		publishTemperature(idx);
 	} else if (strcmp("output", param) == 0) {
-		if (0 <= id && id < MAX_OUTPUT) {
+		if (0 <= id && id < OUTPUTS) {
 			overrideSetOutput(id, value);
 		}
 	}
@@ -324,7 +328,7 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 				os_timer_disarm(&date_timer); // Restart it
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 			} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
-				publishData((void*) client); // publish all I/O & temps
+				publishData(); // publish all I/O & temps
 			} else if (tokenCount == 3 && strcmp("Cloud", tokens[1]) == 0) {
 				saveCloudForecast(data);
 			} else if (tokenCount == 3 && strcmp("Sun", tokens[1]) == 0) {
@@ -333,10 +337,8 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 				} else if (strcmp("hourly", tokens[2]) == 0) {
 					saveSunPositions(data);
 				}
-
 				checkResetBoilerTemperature(client);
 			}
-
 			if (tokenCount >= 5 && strcmp("TS Bottom", tokens[3]) == 0) {
 				saveTSbottom(data);
 			}

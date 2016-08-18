@@ -31,6 +31,7 @@ double mappedFloatTemperature(uint8 name);
 double mappedFloatPtrTemperature(uint8 name, double *temp);
 char * mappedStrTemperature(uint8 name, char *s);
 int  mappedTemperature(uint8 name);
+char *unmappedSensorID(uint8 name);
 bool mappedTemperatureIsSet(uint8 name);
 int setUnmappedSensorTemperature(char *sensorID, enum temperatureType_t temperatureType, int val, int fract);
 double getUnmappedFloatTemperature(uint8 name);

@@ -12,10 +12,10 @@
 #include "ip_addr.h"
 #include "espconn.h"
 #include "debug.h"
-#include "config.h"
 #include "flash.h"
 #include "http.h"
 
+#include "config.h"
 #include "espmissingincludes.h"
 
 #define HTTPD_METHOD_GET 1
@@ -38,6 +38,8 @@ static esp_tcp httpTcp;
 extern bool httpSetupMode;
 static bool reboot = false;
 static os_timer_t setup_timer;
+
+//strcpy()
 
 static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 	int i;
@@ -117,7 +119,7 @@ static int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int
 	p = line;
 	while(p!=NULL && *p!='\n' && *p!='\r' && *p!=0) {
 		INFOP("findArg: %s\n", p);
-		if (os_strncmp(p, arg, os_strlen(arg))==0 && p[strlen(arg)]=='=') {
+		if (os_strncmp(p, arg, os_strlen(arg))==0 && p[os_strlen(arg)]=='=') {
 			p += os_strlen(arg)+1; //move p to start of value
 			e = (char*)os_strstr(p, "&");
 			if (e==NULL) e = p+os_strlen(p);
@@ -176,32 +178,32 @@ static void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned sh
 			if (os_strncmp(bfr, "Update", 6) == 0) {
 				if (httpdFindArg(c.getArgs, "MQTThost", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTThost=%s\n", bfr);
-					if (7 < strlen(bfr) && strlen(bfr) < sizeof(sysCfg.mqtt_host)) {
-						strcpy(sysCfg.mqtt_host, bfr);
+					if (7 < os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.mqtt_host)) {
+						os_strcpy(sysCfg.mqtt_host, bfr);
 					}
 				}
 				if (httpdFindArg(c.getArgs, "MQTTport", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTTport=%s\n", bfr);
-					if (1 <= strlen(bfr) && strlen(bfr) <= 4) {
+					if (1 <= os_strlen(bfr) && os_strlen(bfr) <= 4) {
 						sysCfg.mqtt_port = atoi(bfr);
 					}
 				}
 				if (httpdFindArg(c.getArgs, "MQTTuser", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTTuser=%s\n", bfr);
-					if (0 <= strlen(bfr) && strlen(bfr) < sizeof(sysCfg.mqtt_user)) {
-						strcpy(sysCfg.mqtt_user, bfr);
+					if (0 <= os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.mqtt_user)) {
+						os_strcpy(sysCfg.mqtt_user, bfr);
 					}
 				}
 				if (httpdFindArg(c.getArgs, "MQTTpass", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTTpass=%s\n", bfr);
-					if (0 <= strlen(bfr) && strlen(bfr) < sizeof(sysCfg.mqtt_pass)) {
-						strcpy(sysCfg.mqtt_pass, bfr);
+					if (0 <= os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.mqtt_pass)) {
+						os_strcpy(sysCfg.mqtt_pass, bfr);
 					}
 				}
 				if (httpdFindArg(c.getArgs, "DevPrefix", bfr, sizeof(bfr)) >= 0) {
 					TESTP("DevPrefix=%s\n", bfr);
-					if (2 <= strlen(bfr) && strlen(bfr) < sizeof(sysCfg.deviceID_prefix)) {
-						strcpy(sysCfg.deviceID_prefix, bfr);
+					if (2 <= os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.deviceID_prefix)) {
+						os_strcpy(sysCfg.deviceID_prefix, bfr);
 						os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
 					}
 				}

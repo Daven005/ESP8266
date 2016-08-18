@@ -10,13 +10,18 @@
 
 #define DEBUG 2
 
+#ifdef DEBUG_OVERRIDE
+#pragma message "DEBUG_OVERRIDE"
+#define INFOP os_printf
+#define INFO(x) do { x; } while (0)
+#else
 #ifndef INFOP
 #define INFOP if (DEBUG>=3) os_printf
 #endif
 #ifndef INFO
 #define INFO(x) if (DEBUG>=3) do { x; } while (0)
 #endif
-
+#endif
 #ifndef TESTP
 #define TESTP if (DEBUG>=2) os_printf
 #endif
