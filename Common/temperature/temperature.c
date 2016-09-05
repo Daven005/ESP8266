@@ -10,13 +10,11 @@
 #include <osapi.h>
 #include <ds18b20.h>
 #include "temperature.h"
-#include "debug.h"
-#include "dtoa.h"
-#include "publish.h"
-#include "assert.h"
-
-#include "user_conf.h"
 #include "config.h"
+#include "debug.h"
+#include "user_conf.h"
+#include "dtoa.h"
+#include "assert.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];
 static os_timer_t ds18b20_timer;
