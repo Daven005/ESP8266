@@ -33,7 +33,7 @@
 #include "mqtt_msg.h"
 #include "user_interface.h"
 #include "osapi.h"
-#include "user_config.h"
+#include "user_conf.h"
 #include "debug.h"
 #define MQTT_MAX_FIXED_HEADER_SIZE 3
 

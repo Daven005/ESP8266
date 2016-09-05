@@ -1,0 +1,1 @@
+powershell -file incversion.ps1 "%1" "%2"

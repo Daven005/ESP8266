@@ -30,8 +30,6 @@
 */
 
 #include "config.h"
-#include "user_config.h"
-
 #include <c_types.h>
 #include <osapi.h>
 #include <spi_flash.h>
@@ -39,45 +37,46 @@
 #include "dht22.h"
 #include "config.h"
 #include "debug.h"
+#include "user_conf.h"
 
 SYSCFG sysCfg;
 SAVE_FLAG saveFlag;
 static uint32 lastSaved = 0;
+enum { FLASH0, FLASH1, FLASH_FLAG };
 
 void ICACHE_FLASH_ATTR CFG_Save() {
-	 spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
+	 spi_flash_read((CFG_LOCATION + FLASH_FLAG) * SPI_FLASH_SEC_SIZE,
 	                   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 
 	if (saveFlag.flag == 0) {
-		spi_flash_erase_sector(CFG_LOCATION + 1);
-		spi_flash_write((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
+		spi_flash_erase_sector(CFG_LOCATION + FLASH1);
+		spi_flash_write((CFG_LOCATION + FLASH1) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&sysCfg, sizeof(SYSCFG));
 		saveFlag.flag = 1;
-		spi_flash_erase_sector(CFG_LOCATION + 3);
-		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
+		spi_flash_erase_sector(CFG_LOCATION + FLASH_FLAG);
+		spi_flash_write((CFG_LOCATION + FLASH_FLAG) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	} else {
-		spi_flash_erase_sector(CFG_LOCATION + 0);
-		spi_flash_write((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
+		spi_flash_erase_sector(CFG_LOCATION + FLASH0);
+		spi_flash_write((CFG_LOCATION + FLASH0) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&sysCfg, sizeof(SYSCFG));
 		saveFlag.flag = 0;
-		spi_flash_erase_sector(CFG_LOCATION + 3);
-		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
+		spi_flash_erase_sector(CFG_LOCATION + FLASH_FLAG);
+		spi_flash_write((CFG_LOCATION + FLASH_FLAG) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	}
 	lastSaved = system_get_time();
 }
 
 void ICACHE_FLASH_ATTR CFG_Load() {
-
-	ets_uart_printf("\r\nload ...\r\n");
-	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
+	TESTP("\nload ...\n");
+	spi_flash_read((CFG_LOCATION + FLASH_FLAG) * SPI_FLASH_SEC_SIZE,
 				   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	if (saveFlag.flag == 0) {
-		spi_flash_read((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
+		spi_flash_read((CFG_LOCATION + FLASH0) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	} else {
-		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
+		spi_flash_read((CFG_LOCATION + FLASH1) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	}
 	if (sysCfg.cfg_holder != CFG_HOLDER){

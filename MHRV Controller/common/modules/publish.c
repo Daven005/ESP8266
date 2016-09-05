@@ -11,17 +11,23 @@
 #include <osapi.h>
 #include <user_interface.h>
 #include "wifi.h"
-#include "user_config.h"
 #include "debug.h"
 #include "flash.h"
 #include "wifi.h"
-#include "config.h"
 #include "mqtt.h"
 #include "temperature.h"
 #include "publish.h"
+
+#include "user_conf.h"
+#include "config.h"
 #include "check.h"
 
 static MQTT_Client *mqttClient;
+
+static void ICACHE_FLASH_ATTR printMQTTstate(void) {
+	ERRORP("State: MQTT-%d, TCP-%d\n", mqttClient->mqtt_state, mqttClient->connState);
+	startFlash(-1, 1000, 1000);
+}
 
 void ICACHE_FLASH_ATTR publishAllTemperatures(void) {
 	struct Temperature *t;
@@ -39,7 +45,8 @@ void ICACHE_FLASH_ATTR publishAllTemperatures(void) {
 				os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id, t->address);
 				os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}",
 						t->sign, t->val, t->fract);
-				MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0);
+				if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+					printMQTTstate();
 				INFOP("%s=>%s\n", topic, data);
 			}
 		}
@@ -63,7 +70,8 @@ void ICACHE_FLASH_ATTR publishTemperature(int idx) {
 			os_sprintf(topic, (const char*) "/Raw/%s/%s/info", sysCfg.device_id, t->address);
 			os_sprintf(data, (const char*) "{ \"Type\":\"Temp\", \"Value\":\"%c%d.%02d\"}", t->sign,
 					t->val, t->fract);
-			MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0);
+			if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+				printMQTTstate();
 			INFOP("%s=>%s\n", topic, data);
 		}
 		checkMinHeap();
@@ -85,7 +93,14 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	}
 	os_sprintf(topic, (const char*) "/Raw/%s/error", sysCfg.device_id);
 	os_sprintf(data, (const char*) "{ \"error\":%d, \"info\":%d}", err, info);
-	MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0);
+	if (mqttIsConnected()) {
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+			printMQTTstate();
+		TESTP("********");
+	} else {
+		TESTP("--------");
+	}
+	TESTP("%s=>%s\n", topic, data);
 	checkMinHeap();
 	os_free(topic);
 	os_free(data);
@@ -107,8 +122,14 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	}
 	os_sprintf(topic, (const char*) "/Raw/%s/alarm", sysCfg.device_id);
 	os_sprintf(data, (const char*) "{ \"alarm\":%d, \"info\":%d}", alarm, info);
-	MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0);
-	TESTP("********%s=>%s\n", topic, data);
+	if (mqttIsConnected()) {
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+			printMQTTstate();
+		TESTP("********");
+	} else {
+		TESTP("--------");
+	}
+	TESTP("%s=>%s\n", topic, data);
 	startFlash(-1, 200, 200);
 	checkMinHeap();
 	os_free(topic);
@@ -130,7 +151,8 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 		os_sprintf(data,
 			"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s\", \"Reason\":%d, \"LastAction\":%d}",
 			sysCfg.deviceName, sysCfg.deviceLocation, version, system_get_rst_info()->reason, lastAction);
-		MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, false);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, false))
+			printMQTTstate();
 		INFOP("%s=>%s\n", topic, data);
 		checkMinHeap();
 		os_free(topic);
@@ -139,7 +161,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 }
 
 void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
-		uint8 wifiChannel, uint16 wifiAttempts, char *bestSSID, uint16 vcc) {
+		uint8 wifiChannel, uint16 wifiConnectTime, char *bestSSID, uint16 vcc) {
 	if (mqttIsConnected()) {
 		char *topic = (char *) os_zalloc(50);
 		char *data = (char *) os_zalloc(500);
@@ -169,7 +191,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 #else
 				0,
 #endif
-				wifi_station_get_rssi(), wifiChannel, WIFI_Attempts(), vcc);
+				wifi_station_get_rssi(), wifiChannel, wifiConnectTime, vcc);
 		os_sprintf(data + os_strlen(data), "\"IPaddress\":\"%d.%d.%d.%d\"", IP2STR(&ipConfig.ip.addr));
 		os_sprintf(data + os_strlen(data), ", \"AP\":\"%s\"", bestSSID);
 		os_sprintf(data + os_strlen(data), ", \"Settings\":[");
@@ -179,7 +201,8 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 			os_sprintf(data + os_strlen(data), "%d", sysCfg.settings[idx]);
 		}
 		os_sprintf(data + os_strlen(data), "]}");
-		MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, true);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, true))
+			printMQTTstate();
 		INFOP("%s=>%s\n", topic, data);
 		checkMinHeap();
 		os_free(topic);
@@ -207,7 +230,8 @@ void ICACHE_FLASH_ATTR publishMapping(void) {
 					sysCfg.mapping[idx], sysCfg.mappingName[idx], unmappedSensorID(idx));
 		}
 		os_sprintf(data + os_strlen(data), "]");
-		MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, true);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, true))
+			printMQTTstate();
 		INFOP("%s=>%s\n", topic, data);
 		checkMinHeap();
 		os_free(topic);
@@ -230,7 +254,8 @@ void ICACHE_FLASH_ATTR publishInput(uint8 idx, uint8 val) {
 				(const char*) "{\"Name\":\"IP%d\", \"Type\":\"Input\", \"Value\":\"%d\"}", idx,
 				val);
 		INFOP("%s-->%s", topic, data);
-		MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+			printMQTTstate();
 		checkMinHeap();
 		os_free(topic);
 		os_free(data);
@@ -254,7 +279,7 @@ void ICACHE_FLASH_ATTR publishOutput(uint8 idx, uint8 val) {
 				val);
 		INFOP("%s-->%s", topic, data);
 		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
-			ERRORP("Error with %s--->%s\n", topic, data);
+			printMQTTstate();
 		checkMinHeap();
 		os_free(topic);
 		os_free(data);

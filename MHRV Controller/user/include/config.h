@@ -31,7 +31,8 @@
 #ifndef USER_CONFIG_H_
 #define USER_CONFIG_H_
 #include "os_type.h"
-#include "user_config.h"
+
+#include "user_conf.h"
 typedef struct{
 	uint32_t cfg_holder;
 	uint8_t device_id[16];

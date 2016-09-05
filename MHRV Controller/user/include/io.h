@@ -12,7 +12,7 @@ enum led_t {
 	DARK, RED, GREEN, YELLOW
 };
 enum speedSelect {
-	OFF, SLOW, FAST
+	STOP, SLOW, FAST
 };
 
 enum pir_t { PIR1=1, PIR2=2 };

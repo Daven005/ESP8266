@@ -12,10 +12,10 @@
 #include "gpio.h"
 #include "easygpio.h"
 #include "stdout.h"
-#include "user_config.h"
 #include "config.h"
 #include "io.h"
 #include "debug.h"
+#include "user_conf.h"
 #include "user_main.h"
 
 bool pirStatus[3] = { false, false, false };
@@ -101,7 +101,7 @@ void ICACHE_FLASH_ATTR setSpeed(enum speedSelect speed) {
 		oldSpeed = speed;
 	}
 	switch (speed) {
-	case OFF:
+	case STOP:
 		setOutput(RELAY1, 0);
 		setOutput(RELAY2, 0);
 		break;

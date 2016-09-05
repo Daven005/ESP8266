@@ -6,7 +6,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A8	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A9	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
@@ -31,7 +31,7 @@
 #define MQTT_PASS			""
 
 #define STA_SSID "EE-berry"
-#define STA_PASS "fog-phone-deep"
+#include "password.h"
 #define STA_TYPE AUTH_WPA2_PSK
 
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
@@ -42,7 +42,7 @@
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/
 
-#define NAME_SIZE 32
+#define NAME_SIZE 33
 #define MAP_SIZE 4
 #define MAP_TEMP_SIZE 1
 #define SETTINGS_SIZE 15

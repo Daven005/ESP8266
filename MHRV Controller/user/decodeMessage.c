@@ -13,15 +13,15 @@
 #include "jsmn.h"
 #include "temperature.h"
 #include "mqtt.h"
-#include "user_config.h"
 #include "config.h"
 #include "decodeMessage.h"
 #include "debug.h"
 #include "publish.h"
 #include "io.h"
 
+#include "user_conf.h"
+
 extern os_timer_t transmit_timer;
-extern os_timer_t date_timer;
 
 static int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[]) {
 	char *endString;

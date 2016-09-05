@@ -10,7 +10,7 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
-#include "user_config.h"
+#include "user_conf.h"
 #include "switch.h"
 
 #ifdef SWITCH
