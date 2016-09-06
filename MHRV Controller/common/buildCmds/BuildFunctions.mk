@@ -30,6 +30,6 @@ vpath %.c $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	$(vecho) "CC $$< $(MODULE_INCDIR)"
-	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
+	$(vecho) "CC $$< $(DEFINES) $(MODULE_INCDIR)"
+	$(Q) $(CC) $(DEFINES) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef

@@ -7,14 +7,16 @@
 #############################################################
 
 include ..\common\buildCmds\Paths.mk
+export PATH := ../buildCmds;$(PATH)
 
-VERBOSE 	:= 1
+VERBOSE 	?= 0
 
 ESPPORT		?= COM3
 ESPBAUD		?= 115200
 DEVICE 		?= ESP-07
-MAPFILE		?= $(DEVICE).map
-COMMON_MODULES ?=  common/mqtt common/modules common/temperature
+CONFIG_NAME	?= $(DEVICE)
+MAPFILE		?= $(CONFIG_NAME).map
+COMMON_MODULES ?=  common/driver common/mqtt common/modules common/temperature
 
 include ..\common\buildCmds\DeviceType.mk
 
@@ -66,7 +68,13 @@ checkdirs: $(BUILD_DIR) $(FW_BASE)
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-firmware:
+$(FW_BASE):
+	$(Q) mkdir -p $@
+
+firmwareNoSleep:
+	$(Q) mkdir -p $@
+
+firmwareOutput:
 	$(Q) mkdir -p $@
 
 flash: all
@@ -103,6 +111,5 @@ clean:
 	$(Q) rm -f *.sym
 	$(Q) rm -rf $(BUILD_DIR)
 	$(Q) rm -rf $(BUILD_BASE)
-	$(Q) rm -rf $(FW_BASE)
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))

@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "user_conf.h"
 #include "flash.h"
+#include "easygpio.h"
 typedef enum {
 	OFF, FLASHING_ON, FLASHING_OFF, WAIT
 } flashState_t;

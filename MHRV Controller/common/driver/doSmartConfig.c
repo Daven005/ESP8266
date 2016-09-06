@@ -12,7 +12,6 @@
 #include <user_interface.h>
 #include "smartconfig.h"
 
-#include "mqtt.h"
 #include "doSmartConfig.h"
 #include "user_conf.h"
 #include "config.h"

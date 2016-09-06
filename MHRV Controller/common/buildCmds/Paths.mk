@@ -18,8 +18,8 @@ SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
 SDK_INCDIR	= include
 
-BUILD_BASE	= build
-FW_BASE		= firmware
+BUILD_BASE	= build/$(CONFIG_NAME)
+FW_BASE		= firmware/$(CONFIG_NAME)
 
-FIRMWARE_FLASH	= firmware/flash.bin
-FIRMWARE_USER	= firmware/user1.bin
+FIRMWARE_FLASH	= $(FW_BASE)/flash.bin
+FIRMWARE_USER	= $(FW_BASE)/user1.bin
