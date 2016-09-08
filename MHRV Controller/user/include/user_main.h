@@ -12,7 +12,7 @@ bool mqttIsConnected(void);
 void stopConnection(void);
 void startConnection(void);
 void user_init(void);
-void publishSensorData(uint8 sensor, char *type, int info);
+void publishSensorData(uint8 sensor, char *type, char *info);
 void _publishDeviceInfo(void);
 void publishData(void);
 void setExternalTemperature(char* dataBuf);

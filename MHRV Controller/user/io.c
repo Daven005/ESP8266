@@ -27,6 +27,7 @@ const uint8 outputMap[MAX_OUTPUT] = { PIN_LED1, PIN_LED2, PIN_RELAY1, PIN_RELAY2
 
 static bool currentOutputs[MAX_OUTPUT];
 static bool outputOverrides[MAX_OUTPUT];
+static enum speedSelect oldSpeed;
 
 void ICACHE_FLASH_ATTR initOutputs(void) {
 	int id;
@@ -94,8 +95,11 @@ void ICACHE_FLASH_ATTR setLED(enum led_t led) {
 	}
 }
 
+enum speedSelect ICACHE_FLASH_ATTR getSpeed(void) {
+	return oldSpeed;
+}
+
 void ICACHE_FLASH_ATTR setSpeed(enum speedSelect speed) {
-	static enum speedSelect oldSpeed;
 	if (speed != oldSpeed) {
 		TESTP("relay:%d\n", speed);
 		oldSpeed = speed;
@@ -135,11 +139,15 @@ static void ICACHE_FLASH_ATTR pirCb(uint32 args) {
 	oldPIRstatus[pir] = pirStatus[pir] = false;
 }
 
+bool ICACHE_FLASH_ATTR pirState(enum pir_t pir) {
+	return easygpio_inputGet(pirPins[pir]);
+}
+
 bool ICACHE_FLASH_ATTR checkPirActive(enum pir_t actionPir) {
 	enum pir_t pir;
 
 	for (pir = PIR1; pir <= PIR2; pir++) {
-		if (easygpio_inputGet(pirPins[pir])) {
+		if (pirState(pir)) {
 			setPirActive(pir);
 		}
 	}
@@ -161,7 +169,7 @@ void ICACHE_FLASH_ATTR setPirActive(enum pir_t pir) {
 		pirStatus[pir] = true;
 		if (pirStatus[pir] != oldPIRstatus[pir]) {
 			TESTP("PIR:%d ", pir);
-			publishSensorData(SENSOR_PIR1 - 1 + pir, "PIR", 1);
+			publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR ON", "1");
 			oldPIRstatus[pir] = true;
 		}
 		os_timer_disarm(&pir_timer[pir]);

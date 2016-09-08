@@ -19,7 +19,9 @@
 #define SENSOR_HUMIDITY2 3
 #define SENSOR_PIR1 4
 #define SENSOR_PIR2 5
-
+#define SENSOR_PIR_ACTIVE1 6
+#define SENSOR_PIR_ACTIVE2 7
+#define SENSOR_FAN 8
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883

@@ -178,7 +178,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 		os_sprintf(data,
 				"{\"Name\":\"%s\", \"Location\":\"%s\", \"Version\":\"%s(%s)\", "
 					"\"Updates\":%d, \"Inputs\":%d, \"Outputs\":%d, "
-					"\"RSSI\":%d, \"Channel\": %d, \"Attempts\": %d, \"Vcc\": %d, ",
+					"\"RSSI\":%d, \"Channel\": %d, \"ConnectTime\": %d, \"Vcc\": %d, ",
 				sysCfg.deviceName, sysCfg.deviceLocation, version, mode,
 				sysCfg.updates,
 #ifdef INPUTS

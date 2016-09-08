@@ -146,7 +146,8 @@ void ICACHE_FLASH_ATTR WIFI_Connect(uint8_t* ssid, uint8_t* pass, uint8_t* devic
 	os_strcpy(stationConf.password, pass);
 	if (!wifi_station_set_config(&stationConf)) errorFlags |= 1 << 2;
 	if (!wifi_station_set_auto_connect(true)) errorFlags |= 1 << 3;
-	if (!wifi_station_connect()) errorFlags |= 1 << 4;
+	if (!wifi_station_set_reconnect_policy(true)) errorFlags |= 1 << 4;
+	if (!wifi_station_connect()) errorFlags |= 1 << 5;
 	if (errorFlags)
 		ERRORP("WIFI_Connect errors %x\n", errorFlags);
 	TESTP("Hostname is: %s\n", wifi_station_get_hostname());

@@ -24,10 +24,12 @@ void setOutput(uint8 id, bool set);
 void forceOutput(uint8 id, bool set);
 void clrOverride(uint8 id);
 void setLED(enum led_t led);
+enum speedSelect getSpeed(void);
 void setSpeed(enum speedSelect speed);
 void printOutputs(void);
 bool checkPirActive(enum pir_t actionPir);
 void clearPirActive(enum pir_t pir);
 void setPirActive(enum pir_t pir);
+bool pirState(enum pir_t pir);
 
 #endif /* USER_INCLUDE_IO_H_ */

@@ -40,10 +40,11 @@ struct dht_sensor_data {
 	enum DHTType sensorType;
 	uint8 id;
 	uint8 pin;
+	bool printRaw;
 	ETSTimer timer;
 	ETSTimer wakeTimer;
 	enum errorCode {
-		E_NONE, E_MAXCOUNT0, E_MAXCOUNT1, E_CRC, E_NO_START
+		E_NONE, E_NOACK_0, E_NOACK_1, E_NODATA_0, E_NODATA_1, E_CRC, E_NO_START
 	} error;
 };
 

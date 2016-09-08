@@ -23,6 +23,7 @@
 #include "check.h"
 #include "dht22.h"
 #include "time.h"
+#include "dtoa.h"
 #include "user_main.h"
 
 #include "include/user_conf.h"
@@ -118,12 +119,12 @@ void ICACHE_FLASH_ATTR startConnection(void) {
 	MQTT_Connect(&mqttClient);
 }
 
-void ICACHE_FLASH_ATTR publishSensorData(uint8 sensor, char *type, int info) {
+void ICACHE_FLASH_ATTR publishSensorData(uint8 sensor, char *type, char *info) {
 	if (mqttConnected) {
 		char *topic = (char *) os_zalloc(100);
 		char *data = (char *) os_zalloc(100);
 		os_sprintf(topic, (const char*) "/Raw/%s/%d/info", sysCfg.device_id, sensor);
-		os_sprintf(data, (const char*) "{ \"Type\":\"%s\", \"Value\":%d}", type, info);
+		os_sprintf(data, (const char*) "{ \"Type\":\"%s\", \"Value\":%s}", type, info);
 		MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, false);
 		INFOP("%s=>%s\n", topic, data);
 		checkMinHeap();
@@ -137,22 +138,27 @@ void ICACHE_FLASH_ATTR _publishDeviceInfo(void) {
 }
 
 void ICACHE_FLASH_ATTR publishData(void) {
+	char bfr[20];
 	if (mqttConnected) {
 		struct dht_sensor_data* r1 = dhtRead(1);
 		struct dht_sensor_data* r2 = dhtRead(2);
 
-		if (r1->success) {
-			publishSensorData(SENSOR_TEMPERATURE1, "Temp", (int) r1->temperature);
-			publishSensorData(SENSOR_HUMIDITY1, "Hum", (int) r1->humidity);
+		if (r1->valid) {
+			publishSensorData(SENSOR_TEMPERATURE1, "Temp", dtoStr(r1->temperature, 5, 1, bfr));
+			publishSensorData(SENSOR_HUMIDITY1, "Hum", dtoStr(r1->humidity, 5, 1, bfr));
 		} else {
-			publishError(1, 1);
+			publishError(61, r1->error);
 		}
-		if (r2->success) {
-			publishSensorData(SENSOR_TEMPERATURE2, "Temp", (int) r2->temperature);
-			publishSensorData(SENSOR_HUMIDITY2, "Hum", (int) r2->humidity);
+		if (r2->valid) {
+			publishSensorData(SENSOR_TEMPERATURE2, "Temp", dtoStr(r2->temperature, 5, 1, bfr));
+			publishSensorData(SENSOR_HUMIDITY2, "Hum", dtoStr(r2->humidity, 5, 1, bfr));
 		} else {
-			publishError(1, 2);
+			publishError(62, r2->error);
 		}
+		publishSensorData(SENSOR_PIR1, "PIR", pirState(PIR1) ? "1" : "0");
+		publishSensorData(SENSOR_PIR2, "PIR", pirState(PIR2) ? "1" : "0");
+		os_sprintf(bfr, "%d", getSpeed());
+		publishSensorData(SENSOR_FAN, "Fan", bfr);
 	}
 }
 
@@ -162,20 +168,22 @@ static void ICACHE_FLASH_ATTR printAll(void) {
 
 	printOutputs();
 	CFG_printSettings();
-	if (r1->success) {
+	if (r1->valid) {
 		os_printf("Temp 1: %d", (int) r1->temperature);
 		os_printf(" Hum 1: %d\n", (int) r1->humidity);
 	} else {
 		os_printf("Can't read DHT 1 (type %d, pin %d, error %d)\n", r1->sensorType, r1->pin,
 				r1->error);
 	}
-	if (r2->success) {
+	r1->printRaw ^= 1;
+	if (r2->valid) {
 		os_printf("Temp 2: %d", (int) r2->temperature);
 		os_printf(" Hum 2: %d\n", (int) r2->humidity);
 	} else {
 		os_printf("Can't read DHT 2 (type %d, pin %d, error %d)\n", r2->sensorType, r2->pin,
 				r2->error);
 	}
+	r2->printRaw ^= 1;
 }
 
 static bool ICACHE_FLASH_ATTR checkHumidityHigh(void) {

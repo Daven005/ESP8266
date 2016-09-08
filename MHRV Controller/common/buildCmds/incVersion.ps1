@@ -1,5 +1,5 @@
 function getLevel($level) {
-	$version = $level.toUpper()
+	$version = $level.toLower()
  	if ($version -match '^\d+') {
 		$i = [int]$version
 	} elseif ($version -eq "major") {
@@ -10,14 +10,19 @@ function getLevel($level) {
 		$i = 2
 	} elseif ($version -eq "build") {
 		$i = 3
+	} elseif ($version -eq "check") {
+		$i = 9
 	} else {
 		write-host "Bad level: "$level
-		5
+		$i = 99
 	}
 	$i
 }
 
-write-host "incVersion "$Args.Length
+function makeVersionString($fv) {
+    [string]$fv[0]+"."+$fv[1]+"."+$fv[2]+"+"+$fv[3]
+}
+
 if (!($Args[0] -and $Args[1])) {
     write-host "Need versionLevel and file arguments"
     exit
@@ -44,10 +49,15 @@ Try
 	        $fv[$j] = 0
 	    }
 	} else {
-	    write-host "Wrong level: "$i" in "$fileVersion
+    	    if ($i -eq 9) {
+		$v = makeVersionString($fv)
+    	        write-host "V: "$v
+            } else {
+	    	write-host "Wrong level: "$i" in "$fileVersion
+	    }		
 	    exit
 	}
-	$v = [string]$fv[0]+"."+$fv[1]+"."+$fv[2]+"+"+$fv[3]
+	$v = makeVersionString $fv
 	'char *version = "' + $v + '";' | Out-File $file -encoding utf8
 	Get-Content $file | write-host 
 }

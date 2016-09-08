@@ -53,26 +53,31 @@ static void ICACHE_FLASH_ATTR pulses(int8 count) {
 #define pulses(x)
 #endif
 
-static inline float ICACHE_FLASH_ATTR scale_temperature(struct dht_sensor_data *reading, int8 *data) {
+static void ICACHE_FLASH_ATTR printRaw(struct dht_sensor_data *reading, uint8 *data) {
+	uint8 byteCount;
+	for (byteCount=0; byteCount < 5; byteCount++) {
+		os_printf("%02x ", data[byteCount]);
+	}
+	os_printf(" (pin: %d id: %d)\n", reading->pin, reading->id);
+}
+
+static inline float ICACHE_FLASH_ATTR scaleTemperature(struct dht_sensor_data *reading, uint8 *data) {
 	if (reading->sensorType == DHT11) {
-		return data[2];
+		return (float) data[2];
 	} else {
-		float temperature = data[2] & 0x7f;
-		temperature *= 256;
-		temperature += data[3];
-		temperature /= 10;
+		int32 temperature = (((int32) data[2] & 0x7f) << 8) + data[3];
 		if (data[2] & 0x80)
-			temperature *= -1;
-		return temperature;
+			temperature = -temperature;
+		return ((float) temperature) / 10.0;
 	}
 }
 
-static inline float ICACHE_FLASH_ATTR scale_humidity(struct dht_sensor_data *reading, int8 *data) {
+static inline float ICACHE_FLASH_ATTR scaleHumidity(struct dht_sensor_data *reading, uint8 *data) {
 	if (reading->sensorType == DHT11) {
 		return data[0];
 	} else {
-		float humidity = data[0] * 256 + data[1];
-		return humidity /= 10;
+		int32 humidity = (((int32) data[0]) << 8) + data[1];
+		return ((float) humidity) / 10.0;
 	}
 }
 
@@ -95,21 +100,27 @@ static int32 ICACHE_FLASH_ATTR waitWhile(uint8 pin, bool state, uint32 min, uint
 	return -tDiff;
 }
 
-static enum errorCode ICACHE_FLASH_ATTR readByte(struct dht_sensor_data *reading, uint8 *byte) {
+static void ICACHE_FLASH_ATTR bitTimingError(char *msg, uint32 tDiff, uint8 bit, uint8 byteCount, struct dht_sensor_data *reading) {
+	TESTP("%s timing error %d bit %d/%d (pin: %d id: %d)\n", msg, -tDiff, bit, byteCount, reading->pin, reading->id);
+}
+
+static void ICACHE_FLASH_ATTR timingError(char *msg, uint32 tDiff, struct dht_sensor_data *reading) {
+	TESTP("%s in %duS (pin: %d id: %d)\n", msg, -tDiff, reading->pin, reading->id);
+}
+
+static enum errorCode ICACHE_FLASH_ATTR readByte(struct dht_sensor_data *reading, uint8 *byte, uint8 byteCount) {
 	uint8 bitCount;
 	int32 t;
 
-	// Assumes already Lo
+	// Assumes already Low
 	for (bitCount = 0; bitCount < 8; bitCount++) {
-		if (waitWhile(reading->pin, 0, 40, 60) <= 0) { // ~50uS
-			pulses(3);
-			TESTP("Bit -> Hi error %d @ %d", t, bitCount);
-			return E_MAXCOUNT0;
+		if ((t = waitWhile(reading->pin, 0, 35, 70)) <= 0) { // ~50uS
+			bitTimingError("Bit High", t, bitCount, byteCount, reading);
+			return E_NODATA_1;
 		}
-		if ((t = waitWhile(reading->pin, 1, 18, 80)) <= 0) { // ~27uS (0) or ~70uS (1)
-			pulses(2);
-			TESTP("Bit -> Lo error %d @ %d", t, bitCount);
-			return E_MAXCOUNT1;
+		if ((t = waitWhile(reading->pin, 1, 15, 80)) <= 0) { // ~27uS (0) or ~70uS (1)
+			bitTimingError("Bit Low", t, bitCount, byteCount, reading);
+			return E_NODATA_0;
 		}
 		*byte <<= 1;
 		if (t > 50)
@@ -128,57 +139,49 @@ static enum errorCode ICACHE_FLASH_ATTR readByte(struct dht_sensor_data *reading
  *                                                   \..50uS../            \..50uS . . etc
  */
 
-static void ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
-	int8 data[10] = { 0, 0, 0, 0, 0 };
+static bool ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
+	uint8 data[10] = { 0, 0, 0, 0, 0 };
 	uint32 t = system_get_time();
 	int32 tDiff;
-	uint8 byteCounter;
-
-	pulses(5);
+	uint8 byteCount, checkSum;
 
 	//   Section   b
 	easygpio_outputSet(reading->pin, 1);
 	easygpio_outputDisable(reading->pin);
-	if ((tDiff = waitWhile(reading->pin, 1, 1, 50)) < 0) { //    Section b
-		TESTP("No response in %duS\n", -tDiff);
+	if ((tDiff = waitWhile(reading->pin, 1, 1, 60)) < 0) { //    Section b
+		timingError("No response in", -tDiff, reading);
 		reading->error = E_NO_START;
-		reading->success = false;
-		return;
-	}pulse();
+		return reading->success = false;
+	}
 	if ((tDiff = waitWhile(reading->pin, 0, 40, 90)) < 0) { //    Section c
-		TESTP("No pulse Hi in %duS\n", -tDiff);
-		reading->error = E_MAXCOUNT0;
-		reading->success = false;
-		return;
-	}pulse();
+		timingError("No pulse Hi", -tDiff, reading);
+		reading->error = E_NOACK_1;
+		return reading->success = false;
+	}
 	if ((tDiff = waitWhile(reading->pin, 1, 70, 90)) < 0) { //    Section d
-		TESTP("No pulse Lo in %duS\n", -tDiff);
-		reading->error = E_MAXCOUNT1;
-		reading->success = false;
-		return;
+		timingError("No pulse Lo", -tDiff, reading);
+		reading->error = E_NOACK_0;
+		return reading->success = false;
 	}
 	// read data
-	for (byteCounter = 0; byteCounter < 5; byteCounter++) {
-		if ((reading->error = readByte(reading, &data[byteCounter])) != E_NONE) {
-			TESTP(" - %d\n", byteCounter);
+	for (byteCount = 0; byteCount < 5; byteCount++) {
+		if ((reading->error = readByte(reading, &data[byteCount], byteCount)) != E_NONE) {
 			break;
 		}
 	}
 	if (reading->error != E_NONE) {
-		reading->success = false;
-		return;
+		return reading->success = false;
 	}
-	INFO(for (byteCounter=0; byteCounter < 5; byteCounter++) TESTP("%02x ", data[byteCounter]));
-	INFOP("\n");
-	if (data[4] != ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) {
-		INFOP("Checksum was incorrect. Expected %d\n", data[4]);
-		reading->success = false;
+	checkSum = data[0] + data[1] + data[2] + data[3];
+	if (data[4] != checkSum) {
+		ERRORP("Checksum incorrect. Expected %02x.\n", checkSum);
+		TEST(printRaw(reading, data));
 		reading->error = E_CRC;
-		return;
+		return reading->success = false;
 	}
 	// checksum is valid
-	reading->temperature = scale_temperature(reading, data);
-	reading->humidity = scale_humidity(reading, data);
+	reading->temperature = scaleTemperature(reading, data);
+	reading->humidity = scaleHumidity(reading, data);
 	if (reading->count == 0) {
 		reading->avgTemperature = reading->temperature;
 		reading->avgHumidity = reading->humidity;
@@ -187,17 +190,20 @@ static void ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
 		reading->avgTemperature = (reading->avgTemperature * 4 + reading->temperature) / 5;
 		reading->avgHumidity = (reading->avgHumidity * 4 + reading->humidity) / 5;
 	}
-	INFOP("DHT %d (%d-%d) Average Temperature: %dC, Humidity: %d%%\n", reading->id,
-			reading->sensorType, reading->pin, (int) (reading->avgTemperature),
-			(int) (reading->avgHumidity));
-	reading->success = true;
-	return;
+	if (reading->printRaw) {
+		char bfr1[20], bfr2[20];
+		TEST(printRaw(reading, data));
+		dtoStr(reading->temperature, 6, 1, bfr1);
+		dtoStr(reading->humidity, 6, 1, bfr2);
+		TESTP("DHT%d%d[%d] Temperature: %sC, Humidity: %s%%\n",
+				reading->sensorType, reading->sensorType, reading->id, bfr1, bfr2);
+	}
+	return reading->success = true;
 }
 
 static void dhtCb(struct dht_sensor_data *reading) {
 	static uint32 lastGoodReadingTime;
-	dhtInput(reading);
-	if (reading->success) {
+	if (dhtInput(reading)) {
 		lastGoodReadingTime = system_get_time();
 		reading->valid = true;
 	} else {
