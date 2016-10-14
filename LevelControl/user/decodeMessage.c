@@ -13,11 +13,12 @@
 #include "jsmn.h"
 #include "temperature.h"
 #include "mqtt.h"
-#include "user_config.h"
+#include "user_conf.h"
 #include "config.h"
 #include "decodeMessage.h"
 #include "debug.h"
 #include "publish.h"
+#include "flowMonitor.h"
 
 extern os_timer_t transmit_timer;
 extern os_timer_t date_timer;
@@ -48,6 +49,11 @@ static int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[
 }
 
 static void ICACHE_FLASH_ATTR decodeSensorClear(char *idPtr, char *param, MQTT_Client* client) {
+	if (strcmp("flow", param) == 0) {
+		overrideClearFlow();
+	} else if (strcmp("pressure", param) == 0) {
+		overrideClearPressure();
+	}
 }
 
 static void saveMapName(uint8 sensorID, char *bfr) {
@@ -117,6 +123,10 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 				_publishDeviceInfo();
 			}
 		}
+	} else if (strcmp("flow", param) == 0) {
+		overrideSetFlow(value);
+	} else if (strcmp("pressure", param) == 0) {
+		overrideSetPressure(value);
 	}
 }
 
@@ -159,8 +169,6 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); // 10 minutes
 			} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
 				publishData((void*) client); // publish all I/O & temps
-			} else if (tokenCount == 3 && strcmp("rainwater", tokens[1] )== 0 && strcmp("level", tokens[2] )== 0) {
-				setTankStatus(data);
 			}
 		}
 	}

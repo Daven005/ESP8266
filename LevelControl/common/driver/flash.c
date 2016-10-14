@@ -9,91 +9,176 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
-#include "user_config.h"
 #include "debug.h"
+#include "user_conf.h"
 #include "flash.h"
+#include "easygpio.h"
+typedef enum {
+	OFF, FLASHING_ON, FLASHING_OFF, WAIT
+} flashState_t;
 
 #ifdef LED
 static os_timer_t flash_timer;
-static bool flashState;
-static int flashCount;
-static unsigned int flashOnTime;
-static unsigned int flashOffTime;
+flashState_t flashState;
+static int flashCount; // Count of flashes within pattern
+static int flashCounter;
+static int patternRepeatCount; // Count of pattern repeats
+static unsigned int flashOnTime; // Individual ON & OFF times for flashes within a pattern
+static unsigned int patternOffTime;
+flashCb_t flashFinishedCb;
+#else
+#pragma message "No LED"
 #endif
 #ifdef ACTION_LED
 static os_timer_t flashA_timer;
-static bool flashActionState;
-static int flashActionCount;
-static unsigned int flashActionOnTime;
-static unsigned int flashActionOffTime;
+flashState_t flashActionState;
+static int flashActionCount; // Count of flashes within pattern
+static int flashActionCounter;
+static int patternActionRepeatCount; // Count of pattern repeats
+static unsigned int flashActionOnTime; // Individual ON & OFF times for flashes within a pattern
+static unsigned int patternActionOffTime;
+flashCb_t flashActionFinishedCb;
 #endif
 
 #ifdef LED
 void ICACHE_FLASH_ATTR stopFlash(void) {
 	easygpio_outputSet(LED, 0);
+	flashState = OFF;
 	os_timer_disarm(&flash_timer);
 }
 
 static void ICACHE_FLASH_ATTR flashCb(void) {
 	os_timer_disarm(&flash_timer);
-	if (flashState) {
-		if (flashCount > 0)
-			flashCount--;
-		if (flashCount == 0) {
-			stopFlash();
-		} else { // if -ve will keep going
-			easygpio_outputSet(LED, (flashState=0));
-			os_timer_arm(&flash_timer, flashOffTime, false);
-		}
-	} else {
-		easygpio_outputSet(LED, (flashState=1));
+	switch (flashState) {
+	case OFF:
+		easygpio_outputSet(LED, 0);
+		break;
+	case FLASHING_ON:
+		easygpio_outputSet(LED, 0);
 		os_timer_arm(&flash_timer, flashOnTime, false);
+		flashState = FLASHING_OFF;
+		break;
+	case FLASHING_OFF:
+		flashCounter--;
+		if (flashCounter > 0) {
+			easygpio_outputSet(LED, 1);
+			os_timer_arm(&flash_timer, flashOnTime, false);
+			flashState = FLASHING_ON;
+		} else {
+			easygpio_outputSet(LED, 0);
+			os_timer_arm(&flash_timer, patternOffTime, false);
+			flashState = WAIT;
+		}
+		break;
+	case WAIT:
+		if (patternRepeatCount > 0)
+			patternRepeatCount--;
+		if (patternRepeatCount == 0) {
+			stopFlash();
+			if (flashFinishedCb) flashFinishedCb();
+		} else { // if -ve will keep going
+			easygpio_outputSet(LED, 1);
+			flashCounter = flashCount;
+			os_timer_arm(&flash_timer, flashOnTime, false);
+			flashState = FLASHING_ON;
+		}
+		break;
 	}
 }
 
-void ICACHE_FLASH_ATTR startFlash(int count, unsigned int onTime, unsigned int offTime) {
-	TESTP("Start Flash %d %d/%d\n", count, onTime, offTime);
-	easygpio_outputSet(LED, (flashState=1));
-	flashCount = count;
-	flashOnTime = onTime;
-	flashOffTime = offTime;
+void startMultiFlashCb(int count, uint8 flashCount, unsigned int flashTime, unsigned int offTime,
+		flashCb_t cb) {
+	startMultiFlash(count, flashCount, flashTime, offTime);
+	if (cb != NULL) flashFinishedCb = cb;
+}
+
+void startMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned int offTime) {
+	TESTP("Start Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
+	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	patternRepeatCount = pCount;
+	flashCounter = flashCount = fCount;
+	flashOnTime = flashTime;
+	patternOffTime = offTime;
+	flashFinishedCb = NULL;
+	flashState = FLASHING_ON;
 	os_timer_disarm(&flash_timer);
 	os_timer_setfn(&flash_timer, (os_timer_func_t *) flashCb, (void *) 0);
-	os_timer_arm(&flash_timer, onTime, false);
+	os_timer_arm(&flash_timer, flashOnTime, false);
+}
+
+void ICACHE_FLASH_ATTR startFlash(int count, unsigned int flashTime, unsigned int offTime) {
+	startMultiFlash(count, 1, flashTime, offTime);
 }
 #endif
 
 #ifdef ACTION_LED
 void ICACHE_FLASH_ATTR stopActionFlash(void) {
 	easygpio_outputSet(ACTION_LED, 0);
+	flashActionState = OFF;
 	os_timer_disarm(&flashA_timer);
 }
 
 static void ICACHE_FLASH_ATTR flashActionCb(void) {
 	os_timer_disarm(&flashA_timer);
-	if (flashActionState) {
-		if (flashActionCount > 0)
-			flashActionCount--;
-		if (flashActionCount == 0) {
-			stopActionFlash();
-		} else { // if -ve will keep going
-			easygpio_outputSet(ACTION_LED, (flashActionState = 0));
-			os_timer_arm(&flashA_timer, flashActionOffTime, false);
-		}
-	} else {
-		easygpio_outputSet(ACTION_LED, (flashActionState = 1));
+	switch (flashActionState) {
+	case OFF:
+		easygpio_outputSet(ACTION_LED, 0);
+		break;
+	case FLASHING_ON:
+		easygpio_outputSet(ACTION_LED, 0);
 		os_timer_arm(&flashA_timer, flashActionOnTime, false);
+		flashActionState = FLASHING_OFF;
+		break;
+	case FLASHING_OFF:
+		flashActionCounter--;
+		if (flashActionCounter > 0) {
+			easygpio_outputSet(ACTION_LED, 1);
+			os_timer_arm(&flashA_timer, flashActionOnTime, false);
+			flashActionState = FLASHING_ON;
+		} else {
+			easygpio_outputSet(ACTION_LED, 0);
+			os_timer_arm(&flashA_timer, patternActionOffTime, false);
+			flashActionState = WAIT;
+		}
+		break;
+	case WAIT:
+		if (patternActionRepeatCount > 0)
+			patternActionRepeatCount--;
+		if (patternActionRepeatCount == 0) {
+			stopActionFlash();
+			if (flashActionFinishedCb) flashActionFinishedCb();
+		} else { // if -ve will keep going
+			easygpio_outputSet(ACTION_LED, 1);
+			flashActionCounter = flashActionCount;
+			os_timer_arm(&flashA_timer, flashActionOnTime, false);
+			flashActionState = FLASHING_ON;
+		}
+		break;
 	}
 }
 
-void ICACHE_FLASH_ATTR startActionFlash(int count, unsigned int onTime, unsigned int offTime) {
-	TESTP("Start Action Flash %d %d/%d\n", count, onTime, offTime);
-	easygpio_outputSet(ACTION_LED, (flashActionState = 1));
-	flashActionCount = count;
-	flashActionOnTime = onTime;
-	flashActionOffTime = offTime;
+void startActionMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned int offTime) {
+	TESTP("Start Action Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
+	easygpio_pinMode(ACTION_LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_outputSet(ACTION_LED, 1);
+	patternActionRepeatCount = pCount;
+	flashActionCounter = flashActionCount = fCount;
+	flashActionOnTime = flashTime;
+	patternActionOffTime = offTime;
+	flashActionFinishedCb = NULL;
+	flashActionState = FLASHING_ON;
 	os_timer_disarm(&flashA_timer);
 	os_timer_setfn(&flashA_timer, (os_timer_func_t *) flashActionCb, (void *) 0);
-	os_timer_arm(&flashA_timer, onTime, false);
+	os_timer_arm(&flashA_timer, flashActionOnTime, false);
+}
+
+void startActionMultiFlashCb(int count, uint8 flashCount, unsigned int flashTime, unsigned int offTime,
+		flashCb_t cb) {
+	startActionMultiFlash(count, flashCount, flashTime, offTime);
+	if (cb != NULL) flashActionFinishedCb = cb;
+}
+
+void ICACHE_FLASH_ATTR startActionFlash(int count, unsigned int onTime, unsigned int offTime) {
+	startActionMultiFlash(count, 1, onTime, offTime);
 }
 #endif

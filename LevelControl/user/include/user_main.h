@@ -15,7 +15,7 @@ bool mqttIsConnected(void);
 void stopConnection(void);
 void startConnection(void);
 void _publishDeviceInfo(void);
-void publishData(MQTT_Client* client);
+void publishData(void);
 void setTankStatus(char *data);
 
 

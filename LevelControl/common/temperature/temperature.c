@@ -12,9 +12,8 @@
 #include "temperature.h"
 #include "config.h"
 #include "debug.h"
-#include "user_config.h"
+#include "user_conf.h"
 #include "dtoa.h"
-#include "publish.h"
 #include "assert.h"
 
 static struct Temperature temperature[MAX_TEMPERATURE_SENSOR];

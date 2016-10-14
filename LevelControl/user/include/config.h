@@ -31,7 +31,7 @@
 #ifndef USER_CONFIG_H_
 #define USER_CONFIG_H_
 #include "os_type.h"
-#include "user_config.h"
+#include "user_conf.h"
 typedef struct{
 	uint32_t cfg_holder;
 	uint8_t device_id[16];
@@ -68,5 +68,6 @@ void CFG_Load(void);
 void CFG_print(void);
 uint16 sysCfgUpdates(void);
 extern SYSCFG sysCfg;
+uint32 CFG_lastSaved(void);
 
 #endif /* USER_CONFIG_H_ */
