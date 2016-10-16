@@ -93,7 +93,7 @@ void startMultiFlashCb(int count, uint8 flashCount, unsigned int flashTime, unsi
 }
 
 void startMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned int offTime) {
-	TESTP("Start Action Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
+	TESTP("Start Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	patternRepeatCount = pCount;
 	flashCounter = flashCount = fCount;

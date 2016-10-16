@@ -26,7 +26,7 @@
 #include "dtoa.h"
 #include "user_main.h"
 
-#include "include/user_conf.h"
+#include "user_conf.h"
 
 os_timer_t transmit_timer;
 static os_timer_t time_timer;
@@ -298,11 +298,11 @@ static void ICACHE_FLASH_ATTR switchAction(int pressCount) {
 	startFlash(pressCount, 50, 100);
 	switch (pressCount) {
 	case 1:
-		setPirActive(sysCfg.settings[SETTING_PIR_ACTION]);
+		setPirFanActive(sysCfg.settings[SETTING_PIR_ACTION]);
 		processData();
 		break;
 	case 2:
-		clearPirActive(sysCfg.settings[SETTING_PIR_ACTION]);
+		clearPirFanActive(sysCfg.settings[SETTING_PIR_ACTION]);
 		processData();
 		break;
 	case 3:

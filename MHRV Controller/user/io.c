@@ -18,10 +18,13 @@
 #include "user_conf.h"
 #include "user_main.h"
 
-bool pirStatus[3] = { false, false, false };
-bool oldPIRstatus[3] = { false, false, false };
-uint8 pirPins[3] = {0, PIN_PIR1, PIN_PIR2 };
-static os_timer_t pir_timer[3];
+static bool pirFanStatus[3] = { false, false, false };
+static bool oldPirFanstatus[3] = { false, false, false };
+static bool pirLightStatus[3] = { false, false, false };
+static bool oldPirLightstatus[3] = { false, false, false };
+static const uint8 pirPins[3] = {0, PIN_PIR1, PIN_PIR2 };
+static os_timer_t pirFanTmer[3];
+static os_timer_t pirLightTmer[3];
 
 const uint8 outputMap[MAX_OUTPUT] = { PIN_LED1, PIN_LED2, PIN_RELAY1, PIN_RELAY2 };
 
@@ -123,7 +126,7 @@ void ICACHE_FLASH_ATTR setSpeed(enum speedSelect speed) {
 void ICACHE_FLASH_ATTR printOutputs(void) {
 	int idx;
 	for (idx=PIR1; idx<=PIR2; idx++) {
-		os_printf("PIR[%d]: %d (%d)\n", idx, pirStatus[idx], easygpio_inputGet(pirPins[idx]));
+		os_printf("PIR[%d]: %d (%d)\n", idx, pirFanStatus[idx], easygpio_inputGet(pirPins[idx]));
 	}
 	os_printf("OP: ");
 	for (idx = 0; idx < MAX_OUTPUT; idx++) {
@@ -132,11 +135,34 @@ void ICACHE_FLASH_ATTR printOutputs(void) {
 	os_printf("\n");
 }
 
-static void ICACHE_FLASH_ATTR pirCb(uint32 args) {
+static void ICACHE_FLASH_ATTR pirFanTimeoutCb(uint32 args) {
 	enum pir_t pir = args;
-	TESTP("pirCb %d\n", pir);
-	publishSensorData(SENSOR_PIR1 - 1 + pir, "PIR", 0);
-	oldPIRstatus[pir] = pirStatus[pir] = false;
+	TESTP("pirFanTimeoutCb %d\n", pir);
+	publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR FAN ON", "0");
+	oldPirFanstatus[pir] = pirFanStatus[pir] = false;
+}
+
+static void ICACHE_FLASH_ATTR pirLightTimeoutCb(uint32 args) {
+	enum pir_t pir = args;
+	TESTP("pirLightTimeoutCb %d\n", pir);
+	publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR LIGHT ON", "0");
+	oldPirLightstatus[pir] = pirLightStatus[pir] = false;
+}
+
+static void setPirLightActive(enum pir_t pir) {
+	if (PIR1 <= pir && pir <= PIR2) {
+		pirLightStatus[pir] = true;
+		if (pirLightStatus[pir] != oldPirLightstatus[pir]) {
+			TESTP("PIR Lt:%d ", pir);
+			publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR LIGHT ON", "1");
+			oldPirLightstatus[pir] = true;
+		}
+		os_timer_disarm(&pirLightTmer[pir]);
+		os_timer_setfn(&pirLightTmer[pir], (os_timer_func_t *) pirLightTimeoutCb, pir);
+		os_timer_arm(&pirLightTmer[pir], sysCfg.settings[SETTING_LIGHT_PIR1_ON_TIME-1+pir]*1000*60, false); // Minutes
+	} else  {
+		ERRORP("Bad PIR # %d", pir);
+	}
 }
 
 bool ICACHE_FLASH_ATTR pirState(enum pir_t pir) {
@@ -148,33 +174,34 @@ bool ICACHE_FLASH_ATTR checkPirActive(enum pir_t actionPir) {
 
 	for (pir = PIR1; pir <= PIR2; pir++) {
 		if (pirState(pir)) {
-			setPirActive(pir);
+			setPirFanActive(pir);
+			setPirLightActive(pir);
 		}
 	}
 	switch (actionPir) {
 	case PIR1:
 	case PIR2:
-		return pirStatus[actionPir];
+		return pirFanStatus[actionPir];
 	}
 	publishError(2, actionPir);
 	return false;
 }
 
-void ICACHE_FLASH_ATTR clearPirActive(enum pir_t pir) {
-	pirStatus[pir] = false;
+void ICACHE_FLASH_ATTR clearPirFanActive(enum pir_t pir) {
+	pirFanStatus[pir] = false;
 }
 
-void ICACHE_FLASH_ATTR setPirActive(enum pir_t pir) {
+void ICACHE_FLASH_ATTR setPirFanActive(enum pir_t pir) {
 	if (PIR1 <= pir && pir <= PIR2) {
-		pirStatus[pir] = true;
-		if (pirStatus[pir] != oldPIRstatus[pir]) {
-			TESTP("PIR:%d ", pir);
-			publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR ON", "1");
-			oldPIRstatus[pir] = true;
+		pirFanStatus[pir] = true;
+		if (pirFanStatus[pir] != oldPirFanstatus[pir]) {
+			TESTP("PIR Fan:%d ", pir);
+			publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR FAN ON", "1");
+			oldPirFanstatus[pir] = true;
 		}
-		os_timer_disarm(&pir_timer[pir]);
-		os_timer_setfn(&pir_timer[pir], (os_timer_func_t *) pirCb, pir);
-		os_timer_arm(&pir_timer[pir], sysCfg.settings[SETTING_PIR1_ON_TIME-1+pir]*1000*60, false); // Minutes
+		os_timer_disarm(&pirFanTmer[pir]);
+		os_timer_setfn(&pirFanTmer[pir], (os_timer_func_t *) pirFanTimeoutCb, pir);
+		os_timer_arm(&pirFanTmer[pir], sysCfg.settings[SETTING_FAN_PIR1_ON_TIME-1+pir]*1000*60, false); // Minutes
 	} else  {
 		ERRORP("Bad PIR # %d", pir);
 	}

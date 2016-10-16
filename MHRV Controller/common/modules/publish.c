@@ -25,7 +25,7 @@
 static MQTT_Client *mqttClient;
 
 static void ICACHE_FLASH_ATTR printMQTTstate(void) {
-	ERRORP("State: MQTT-%d, TCP-%d\n", mqttClient->mqtt_state, mqttClient->connState);
+	ERRORP("State: MQTT-%x, TCP-%x\n", mqttClient->mqtt_state, mqttClient->connState);
 	startFlash(-1, 1000, 1000);
 }
 
@@ -80,6 +80,27 @@ void ICACHE_FLASH_ATTR publishTemperature(int idx) {
 	}
 }
 
+void ICACHE_FLASH_ATTR publishAnalogue(uint16 val) {
+
+	if (mqttIsConnected()) {
+		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
+		if (topic == NULL || data == NULL) {
+			ERRORP("malloc err %s/%s\n", topic, data);
+			startFlash(-1, 50, 50); // fast
+			return;
+		}
+		os_sprintf(topic, (const char*) "/Raw/%s/A1/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Type\":\"Level\", \"Value\":%d}", val);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+			printMQTTstate();
+		TESTP("%s=>%s\n", topic, data);
+
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
+	}
+}
+
 void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	static uint8 last_err = 0xff;
 	static int last_info = -1;
@@ -93,7 +114,7 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	}
 	os_sprintf(topic, (const char*) "/Raw/%s/error", sysCfg.device_id);
 	os_sprintf(data, (const char*) "{ \"error\":%d, \"info\":%d}", err, info);
-	if (mqttIsConnected()) {
+	if (mqttIsConnected() && mqttClient) {
 		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
 			printMQTTstate();
 		TESTP("********");
@@ -122,7 +143,7 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	}
 	os_sprintf(topic, (const char*) "/Raw/%s/alarm", sysCfg.device_id);
 	os_sprintf(data, (const char*) "{ \"alarm\":%d, \"info\":%d}", alarm, info);
-	if (mqttIsConnected()) {
+	if (mqttIsConnected() && mqttClient) {
 		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
 			printMQTTstate();
 		TESTP("********");
@@ -130,14 +151,13 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 		TESTP("--------");
 	}
 	TESTP("%s=>%s\n", topic, data);
-	startFlash(-1, 200, 200);
 	checkMinHeap();
 	os_free(topic);
 	os_free(data);
 }
 
 void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
-	if (mqttIsConnected()) {
+	if (mqttIsConnected() && mqttClient) {
 		char *topic = (char *) os_zalloc(50);
 		char *data = (char *) os_zalloc(200);
 		int idx;
@@ -157,12 +177,14 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 		checkMinHeap();
 		os_free(topic);
 		os_free(data);
+	} else {
+		ERRORP("No client\n");
 	}
 }
 
 void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 		uint8 wifiChannel, uint16 wifiConnectTime, char *bestSSID, uint16 vcc) {
-	if (mqttIsConnected()) {
+	if (mqttIsConnected() && mqttClient) {
 		char *topic = (char *) os_zalloc(50);
 		char *data = (char *) os_zalloc(500);
 		int idx;
@@ -207,6 +229,8 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode,
 		checkMinHeap();
 		os_free(topic);
 		os_free(data);
+	} else {
+		ERRORP("No client\n");
 	}
 }
 
@@ -290,5 +314,6 @@ void ICACHE_FLASH_ATTR publishOutput(uint8 idx, uint8 val) {
 #endif
 
 void ICACHE_FLASH_ATTR initPublish(MQTT_Client* client) {
+	INFOP("initPublish\n");
 	mqttClient = client;
 }
