@@ -239,6 +239,12 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err) {
 	TESTP("Reconnected\n");
 }
 
+static void ICACHE_FLASH_ATTR setupCb(void) {
+	httpSetupMode = false;
+	stopFlash();
+}
+
+#ifndef ESP01
 bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port) {
 	int ret;
 
@@ -262,11 +268,6 @@ bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port) {
 	return true;
 }
 
-static void ICACHE_FLASH_ATTR setupCb(void) {
-	httpSetupMode = false;
-	stopFlash();
-}
-
 bool ICACHE_FLASH_ATTR toggleHttpSetupMode(void) {
 	httpSetupMode = !httpSetupMode;
 	if (httpSetupMode) {
@@ -280,3 +281,4 @@ bool ICACHE_FLASH_ATTR toggleHttpSetupMode(void) {
 	}
 	return httpSetupMode;
 }
+#endif

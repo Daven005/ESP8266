@@ -1,4 +1,15 @@
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/CONFIG_NAME/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/CONFIG_NAME/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/CONFIG_NAME/value=BoilerControl
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/DEVICE/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/DEVICE/operation=append
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/DEVICE/value=ESP-12
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/ESP_BAUD/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/ESP_BAUD/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/ESP_BAUD/value=460800
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/append=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618/appendContributed=true
 indexer/indexAllFiles=true
 indexer/indexAllHeaderVersions=false
 indexer/indexAllVersionsSpecificHeaders=

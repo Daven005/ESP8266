@@ -6,6 +6,8 @@
 #include "stdout.h"
 #include "config.h"
 #include "io.h"
+#include "flash.h"
+#include "publish.h"
 #include "time.h"
 #include "timezone.h"
 #include "temperature.h"
@@ -34,10 +36,6 @@ static const int criticalSensors[MAX_CRITICAL_SENSOR] = {
 static uint8 radsOffCount = 0;
 static uint8 dhwWarningCount = 0;
 static uint8 chWarningCount = 0;
-
-extern void publishError(uint8 err, int info);
-extern void startFlash(int t, int repeat);
-extern void stopFlash(void);
 
 static bool ICACHE_FLASH_ATTR dhwOn(void) {
 	if (dhwOverride == DHW_AUTO || dhwOverride == DHW_AUTO_MAX) {
@@ -69,18 +67,18 @@ void ICACHE_FLASH_ATTR boilerSwitchAction(void) {
 	switch (dhwOverride) {
 	case DHW_AUTO:
 		dhwOverride = DHW_AUTO_MAX;
-		startFlash(100, true);
+		startMultiFlash(-1, 3, 100, 2000);  // DHW Max - heat lower part of cylinder
 		break;
 	case DHW_AUTO_MAX:
 		dhwOverride = DHW_OFF;
-		startFlash(1000, true);
+		startMultiFlash(-1, 1, 100, 2000); // DHW Off
 		break;
 	case DHW_OFF:
 		dhwOverride = DHW_ON;
-		startFlash(200, true);
+		startMultiFlash(-1, 2, 100, 2000); // DHW On all the time
 		break;
 	case DHW_ON:
-		dhwOverride = DHW_AUTO;
+		dhwOverride = DHW_AUTO; // DHW Auto - On between set hours
 		stopFlash();
 		break;
 	}
@@ -289,7 +287,7 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 
 	if (mappedTemperature(MAP_OUTSIDE_TEMP) <= MIN_COMP_TEMP) { 	// No Outside Temperature compensation
 		int idx = setUnmappedSensorTemperature("CH setpoint", DERIVED, baseSetPoint, 0);
-		INFO(extraPublishTemperatures(idx));
+		INFO(publishTemperature(idx));
 		boostInProgress = false;
 		boostHadCFH = false;
 	} else {
@@ -315,7 +313,7 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 			os_timer_arm(&Boost_timer, sysCfg.settings[SETTING_BOOST_TIME] * 60 * 1000, true);
 		}
 		int idx = setUnmappedSensorTemperature("CH setpoint", DERIVED, modifiedSetPoint, 0);
-		INFO(extraPublishTemperatures(idx));
+		INFO(publishTemperature(idx));
 	}
 
 	chSetPoint = mappedTemperature(MAP_CURRENT_CH_SET_POINT);

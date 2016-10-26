@@ -1,7 +1,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A5	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A6	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
@@ -9,9 +9,9 @@
 #define SWITCH 0 // GPI00
 #define LED 5 // NB same as an_t t);
 
-#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
-#define DS18B20_FUNC	FUNC_GPIO2
-#define DS18B20_PIN		2
+#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO4_U
+#define DS18B20_FUNC	FUNC_GPIO4
+#define DS18B20_PIN		4
 
 #define IP4 16
 
@@ -19,7 +19,7 @@
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
-#define MQTT_BUF_SIZE		512
+#define MQTT_BUF_SIZE		2048
 #define MQTT_KEEPALIVE		120	 /*second*/
 
 #define DEVICE_PREFIX		"Hollies"
@@ -88,12 +88,14 @@
 #define MAP_HEATING_RETURN_TEMP 5
 #define MAP_HEATING_FLOW_TEMP 6
 #define MAP_TEMP_TS_CYLINDER 7 // Physically higher than MIDDLE
-#define MAP_SOLAR_TEMP 9
+#define MAP_OB_RETURN_TEMP 8
 
 // Derived temperatures
 #define MAP_CURRENT_CH_SET_POINT 10
 #define MAP_CURRENT_DHW_SET_POINT 11
 #define MAP_OUTSIDE_TEMP 12
+
+#define MAP_TEMP_LAST 12
 
 #define IP_UFH_ON 0
 #define IP_RADS_ON 1

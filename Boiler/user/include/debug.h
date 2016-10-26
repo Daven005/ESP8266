@@ -8,31 +8,52 @@
 #ifndef USER_DEBUG_H_
 #define USER_DEBUG_H_
 
-#define DEBUG 2
 
 #ifdef DEBUG_OVERRIDE
 #pragma message "DEBUG_OVERRIDE"
-#define INFOP os_printf
+#define DEBUG 3
+#else
+#define DEBUG 2 // Normal case
+#endif
+
+#ifndef INFOP
+#if DEBUG>=3
+#define INFOP(...) os_printf(__VA_ARGS__);
+#else
+#define INFOP(...)
+#endif
+#endif
+
+#ifndef INFO
+#if DEBUG>=3
 #define INFO(x) do { x; } while (0)
 #else
-#ifndef INFOP
-#define INFOP if (DEBUG>=3) os_printf
-#endif
-#ifndef INFO
-#define INFO(x) if (DEBUG>=3) do { x; } while (0)
+#define INFO(x)
 #endif
 #endif
 
 #ifndef TESTP
-#define TESTP if (DEBUG>=2) os_printf
+#if DEBUG>=2
+#define TESTP(...) os_printf(__VA_ARGS__);
+#else
+#define TESTP(...)
+#endif
 #endif
 
 #ifndef ERRORP
-#define ERRORP if (DEBUG>=1) os_printf
+#if DEBUG>=1
+#define ERRORP(...) os_printf(__VA_ARGS__);
+#else
+#define ERRORP(...)
+#endif
 #endif
 
 #ifndef TEST
-#define TEST(x) if (DEBUG>=2) do { x; } while (0)
+#if DEBUG>=2
+#define TEST(x) do { x; } while (0)
+#else
+#define TEST(x)
+#endif
 #endif
 
 #endif /* USER_DEBUG_H_ */

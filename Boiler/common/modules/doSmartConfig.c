@@ -15,8 +15,8 @@
 #include "mqtt.h"
 #include "doSmartConfig.h"
 
-#include "user_conf.h"
 #include "config.h"
+#include "user_conf.h"
 #include "debug.h"
 
 void ICACHE_FLASH_ATTR smartConfig_done(sc_status status, void *pdata) {

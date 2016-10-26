@@ -61,11 +61,11 @@ static void saveMapName(uint8 sensorID, char *bfr) {
 	r = jsmn_parse(&p, bfr, strlen(bfr), t, sizeof(t) / sizeof(t[0]));
 
 	if (r < 0) {
-		TESTP("Failed to parse JSON: %d\n", r);
+		ERRORP("Failed to parse JSON: %d\n", r);
 		return;
 	}
 	if (r < 1 || t[0].type != JSMN_OBJECT) {/* Assume the top-level element is an object */
-		TESTP("Object expected\n");
+		ERRORP("Object expected\n");
 		return;
 	}
 	TESTP("%d tokens\n", r);
@@ -80,7 +80,7 @@ static void saveMapName(uint8 sensorID, char *bfr) {
 		}
 	}
 	if (mapIdx < MAP_TEMP_SIZE && name != NULL) {
-		strcpy(sysCfg.mappingName[mapIdx], name);
+		os_strcpy(sysCfg.mappingName[mapIdx], name);
 		CFG_Save();
 		printMappedTemperature(mapIdx);
 		TESTP("\n");
@@ -140,6 +140,7 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 	int id = atoi(idPtr);
 	int value = atoi(valPtr);
 	if (strcmp("mapping", param) == 0) {
+		INFOP("Set sensor mapping %s -> %s\n", valPtr, idPtr);
 		if (strlen(valPtr) == 0) return; // No mapping data
 		uint8 mapIdx = atoi(valPtr);
 		if (mapIdx >= MAP_TEMP_SIZE) return; // can't be used as mapIdx
@@ -149,9 +150,10 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 		sysCfg.mapping[mapIdx] = newMapValue;
 		CFG_Save();
 	} else if (strcmp("name", param) == 0) {
+		INFOP("Set sensor name %s -> %s\n", idPtr, valPtr);
 		int sensorID = sensorIdx(idPtr);
 		if (sensorID >= MAP_TEMP_SIZE) {
-			TESTP("Invalid sensorID %s for 'name' (%d)\n", idPtr, sensorID);
+			ERRORP("Invalid sensorID %s for 'name' (%d)\n", idPtr, sensorID);
 			return; // can't be used as mapIdx
 		}
 		saveMapName(sensorID, valPtr);
@@ -160,7 +162,7 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 			if (SET_MINIMUM <= value && value <= SET_MAXIMUM) {
 				sysCfg.settings[id] = value;
 				CFG_Save();
-				TESTP("Setting %d = %d\n", id, sysCfg.settings[id]);
+				TESTP("Setting %d = %d (Solar?)\n", id, sysCfg.settings[id]);
 				_publishDeviceInfo();
 			}
 		}
@@ -188,11 +190,11 @@ static void ICACHE_FLASH_ATTR decodeTemps(char *bfr) {
 	r = jsmn_parse(&p, bfr, strlen(bfr), t, sizeof(t) / sizeof(t[0]));
 
 	if (r < 0) {
-		INFOP("Failed to parse JSON: %d\n", r);
+		ERRORP("Failed to parse JSON: %d\n", r);
 		return;
 	}
 	if (r < 1 || t[0].type != JSMN_OBJECT) {/* Assume the top-level element is an object */
-		INFOP("Object expected\n");
+		ERRORP("Object expected\n");
 		return;
 	}
 	INFOP("%d tokens\n", r);
@@ -243,7 +245,7 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 					setOutsideTemp(0, atol(data));
 				}
 			} else if (tokenCount == 2 && strcmp("Refresh", tokens[1]) == 0) {
-				publishData(); // publish all I/O & temps
+				publishData(0); // publish all I/O & temps
 			}
 		}
 	}
