@@ -8,6 +8,7 @@
 #ifndef DRIVER_INCLUDE_CHECK_H_
 #define DRIVER_INCLUDE_CHECK_H_
 
+void dump(uint8 *p, uint8 sz);
 uint32 checkMinHeap(void);
 void showTime(char *func, uint32 previous);
 void checkTime(char *func, uint32 previous);

@@ -12,6 +12,7 @@
 #include <user_interface.h>
 #include "wifi.h"
 #include "debug.h"
+#include "check.h"
 #include "flash.h"
 #include "wifi.h"
 #include "mqtt.h"
@@ -172,7 +173,7 @@ void ICACHE_FLASH_ATTR publishDeviceReset(char *version, int lastAction) {
 				lastAction);
 		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, false))
 			printMQTTstate();
-		INFOP("%s=>%s\n", topic, data);
+		TESTP("%s=>%s\n", topic, data);
 		checkMinHeap();
 		os_free(topic);
 		os_free(data);
@@ -237,6 +238,9 @@ void ICACHE_FLASH_ATTR publishMapping(void) {
 		os_sprintf(data, "[");
 		for (idx = 0; idx <= MAP_TEMP_LAST; idx++) {
 			if (os_strlen(unmappedSensorID(idx)) == 0) {
+				struct Temperature *t;
+				getUnmappedTemperature(idx, &t);
+				dump((void *)t, sizeof(*t));
 				ERRORP("Missing temperature %d\n", idx); // NB Outside temperature may not yet be received
 			} else {
 				if (os_strlen(data) > (MSG_SIZE - 80)) {

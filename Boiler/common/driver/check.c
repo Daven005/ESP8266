@@ -14,6 +14,17 @@
 
 static uint32 minHeap = 0xffffffff;
 
+void ICACHE_FLASH_ATTR dump(uint8 *p, uint8 sz) {
+	uint8 i;
+	for (i=0; i<sz; i++) {
+		if ((i % 16) == 0 ) {
+			os_printf("\n%lx ", &p[i]);
+		}
+		os_printf("%02x ", p[i]);
+	}
+	os_printf("\n");
+}
+
 uint32 ICACHE_FLASH_ATTR checkMinHeap(void) {
 	uint32 heap = system_get_free_heap_size();
 	if (heap < minHeap) minHeap = heap;
@@ -28,7 +39,7 @@ void ICACHE_FLASH_ATTR showTime(char *func, uint32 previous) {
 
 void ICACHE_FLASH_ATTR checkTime(char *func, uint32 previous) {
 	uint32 now = system_get_time();
-	if ((now-previous) > 5000) {
+	if ((now-previous) > 15000) {
 		TESTP("*** %d XS time in %s\n", (now-previous), func);
 	}
 }

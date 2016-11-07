@@ -89,14 +89,14 @@ void ICACHE_FLASH_ATTR startConnection(void) {
 	MQTT_Connect(&mqttClient);
 }
 
-static void ICACHE_FLASH_ATTR publishAllInputs(MQTT_Client* client) {
+static void ICACHE_FLASH_ATTR publishAllInputs(void) {
 	uint8 idx;
 	for (idx = 0; idx < INPUTS && idx < sysCfg.inputs; idx++) {
 		publishInput(idx, input(idx));
 	}
 }
 
-static void ICACHE_FLASH_ATTR publishAllOutputs(MQTT_Client* client) {
+static void ICACHE_FLASH_ATTR publishAllOutputs(void) {
 	uint8 idx;
 	for (idx = 0; idx < OUTPUTS && idx < sysCfg.outputs; idx++) {
 		publishOutput(idx, outputState(idx));
@@ -132,12 +132,12 @@ void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 				ERRORP("Can't post EVENT_TRANSMIT 1\n");
 			break;
 		case 1:
-			publishAllInputs(&mqttClient);
+			publishAllInputs();
 			if (!system_os_post(USER_TASK_PRIO_1, EVENT_TRANSMIT, 2))
 				ERRORP("Can't post EVENT_TRANSMIT 2\n");
 			break;
-		case 3:
-			publishAllOutputs(&mqttClient);
+		case 2:
+			publishAllOutputs();
 			break;
 		}
 	}
@@ -243,6 +243,7 @@ static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic,
 	os_free(topic);
 	os_free(data);
 	lastAction = MQTT_DATA_CB;
+	checkTime("mqttDataFunction", t);
 }
 
 static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
@@ -338,7 +339,7 @@ static void ICACHE_FLASH_ATTR initTime(void) {
 
 static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 	mqttData_t *mqttData;
-	INFOP("Background task %d\n", e->sig);
+	INFOP("Background task %d %lx\n", e->sig, e->par);
 	switch (e->sig) {
 	case EVENT_MQTT_CONNECTED:
 		mqttConnectedFunction((MQTT_Client *) e->par);
@@ -403,9 +404,11 @@ LOCAL void ICACHE_FLASH_ATTR startUp() {
 	if (!system_os_task(backgroundTask, USER_TASK_PRIO_1, taskQueue, QUEUE_SIZE))
 		ERRORP("Can't set up background task\n");
 
+	initTime();
 	initTemperature();
+	initBoilerControl(); // Sets up DERIVED temperatures
+	ds18b20SearchDevices(); // Before setting SENSOR temperatures
 	ds18b20StartScan(NULL);
-	initBoilerControl();
 	lastAction = INIT_DONE;
 }
 

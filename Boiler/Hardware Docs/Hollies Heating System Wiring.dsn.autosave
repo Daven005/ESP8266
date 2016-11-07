@@ -4716,6 +4716,16 @@ download the executable.-->
 			<DATE>03/04/2016</DATE>
 			<GRID spacing='50.00000' snap='1'/>
 		</DETAILS>
+		<FONT id='0'>
+			<HEIGHT>-13</HEIGHT>
+			<WIDTH>6</WIDTH>
+			<WEIGHT>400</WEIGHT>
+			<ITALIC>0</ITALIC>
+			<UNDERLINE>0</UNDERLINE>
+			<STRIKEOUT>0</STRIKEOUT>
+			<CHARSET>0</CHARSET>
+			<FACENAME>Arial</FACENAME>
+		</FONT>
 		<FONT id='3'>
 			<HEIGHT>-13</HEIGHT>
 			<WIDTH>6</WIDTH>
@@ -4897,7 +4907,7 @@ download the executable.-->
 			<POINT pos='5.00000,0.00000' arc='0'/>
 			<POINT pos='0.00000,5.00000' arc='0'/>
 		</POLYGON>
-		<TEXT pos='120.00000,127.00000' direction='3' font='3' color='000000'>Drain &amp; Filling valve</TEXT>
+		<TEXT pos='120.00000,127.00000' direction='3' font='3' color='000000'>Drain valve</TEXT>
 		<TEXT pos='179.00000,46.00000' direction='3' font='3' color='000000'>Thermal Store</TEXT>
 		<TEXT pos='193.00000,115.00000' direction='3' font='3' color='000000'>Solar Coil</TEXT>
 		<WIRE style='4' a='159.00000,118.00000' b='141.00000,118.00000'/>
@@ -4926,7 +4936,7 @@ download the executable.-->
 		<WIRE style='0' a='97.00000,77.00000' b='97.00000,99.00000'/>
 		<WIRE style='5' a='129.00000,77.00000' b='121.00000,77.00000'/>
 		<JUNCTION pos='129.00000,77.00000'/>
-		<WIRE style='5' a='129.00000,40.00000' b='129.00000,77.00000'/>
+		<WIRE style='5' a='129.00000,53.00000' b='129.00000,77.00000'/>
 		<TEXT pos='106.00000,74.00000' direction='3' font='5' color='000000'>Pressure Sensor</TEXT>
 		<WIRE style='0' a='117.00000,110.00000' b='102.00000,110.00000'/>
 		<ELLIPSE a='156.00000,115.00000' b='162.00000,121.00000' style='22' fill='0'/>
@@ -4961,7 +4971,7 @@ download the executable.-->
 		<WIRE style='4' a='141.00000,110.00000' b='133.00000,110.00000'/>
 		<JUNCTION pos='141.00000,118.00000'/>
 		<WIRE style='4' a='141.00000,118.00000' b='133.00000,118.00000'/>
-		<WIRE style='13' a='155.00000,109.00000' b='155.00000,22.00000'/>
+		<WIRE style='13' a='155.00000,53.00000' b='155.00000,22.00000'/>
 		<JUNCTION pos='49.00000,40.00000'/>
 		<TEXT pos='44.00000,38.00000' direction='3' font='3' color='000000'>10mm T</TEXT>
 		<TEXT pos='116.00000,65.00000' direction='3' font='3' color='000000'>15mm T</TEXT>
@@ -4976,5 +4986,14 @@ download the executable.-->
 		<WIRE style='5' a='89.00000,51.00000' b='89.00000,58.00000'/>
 		<TEXT pos='82.00000,63.00000' direction='3' font='3' color='000000'>Overflow</TEXT>
 		<TEXT pos='82.00000,66.00000' direction='3' font='3' color='000000'>Container</TEXT>
+		<JUNCTION pos='129.00000,53.00000'/>
+		<WIRE style='5' a='129.00000,53.00000' b='138.00000,53.00000'/>
+		<WIRE style='5' a='129.00000,40.00000' b='129.00000,53.00000'/>
+		<JUNCTION pos='155.00000,53.00000'/>
+		<WIRE style='13' a='155.00000,53.00000' b='146.00000,53.00000'/>
+		<WIRE style='13' a='155.00000,109.00000' b='155.00000,53.00000'/>
+		<NOCONNECT pos='134.00000,53.00000'/>
+		<NOCONNECT pos='149.00000,53.00000'/>
+		<TEXT pos='135.00000,50.00000' direction='3' font='0' color='000000'>Filling Loop</TEXT>
 	</TinyCAD>
 </TinyCADSheets>
