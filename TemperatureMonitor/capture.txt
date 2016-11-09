@@ -1,0 +1,641 @@
+"27/10/2016 10:25:35",Receive topic: /App/date, data: 1477563957
+"27/10/2016 10:25:35",Background task 2
+"27/10/2016 10:25:35",mqd topic /App/date; data 1477563957
+"27/10/2016 10:25:37",Background task 4
+"27/10/2016 10:25:37",Background task 5
+"27/10/2016 10:26:58",Receive topic: /App/date, data: 1477564040
+"27/10/2016 10:26:58",Background task 2
+"27/10/2016 10:26:58",mqd topic /App/date; data 1477564040
+"27/10/2016 10:27:17",Background task 4
+"27/10/2016 10:27:18",Background task 5
+"27/10/2016 10:27:35",Receive topic: /App/date, data: 1477564077
+"27/10/2016 10:27:35",Background task 2
+"27/10/2016 10:27:35",mqd topic /App/date; data 1477564077
+"27/10/2016 10:28:58",Background task 4
+"27/10/2016 10:28:59",Background task 5
+"27/10/2016 10:29:35",Receive topic: /App/date, data: 1477564197
+"27/10/2016 10:29:35",Background task 2
+"27/10/2016 10:29:35",mqd topic /App/date; data 1477564197
+"27/10/2016 10:30:39",Background task 4
+"27/10/2016 10:30:40",Background task 5
+"27/10/2016 10:31:35",Receive topic: /App/date, data: 1477564317
+"27/10/2016 10:31:35",Background task 2
+"27/10/2016 10:31:35",mqd topic /App/date; data 1477564317
+"27/10/2016 10:32:20",Background task 4
+"27/10/2016 10:32:21",Background task 5
+"27/10/2016 10:33:35",Receive topic: /App/date, data: 1477564437
+"27/10/2016 10:33:35",Background task 2
+"27/10/2016 10:33:35",mqd topic /App/date; data 1477564437
+"27/10/2016 10:34:01",Background task 4
+"27/10/2016 10:34:01",Background task 5
+"27/10/2016 10:35:35",Receive topic: /App/date, data: 1477564557
+"27/10/2016 10:35:35",Background task 2
+"27/10/2016 10:35:35",mqd topic /App/date; data 1477564557
+"27/10/2016 10:35:41",Background task 4
+"27/10/2016 10:35:42",Background task 5
+"27/10/2016 10:37:22",Background task 4
+"27/10/2016 10:37:23",Background task 5
+"27/10/2016 10:37:35",Receive topic: /App/date, data: 1477564677
+"27/10/2016 10:37:35",Background task 2
+"27/10/2016 10:37:35",mqd topic /App/date; data 1477564677
+"27/10/2016 10:39:03",Background task 4
+"27/10/2016 10:39:04",Background task 5
+"27/10/2016 10:39:35",Receive topic: /App/date, data: 1477564797
+"27/10/2016 10:39:35",Background task 2
+"27/10/2016 10:39:35",mqd topic /App/date; data 1477564797
+"27/10/2016 10:40:44",Background task 4
+"27/10/2016 10:40:44",Background task 5
+"27/10/2016 10:41:22",Receive topic: /App/date, data: 1477564904
+"27/10/2016 10:41:22",Background task 2
+"27/10/2016 10:41:22",mqd topic /App/date; data 1477564904
+"27/10/2016 10:41:24",Receive topic: /App/date, data: 1477564906
+"27/10/2016 10:41:24",Background task 2
+"27/10/2016 10:41:24",mqd topic /App/date; data 1477564906
+"27/10/2016 10:41:35",Receive topic: /App/date, data: 1477564917
+"27/10/2016 10:41:35",Background task 2
+"27/10/2016 10:41:35",mqd topic /App/date; data 1477564917
+"27/10/2016 10:42:24",Background task 4
+"27/10/2016 10:42:25",Background task 5
+"27/10/2016 10:43:35",Receive topic: /App/date, data: 1477565037
+"27/10/2016 10:43:35",Background task 2
+"27/10/2016 10:43:35",mqd topic /App/date; data 1477565037
+"27/10/2016 10:44:05",Background task 4
+"27/10/2016 10:44:06",Background task 5
+"27/10/2016 10:45:35",Receive topic: /App/date, data: 1477565157
+"27/10/2016 10:45:35",Background task 2
+"27/10/2016 10:45:35",mqd topic /App/date; data 1477565157
+"27/10/2016 10:45:46",Background task 4
+"27/10/2016 10:45:47",Background task 5
+"27/10/2016 10:47:27",Background task 4
+"27/10/2016 10:47:28",Background task 5
+"27/10/2016 10:47:35",Receive topic: /App/date, data: 1477565277
+"27/10/2016 10:47:35",Background task 2
+"27/10/2016 10:47:35",mqd topic /App/date; data 1477565277
+"27/10/2016 10:49:08",Background task 4
+"27/10/2016 10:49:08",Background task 5
+"27/10/2016 10:49:35",Receive topic: /App/date, data: 1477565397
+"27/10/2016 10:49:35",Background task 2
+"27/10/2016 10:49:35",mqd topic /App/date; data 1477565397
+"27/10/2016 10:50:48",Background task 4
+"27/10/2016 10:50:49",Background task 5
+"27/10/2016 10:51:35",Receive topic: /App/date, data: 1477565517
+"27/10/2016 10:51:35",Background task 2
+"27/10/2016 10:51:35",mqd topic /App/date; data 1477565517
+"27/10/2016 10:52:29",Background task 4
+"27/10/2016 10:52:30",Background task 5
+"27/10/2016 10:53:35",Receive topic: /App/date, data: 1477565637
+"27/10/2016 10:53:35",Background task 2
+"27/10/2016 10:53:35",mqd topic /App/date; data 1477565637
+"27/10/2016 10:54:10",Background task 4
+"27/10/2016 10:54:11",Background task 5
+"27/10/2016 10:55:35",Receive topic: /App/date, data: 1477565757
+"27/10/2016 10:55:35",Background task 2
+"27/10/2016 10:55:35",mqd topic /App/date; data 1477565757
+"27/10/2016 10:55:44",Receive topic: /App/date, data: 1477565767
+"27/10/2016 10:55:44",Background task 2
+"27/10/2016 10:55:44",mqd topic /App/date; data 1477565767
+"27/10/2016 10:55:51",Background task 4
+"27/10/2016 10:55:51",Background task 5
+"27/10/2016 10:57:31",Background task 4
+"27/10/2016 10:57:32",Background task 5
+"27/10/2016 10:57:35",Receive topic: /App/date, data: 1477565877
+"27/10/2016 10:57:35",Background task 2
+"27/10/2016 10:57:35",mqd topic /App/date; data 1477565877
+"27/10/2016 10:59:12",Background task 4
+"27/10/2016 10:59:13",Background task 5
+"27/10/2016 10:59:35",Receive topic: /App/date, data: 1477565997
+"27/10/2016 10:59:35",Background task 2
+"27/10/2016 10:59:35",mqd topic /App/date; data 1477565997
+"27/10/2016 11:00:53",Background task 4
+"27/10/2016 11:00:54",Background task 5
+"27/10/2016 11:01:35",Receive topic: /App/date, data: 1477566117
+"27/10/2016 11:01:35",Background task 2
+"27/10/2016 11:01:35",mqd topic /App/date; data 1477566117
+"27/10/2016 11:02:34",Background task 4
+"27/10/2016 11:02:35",Background task 5
+"27/10/2016 11:03:35",Receive topic: /App/date, data: 1477566237
+"27/10/2016 11:03:35",Background task 2
+"27/10/2016 11:03:35",mqd topic /App/date; data 1477566237
+"27/10/2016 11:04:15",Background task 4
+"27/10/2016 11:04:15",Background task 5
+"27/10/2016 11:05:35",Receive topic: /App/date, data: 1477566357
+"27/10/2016 11:05:35",Background task 2
+"27/10/2016 11:05:35",mqd topic /App/date; data 1477566357
+"27/10/2016 11:05:55",Background task 4
+"27/10/2016 11:05:56",Background task 5
+"27/10/2016 11:07:35",Receive topic: /App/date, data: 1477566477
+"27/10/2016 11:07:35",Background task 2
+"27/10/2016 11:07:35",mqd topic /App/date; data 1477566477
+"27/10/2016 11:07:36",Background task 4
+"27/10/2016 11:07:37",Background task 5
+"27/10/2016 11:09:17",Background task 4
+"27/10/2016 11:09:18",Background task 5
+"27/10/2016 11:09:35",Receive topic: /App/date, data: 1477566597
+"27/10/2016 11:09:35",Background task 2
+"27/10/2016 11:09:35",mqd topic /App/date; data 1477566597
+"27/10/2016 11:10:08",Receive topic: /App/date, data: 1477566630
+"27/10/2016 11:10:08",Background task 2
+"27/10/2016 11:10:08",mqd topic /App/date; data 1477566630
+"27/10/2016 11:10:58",Background task 4
+"27/10/2016 11:10:58",Background task 5
+"27/10/2016 11:11:35",Receive topic: /App/date, data: 1477566717
+"27/10/2016 11:11:35",Background task 2
+"27/10/2016 11:11:35",mqd topic /App/date; data 1477566717
+"27/10/2016 11:12:38",Background task 4
+"27/10/2016 11:12:39",Background task 5
+"27/10/2016 11:13:35",Receive topic: /App/date, data: 1477566837
+"27/10/2016 11:13:35",Background task 2
+"27/10/2016 11:13:35",mqd topic /App/date; data 1477566837
+"27/10/2016 11:14:19",Background task 4
+"27/10/2016 11:14:20",Background task 5
+"27/10/2016 11:15:35",Receive topic: /App/date, data: 1477566957
+"27/10/2016 11:15:35",Background task 2
+"27/10/2016 11:15:35",mqd topic /App/date; data 1477566957
+"27/10/2016 11:16:00",Background task 4
+"27/10/2016 11:16:01",Background task 5
+"27/10/2016 11:17:35",Receive topic: /App/date, data: 1477567077
+"27/10/2016 11:17:35",Background task 2
+"27/10/2016 11:17:35",mqd topic /App/date; data 1477567077
+"27/10/2016 11:17:41",Background task 4
+"27/10/2016 11:17:42",Background task 5
+"27/10/2016 11:18:51",Receive topic: /App/date, data: 1477567153
+"27/10/2016 11:18:51",Background task 2
+"27/10/2016 11:18:51",mqd topic /App/date; data 1477567153
+"27/10/2016 11:19:22",Background task 4
+"27/10/2016 11:19:22",Background task 5
+"27/10/2016 11:19:35",Receive topic: /App/date, data: 1477567197
+"27/10/2016 11:19:35",Background task 2
+"27/10/2016 11:19:35",mqd topic /App/date; data 1477567197
+"27/10/2016 11:21:02",Background task 4
+"27/10/2016 11:21:03",Background task 5
+"27/10/2016 11:21:35",Receive topic: /App/date, data: 1477567317
+"27/10/2016 11:21:35",Background task 2
+"27/10/2016 11:21:35",mqd topic /App/date; data 1477567317
+"27/10/2016 11:22:43",Background task 4
+"27/10/2016 11:22:44",Background task 5
+"27/10/2016 11:23:35",Receive topic: /App/date, data: 1477567437
+"27/10/2016 11:23:35",Background task 2
+"27/10/2016 11:23:35",mqd topic /App/date; data 1477567437
+"27/10/2016 11:24:24",Background task 4
+"27/10/2016 11:24:25",Background task 5
+"27/10/2016 11:24:29",Receive topic: /App/date, data: 1477567491
+"27/10/2016 11:24:29",Background task 2
+"27/10/2016 11:24:29",mqd topic /App/date; data 1477567491
+"27/10/2016 11:25:35",Receive topic: /App/date, data: 1477567557
+"27/10/2016 11:25:35",Background task 2
+"27/10/2016 11:25:35",mqd topic /App/date; data 1477567557
+"27/10/2016 11:26:05",Background task 4
+"27/10/2016 11:26:05",Background task 5
+"27/10/2016 11:27:35",Receive topic: /App/date, data: 1477567677
+"27/10/2016 11:27:35",Background task 2
+"27/10/2016 11:27:35",mqd topic /App/date; data 1477567677
+"27/10/2016 11:27:45",Background task 4
+"27/10/2016 11:27:46",Background task 5
+"27/10/2016 11:29:26",Background task 4
+"27/10/2016 11:29:27",Background task 5
+"27/10/2016 11:29:35",Receive topic: /App/date, data: 1477567797
+"27/10/2016 11:29:35",Background task 2
+"27/10/2016 11:29:35",mqd topic /App/date; data 1477567797
+"27/10/2016 11:31:07",Background task 4
+"27/10/2016 11:31:08",Background task 5
+"27/10/2016 11:31:35",Receive topic: /App/date, data: 1477567917
+"27/10/2016 11:31:35",Background task 2
+"27/10/2016 11:31:35",mqd topic /App/date; data 1477567917
+"27/10/2016 11:32:48",Background task 4
+"27/10/2016 11:32:49",Background task 5
+"27/10/2016 11:33:35",Receive topic: /App/date, data: 1477568037
+"27/10/2016 11:33:35",Background task 2
+"27/10/2016 11:33:35",mqd topic /App/date; data 1477568037
+"27/10/2016 11:34:29",Background task 4
+"27/10/2016 11:34:29",Background task 5
+"27/10/2016 11:34:35",MQTT disconnected
+"27/10/2016 11:34:46",Background task 1
+"27/10/2016 11:34:46",MQTT: Connected to 192.168.1.100:1883
+"27/10/2016 11:34:46",Missing temperature 1
+"27/10/2016 11:34:46",Subscribe to: /Raw/Holliesd82324/set/#
+"27/10/2016 11:34:46",Subscribe to: /Raw/Holliesd82324/+/set/#
+"27/10/2016 11:34:46",Subscribe to: /Raw/Holliesd82324/+/clear/#
+"27/10/2016 11:34:46",Background task 4
+"27/10/2016 11:34:47",Background task 5
+"27/10/2016 11:34:47",Receive topic: /Raw/Holliesd82324/set/location, data: Test
+"27/10/2016 11:34:47",Receive topic: /Raw/Holliesd82324/set/name, data: T-1
+"27/10/2016 11:34:47",Receive topic: /Raw/Holliesd82324/set/updates, data: 100
+"27/10/2016 11:34:47",Receive topic: /Raw/Holliesd82324/set/inputs, data: 0
+"27/10/2016 11:34:47",Receive topic: /Raw/Holliesd82324/set/outputs, data: 0
+"27/10/2016 11:34:47",Receive topic: /Raw/Holliesd82324/set/deviceParams, data: {"location":"Test","name":"T-1","updates":"100","inputs":"0","outputs":"0"}
+"27/10/2016 11:34:47",*** 11705 XS time in mqttDataCb
+"27/10/2016 11:34:47",Background task 2
+"27/10/2016 11:34:47",mqd topic /Raw/Holliesd82324/set/location; data Test
+"27/10/2016 11:34:47",Background task 2
+"27/10/2016 11:34:47",mqd topic /Raw/Holliesd82324/set/name; data T-1
+"27/10/2016 11:34:48",Background task 2
+"27/10/2016 11:34:48",mqd topic /Raw/Holliesd82324/set/updates; data 100
+"27/10/2016 11:34:48",Background task 2
+"27/10/2016 11:34:48",mqd topic /Raw/Holliesd82324/set/inputs; data 0
+"27/10/2016 11:34:48",Background task 2
+"27/10/2016 11:34:48",mqd topic /Raw/Holliesd82324/set/outputs; data 0
+"27/10/2016 11:34:48",Background task 2
+"27/10/2016 11:34:48",mqd topic /Raw/Holliesd82324/set/deviceParams; data {"location":"Test","name":"T-1","updates":"100","inputs":"0","outputs":"0"}
+"27/10/2016 11:35:35",Receive topic: /App/date, data: 1477568157
+"27/10/2016 11:35:35",Background task 2
+"27/10/2016 11:35:35",mqd topic /App/date; data 1477568157
+"27/10/2016 11:36:28",Background task 4
+"27/10/2016 11:36:28",Background task 5
+"27/10/2016 11:37:35",Receive topic: /App/date, data: 1477568277
+"27/10/2016 11:37:35",Background task 2
+"27/10/2016 11:37:35",mqd topic /App/date; data 1477568277
+"27/10/2016 11:38:08",Background task 4
+"27/10/2016 11:38:09",Background task 5
+"27/10/2016 11:38:52",Receive topic: /App/date, data: 1477568354
+"27/10/2016 11:38:52",Background task 2
+"27/10/2016 11:38:52",mqd topic /App/date; data 1477568354
+"27/10/2016 11:39:35",Receive topic: /App/date, data: 1477568397
+"27/10/2016 11:39:35",Background task 2
+"27/10/2016 11:39:35",mqd topic /App/date; data 1477568397
+"27/10/2016 11:39:49",Background task 4
+"27/10/2016 11:39:50",Background task 5
+"27/10/2016 11:41:30",Background task 4
+"27/10/2016 11:41:31",Background task 5
+"27/10/2016 11:41:35",Receive topic: /App/date, data: 1477568517
+"27/10/2016 11:41:35",Background task 2
+"27/10/2016 11:41:35",mqd topic /App/date; data 1477568517
+"27/10/2016 11:43:11",Background task 4
+"27/10/2016 11:43:11",Background task 5
+"27/10/2016 11:43:35",Receive topic: /App/date, data: 1477568637
+"27/10/2016 11:43:35",Background task 2
+"27/10/2016 11:43:35",mqd topic /App/date; data 1477568637
+"27/10/2016 11:44:51",Background task 4
+"27/10/2016 11:44:52",Background task 5
+"27/10/2016 11:45:35",Receive topic: /App/date, data: 1477568757
+"27/10/2016 11:45:35",Background task 2
+"27/10/2016 11:45:35",mqd topic /App/date; data 1477568757
+"27/10/2016 11:46:32",Background task 4
+"27/10/2016 11:46:33",Background task 5
+"27/10/2016 11:47:35",Receive topic: /App/date, data: 1477568877
+"27/10/2016 11:47:35",Background task 2
+"27/10/2016 11:47:35",mqd topic /App/date; data 1477568877
+"27/10/2016 11:48:13",Background task 4
+"27/10/2016 11:48:14",Background task 5
+"27/10/2016 11:49:35",Receive topic: /App/date, data: 1477568997
+"27/10/2016 11:49:35",Background task 2
+"27/10/2016 11:49:35",mqd topic /App/date; data 1477568997
+"27/10/2016 11:49:54",Background task 4
+"27/10/2016 11:49:55",Background task 5
+"27/10/2016 11:51:35",Background task 4
+"27/10/2016 11:51:35",Receive topic: /App/date, data: 1477569117
+"27/10/2016 11:51:35",Background task 2
+"27/10/2016 11:51:35",mqd topic /App/date; data 1477569117
+"27/10/2016 11:51:35",Background task 5
+"27/10/2016 11:53:15",Background task 4
+"27/10/2016 11:53:16",Receive topic: /App/date, data: 1477569218
+"27/10/2016 11:53:16",Background task 2
+"27/10/2016 11:53:16",mqd topic /App/date; data 1477569218
+"27/10/2016 11:53:16",Background task 5
+"27/10/2016 11:53:35",Receive topic: /App/date, data: 1477569237
+"27/10/2016 11:53:35",Background task 2
+"27/10/2016 11:53:35",mqd topic /App/date; data 1477569237
+"27/10/2016 11:54:56",Background task 4
+"27/10/2016 11:54:57",Background task 5
+"27/10/2016 11:55:35",Receive topic: /App/date, data: 1477569357
+"27/10/2016 11:55:35",Background task 2
+"27/10/2016 11:55:35",mqd topic /App/date; data 1477569357
+"27/10/2016 11:56:37",Background task 4
+"27/10/2016 11:56:38",Background task 5
+"27/10/2016 11:57:35",Receive topic: /App/date, data: 1477569477
+"27/10/2016 11:57:35",Background task 2
+"27/10/2016 11:57:35",mqd topic /App/date; data 1477569477
+"27/10/2016 11:58:18",Background task 4
+"27/10/2016 11:58:18",Background task 5
+"27/10/2016 11:59:35",Receive topic: /App/date, data: 1477569597
+"27/10/2016 11:59:35",Background task 2
+"27/10/2016 11:59:35",mqd topic /App/date; data 1477569597
+"27/10/2016 11:59:58",Background task 4
+"27/10/2016 11:59:59",Background task 5
+"27/10/2016 12:01:35",Receive topic: /App/date, data: 1477569717
+"27/10/2016 12:01:35",Background task 2
+"27/10/2016 12:01:35",mqd topic /App/date; data 1477569717
+"27/10/2016 12:01:39",Background task 4
+"27/10/2016 12:01:40",Background task 5
+"27/10/2016 12:03:20",Background task 4
+"27/10/2016 12:03:21",Background task 5
+"27/10/2016 12:03:35",Receive topic: /App/date, data: 1477569837
+"27/10/2016 12:03:35",Background task 2
+"27/10/2016 12:03:35",mqd topic /App/date; data 1477569837
+"27/10/2016 12:05:01",Background task 4
+"27/10/2016 12:05:02",Background task 5
+"27/10/2016 12:05:35",Receive topic: /App/date, data: 1477569957
+"27/10/2016 12:05:35",Background task 2
+"27/10/2016 12:05:35",mqd topic /App/date; data 1477569957
+"27/10/2016 12:06:42",Background task 4
+"27/10/2016 12:06:42",Background task 5
+"27/10/2016 12:07:35",Receive topic: /App/date, data: 1477570077
+"27/10/2016 12:07:35",Background task 2
+"27/10/2016 12:07:35",mqd topic /App/date; data 1477570077
+"27/10/2016 12:07:39",Receive topic: /App/date, data: 1477570082
+"27/10/2016 12:07:39",Background task 2
+"27/10/2016 12:07:39",mqd topic /App/date; data 1477570082
+"27/10/2016 12:08:22",Background task 4
+"27/10/2016 12:08:23",Background task 5
+"27/10/2016 12:09:35",Receive topic: /App/date, data: 1477570197
+"27/10/2016 12:09:35",Background task 2
+"27/10/2016 12:09:35",mqd topic /App/date; data 1477570197
+"27/10/2016 12:10:03",Background task 4
+"27/10/2016 12:10:04",Background task 5
+"27/10/2016 12:11:35",Receive topic: /App/date, data: 1477570317
+"27/10/2016 12:11:35",Background task 2
+"27/10/2016 12:11:35",mqd topic /App/date; data 1477570317
+"27/10/2016 12:11:44",Background task 4
+"27/10/2016 12:11:45",Background task 5
+"27/10/2016 12:13:25",Background task 4
+"27/10/2016 12:13:25",Background task 5
+"27/10/2016 12:13:35",Receive topic: /App/date, data: 1477570437
+"27/10/2016 12:13:35",Background task 2
+"27/10/2016 12:13:35",mqd topic /App/date; data 1477570437
+"27/10/2016 12:15:05",Background task 4
+"27/10/2016 12:15:06",Background task 5
+"27/10/2016 12:15:35",Receive topic: /App/date, data: 1477570557
+"27/10/2016 12:15:35",Background task 2
+"27/10/2016 12:15:35",mqd topic /App/date; data 1477570557
+"27/10/2016 12:16:46",Background task 4
+"27/10/2016 12:16:47",Background task 5
+"27/10/2016 12:17:35",Receive topic: /App/date, data: 1477570677
+"27/10/2016 12:17:35",Background task 2
+"27/10/2016 12:17:35",mqd topic /App/date; data 1477570677
+"27/10/2016 12:18:27",Background task 4
+"27/10/2016 12:18:28",Background task 5
+"27/10/2016 12:19:35",Receive topic: /App/date, data: 1477570797
+"27/10/2016 12:19:35",Background task 2
+"27/10/2016 12:19:35",mqd topic /App/date; data 1477570797
+"27/10/2016 12:20:08",Background task 4
+"27/10/2016 12:20:09",Background task 5
+"27/10/2016 12:21:35",Receive topic: /App/date, data: 1477570917
+"27/10/2016 12:21:35",Background task 2
+"27/10/2016 12:21:35",mqd topic /App/date; data 1477570917
+"27/10/2016 12:21:49",Background task 4
+"27/10/2016 12:21:49",Background task 5
+"27/10/2016 12:22:03",Receive topic: /App/date, data: 1477570945
+"27/10/2016 12:22:03",Background task 2
+"27/10/2016 12:22:03",mqd topic /App/date; data 1477570945
+"27/10/2016 12:23:29",Background task 4
+"27/10/2016 12:23:30",Background task 5
+"27/10/2016 12:23:35",Receive topic: /App/date, data: 1477571037
+"27/10/2016 12:23:35",Background task 2
+"27/10/2016 12:23:35",mqd topic /App/date; data 1477571037
+"27/10/2016 12:25:10",Background task 4
+"27/10/2016 12:25:11",Background task 5
+"27/10/2016 12:25:35",Receive topic: /App/date, data: 1477571157
+"27/10/2016 12:25:35",Background task 2
+"27/10/2016 12:25:35",mqd topic /App/date; data 1477571157
+"27/10/2016 12:26:51",Background task 4
+"27/10/2016 12:26:52",Background task 5
+"27/10/2016 12:27:35",Receive topic: /App/date, data: 1477571277
+"27/10/2016 12:27:35",Background task 2
+"27/10/2016 12:27:35",mqd topic /App/date; data 1477571277
+"27/10/2016 12:28:32",Background task 4
+"27/10/2016 12:28:32",Background task 5
+"27/10/2016 12:29:35",Receive topic: /App/date, data: 1477571397
+"27/10/2016 12:29:35",Background task 2
+"27/10/2016 12:29:35",mqd topic /App/date; data 1477571397
+"27/10/2016 12:30:12",Background task 4
+"27/10/2016 12:30:13",Background task 5
+"27/10/2016 12:31:35",Receive topic: /App/date, data: 1477571517
+"27/10/2016 12:31:35",Background task 2
+"27/10/2016 12:31:35",mqd topic /App/date; data 1477571517
+"27/10/2016 12:31:53",Background task 4
+"27/10/2016 12:31:54",Background task 5
+"27/10/2016 12:33:34",Background task 4
+"27/10/2016 12:33:35",Receive topic: /App/date, data: 1477571637
+"27/10/2016 12:33:35",Background task 2
+"27/10/2016 12:33:35",mqd topic /App/date; data 1477571637
+"27/10/2016 12:33:35",Background task 5
+"27/10/2016 12:35:15",Background task 4
+"27/10/2016 12:35:16",Background task 5
+"27/10/2016 12:35:35",Receive topic: /App/date, data: 1477571757
+"27/10/2016 12:35:35",Background task 2
+"27/10/2016 12:35:35",mqd topic /App/date; data 1477571757
+"27/10/2016 12:36:24",Receive topic: /App/date, data: 1477571807
+"27/10/2016 12:36:24",Background task 2
+"27/10/2016 12:36:24",mqd topic /App/date; data 1477571807
+"27/10/2016 12:36:56",Background task 4
+"27/10/2016 12:36:56",Background task 5
+"27/10/2016 12:37:35",Receive topic: /App/date, data: 1477571877
+"27/10/2016 12:37:35",Background task 2
+"27/10/2016 12:37:35",mqd topic /App/date; data 1477571877
+"27/10/2016 12:38:36",Background task 4
+"27/10/2016 12:38:37",Background task 5
+"27/10/2016 12:39:35",Receive topic: /App/date, data: 1477571997
+"27/10/2016 12:39:35",Background task 2
+"27/10/2016 12:39:35",mqd topic /App/date; data 1477571997
+"27/10/2016 12:40:17",Background task 4
+"27/10/2016 12:40:18",Background task 5
+"27/10/2016 12:41:35",Receive topic: /App/date, data: 1477572117
+"27/10/2016 12:41:35",Background task 2
+"27/10/2016 12:41:35",mqd topic /App/date; data 1477572117
+"27/10/2016 12:41:58",Background task 4
+"27/10/2016 12:41:59",Background task 5
+"27/10/2016 12:43:35",Receive topic: /App/date, data: 1477572237
+"27/10/2016 12:43:35",Background task 2
+"27/10/2016 12:43:35",mqd topic /App/date; data 1477572237
+"27/10/2016 12:43:39",Background task 4
+"27/10/2016 12:43:39",Background task 5
+"27/10/2016 12:45:19",Background task 4
+"27/10/2016 12:45:20",Background task 5
+"27/10/2016 12:45:35",Receive topic: /App/date, data: 1477572357
+"27/10/2016 12:45:35",Background task 2
+"27/10/2016 12:45:35",mqd topic /App/date; data 1477572357
+"27/10/2016 12:47:00",Background task 4
+"27/10/2016 12:47:01",Background task 5
+"27/10/2016 12:47:35",Receive topic: /App/date, data: 1477572477
+"27/10/2016 12:47:35",Background task 2
+"27/10/2016 12:47:35",mqd topic /App/date; data 1477572477
+"27/10/2016 12:48:41",Background task 4
+"27/10/2016 12:48:42",Background task 5
+"27/10/2016 12:49:00",Receive topic: /App/date, data: 1477572563
+"27/10/2016 12:49:00",Background task 2
+"27/10/2016 12:49:00",mqd topic /App/date; data 1477572563
+"27/10/2016 12:49:35",Receive topic: /App/date, data: 1477572597
+"27/10/2016 12:49:35",Background task 2
+"27/10/2016 12:49:35",mqd topic /App/date; data 1477572597
+"27/10/2016 12:50:22",Background task 4
+"27/10/2016 12:50:23",Background task 5
+"27/10/2016 12:50:48",Receive topic: /App/date, data: 1477572670
+"27/10/2016 12:50:48",Background task 2
+"27/10/2016 12:50:48",mqd topic /App/date; data 1477572670
+"27/10/2016 12:51:35",Receive topic: /App/date, data: 1477572717
+"27/10/2016 12:51:35",Background task 2
+"27/10/2016 12:51:35",mqd topic /App/date; data 1477572717
+"27/10/2016 12:52:03",Background task 4
+"27/10/2016 12:52:03",Background task 5
+"27/10/2016 12:53:35",Receive topic: /App/date, data: 1477572837
+"27/10/2016 12:53:35",Background task 2
+"27/10/2016 12:53:35",mqd topic /App/date; data 1477572837
+"27/10/2016 12:53:43",Background task 4
+"27/10/2016 12:53:44",Background task 5
+"27/10/2016 12:54:57",Receive topic: /App/date, data: 1477572919
+"27/10/2016 12:54:57",Background task 2
+"27/10/2016 12:54:57",mqd topic /App/date; data 1477572919
+"27/10/2016 12:55:24",Background task 4
+"27/10/2016 12:55:25",Background task 5
+"27/10/2016 12:55:35",Receive topic: /App/date, data: 1477572957
+"27/10/2016 12:55:35",Background task 2
+"27/10/2016 12:55:35",mqd topic /App/date; data 1477572957
+"27/10/2016 12:57:05",Background task 4
+"27/10/2016 12:57:06",Background task 5
+"27/10/2016 12:57:35",Receive topic: /App/date, data: 1477573077
+"27/10/2016 12:57:35",Background task 2
+"27/10/2016 12:57:35",mqd topic /App/date; data 1477573077
+"27/10/2016 12:58:46",Background task 4
+"27/10/2016 12:58:46",Background task 5
+"27/10/2016 12:59:35",Receive topic: /App/date, data: 1477573197
+"27/10/2016 12:59:35",Background task 2
+"27/10/2016 12:59:35",mqd topic /App/date; data 1477573197
+"27/10/2016 13:00:26",Background task 4
+"27/10/2016 13:00:27",Background task 5
+"27/10/2016 13:01:35",Receive topic: /App/date, data: 1477573317
+"27/10/2016 13:01:35",Background task 2
+"27/10/2016 13:01:35",mqd topic /App/date; data 1477573317
+"27/10/2016 13:02:07",Background task 4
+"27/10/2016 13:02:08",Background task 5
+"27/10/2016 13:03:35",Receive topic: /App/date, data: 1477573437
+"27/10/2016 13:03:35",Background task 2
+"27/10/2016 13:03:35",mqd topic /App/date; data 1477573437
+"27/10/2016 13:03:48",Background task 4
+"27/10/2016 13:03:49",Background task 5
+"27/10/2016 13:05:00",Receive topic: /App/date, data: 1477573523
+"27/10/2016 13:05:00",Background task 2
+"27/10/2016 13:05:00",mqd topic /App/date; data 1477573523
+"27/10/2016 13:05:11",Receive topic: /App/date, data: 1477573534
+"27/10/2016 13:05:11",Background task 2
+"27/10/2016 13:05:11",mqd topic /App/date; data 1477573534
+"27/10/2016 13:05:29",Background task 4
+"27/10/2016 13:05:30",Background task 5
+"27/10/2016 13:05:35",Receive topic: /App/date, data: 1477573557
+"27/10/2016 13:05:35",Background task 2
+"27/10/2016 13:05:35",mqd topic /App/date; data 1477573557
+"27/10/2016 13:07:10",Background task 4
+"27/10/2016 13:07:10",Background task 5
+"27/10/2016 13:07:35",Receive topic: /App/date, data: 1477573677
+"27/10/2016 13:07:35",Background task 2
+"27/10/2016 13:07:35",mqd topic /App/date; data 1477573677
+"27/10/2016 13:08:50",Background task 4
+"27/10/2016 13:08:51",Background task 5
+"27/10/2016 13:09:35",Receive topic: /App/date, data: 1477573797
+"27/10/2016 13:09:35",Background task 2
+"27/10/2016 13:09:35",mqd topic /App/date; data 1477573797
+"27/10/2016 13:10:31",Background task 4
+"27/10/2016 13:10:32",Background task 5
+"27/10/2016 13:11:35",Receive topic: /App/date, data: 1477573918
+"27/10/2016 13:11:35",Background task 2
+"27/10/2016 13:11:35",mqd topic /App/date; data 1477573918
+"27/10/2016 13:12:12",Background task 4
+"27/10/2016 13:12:13",Background task 5
+"27/10/2016 13:13:35",Receive topic: /App/date, data: 1477574038
+"27/10/2016 13:13:35",Background task 2
+"27/10/2016 13:13:35",mqd topic /App/date; data 1477574038
+"27/10/2016 13:13:53",Background task 4
+"27/10/2016 13:13:53",Background task 5
+"27/10/2016 13:15:33",Background task 4
+"27/10/2016 13:15:34",Background task 5
+"27/10/2016 13:15:35",Receive topic: /App/date, data: 1477574158
+"27/10/2016 13:15:35",Background task 2
+"27/10/2016 13:15:35",mqd topic /App/date; data 1477574158
+"27/10/2016 13:17:14",Background task 4
+"27/10/2016 13:17:15",Background task 5
+"27/10/2016 13:17:35",Receive topic: /App/date, data: 1477574278
+"27/10/2016 13:17:35",Background task 2
+"27/10/2016 13:17:35",mqd topic /App/date; data 1477574278
+"27/10/2016 13:18:55",Background task 4
+"27/10/2016 13:18:56",Background task 5
+"27/10/2016 13:19:35",Receive topic: /App/date, data: 1477574398
+"27/10/2016 13:19:35",Background task 2
+"27/10/2016 13:19:35",mqd topic /App/date; data 1477574398
+"27/10/2016 13:19:36",Receive topic: /App/date, data: 1477574398
+"27/10/2016 13:19:36",Background task 2
+"27/10/2016 13:19:36",mqd topic /App/date; data 1477574398
+"27/10/2016 13:20:36",Background task 4
+"27/10/2016 13:20:37",Background task 5
+"27/10/2016 13:21:35",Receive topic: /App/date, data: 1477574518
+"27/10/2016 13:21:35",Background task 2
+"27/10/2016 13:21:35",mqd topic /App/date; data 1477574518
+"27/10/2016 13:22:17",Background task 4
+"27/10/2016 13:22:17",Background task 5
+"27/10/2016 13:23:35",Receive topic: /App/date, data: 1477574638
+"27/10/2016 13:23:35",Background task 2
+"27/10/2016 13:23:35",mqd topic /App/date; data 1477574638
+"27/10/2016 13:23:57",Background task 4
+"27/10/2016 13:23:58",Background task 5
+"27/10/2016 13:25:35",Receive topic: /App/date, data: 1477574758
+"27/10/2016 13:25:35",Background task 2
+"27/10/2016 13:25:35",mqd topic /App/date; data 1477574758
+"27/10/2016 13:25:38",Background task 4
+"27/10/2016 13:25:39",Background task 5
+"27/10/2016 13:27:19",Background task 4
+"27/10/2016 13:27:20",Background task 5
+"27/10/2016 13:27:35",Receive topic: /App/date, data: 1477574878
+"27/10/2016 13:27:35",Background task 2
+"27/10/2016 13:27:35",mqd topic /App/date; data 1477574878
+"27/10/2016 13:29:00",Background task 4
+"27/10/2016 13:29:00",Background task 5
+"27/10/2016 13:29:35",Receive topic: /App/date, data: 1477574998
+"27/10/2016 13:29:35",Background task 2
+"27/10/2016 13:29:35",mqd topic /App/date; data 1477574998
+"27/10/2016 13:30:40",Background task 4
+"27/10/2016 13:30:41",Background task 5
+"27/10/2016 13:31:35",Receive topic: /App/date, data: 1477575118
+"27/10/2016 13:31:35",Background task 2
+"27/10/2016 13:31:35",mqd topic /App/date; data 1477575118
+"27/10/2016 13:32:21",Background task 4
+"27/10/2016 13:32:22",Background task 5
+"27/10/2016 13:33:35",Receive topic: /App/date, data: 1477575238
+"27/10/2016 13:33:35",Background task 2
+"27/10/2016 13:33:35",mqd topic /App/date; data 1477575238
+"27/10/2016 13:33:54",Receive topic: /App/date, data: 1477575257
+"27/10/2016 13:33:54",Background task 2
+"27/10/2016 13:33:54",mqd topic /App/date; data 1477575257
+"27/10/2016 13:34:02",Background task 4
+"27/10/2016 13:34:03",Background task 5
+"27/10/2016 13:35:35",Receive topic: /App/date, data: 1477575358
+"27/10/2016 13:35:35",Background task 2
+"27/10/2016 13:35:35",mqd topic /App/date; data 1477575358
+"27/10/2016 13:35:43",Background task 4
+"27/10/2016 13:35:44",Background task 5
+"27/10/2016 13:37:24",Background task 4
+"27/10/2016 13:37:24",Background task 5
+"27/10/2016 13:37:35",Receive topic: /App/date, data: 1477575478
+"27/10/2016 13:37:35",Background task 2
+"27/10/2016 13:37:35",mqd topic /App/date; data 1477575478
+"27/10/2016 13:39:04",Background task 4
+"27/10/2016 13:39:05",Background task 5
+"27/10/2016 13:39:35",Receive topic: /App/date, data: 1477575598
+"27/10/2016 13:39:35",Background task 2
+"27/10/2016 13:39:35",mqd topic /App/date; data 1477575598
+"27/10/2016 13:40:45",Background task 4
+"27/10/2016 13:40:46",Background task 5
+"27/10/2016 13:41:35",Receive topic: /App/date, data: 1477575718
+"27/10/2016 13:41:35",Background task 2
+"27/10/2016 13:41:35",mqd topic /App/date; data 1477575718
+"27/10/2016 13:42:26",Background task 4
+"27/10/2016 13:42:27",Background task 5
+"27/10/2016 13:43:35",Receive topic: /App/date, data: 1477575838
+"27/10/2016 13:43:35",Background task 2
+"27/10/2016 13:43:35",mqd topic /App/date; data 1477575838
+"27/10/2016 13:44:07",Background task 4
+"27/10/2016 13:44:07",Background task 5
+"27/10/2016 13:45:35",Receive topic: /App/date, data: 1477575958
+"27/10/2016 13:45:35",Background task 2
+"27/10/2016 13:45:35",mqd topic /App/date; data 1477575958
+"27/10/2016 13:45:47",Background task 4
+"27/10/2016 13:45:48",Background task 5
+"27/10/2016 13:47:28",Background task 4
+"27/10/2016 13:47:29",Background task 5
+"27/10/2016 13:47:35",Receive topic: /App/date, data: 1477576078
+"27/10/2016 13:47:35",Background task 2
+"27/10/2016 13:47:35",mqd topic /App/date; data 1477576078
+"27/10/2016 13:48:20",Receive topic: /App/date, data: 1477576123
+"27/10/2016 13:48:20",Background task 2
+"27/10/2016 13:48:20",mqd topic /App/date; data 1477576123
+"27/10/2016 13:49:09",Background task 4
+"27/10/2016 13:49:10",Background task 5
+"27/10/2016 13:49:35",Receive topic: /App/date, data: 1477576198
+"27/10/2016 13:49:35",Background task 2
+"27/10/2016 13:49:35",mqd topic /App/date; data 1477576198
