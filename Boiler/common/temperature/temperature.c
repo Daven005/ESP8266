@@ -14,7 +14,7 @@
 #include <osapi.h>
 #include <ds18b20.h>
 #include "temperature.h"
-#include "config.h"
+#include "sysCfg.h"
 #include "check.h"
 #include "user_conf.h"
 #ifdef USE_FLOAT

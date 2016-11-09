@@ -16,6 +16,7 @@
 #include "http.h"
 
 #include "config.h"
+#include "sysCfg.h"
 #include "espmissingincludes.h"
 
 #define HTTPD_METHOD_GET 1
@@ -213,7 +214,7 @@ static void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned sh
 						reboot = true;
 					}
 				}
-				CFG_Save();
+				CFG_dirty();
 			}
 		}
 		replyOK(conn);

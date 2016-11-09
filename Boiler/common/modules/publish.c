@@ -20,7 +20,7 @@
 #include "publish.h"
 
 #include "user_conf.h"
-#include "config.h"
+#include "sysCfg.h"
 #include "check.h"
 
 static MQTT_Client *mqttClient;

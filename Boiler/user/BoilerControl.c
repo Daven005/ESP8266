@@ -4,7 +4,7 @@
 #include <user_interface.h>
 #include <ds18b20.h>
 #include "stdout.h"
-#include "config.h"
+#include "sysCfg.h"
 #include "io.h"
 #include "flash.h"
 #include "publish.h"

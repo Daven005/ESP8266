@@ -14,6 +14,7 @@
 #include "temperature.h"
 #include "mqtt.h"
 #include "config.h"
+#include "sysCfg.h"
 #include "decodeMessage.h"
 #include "debug.h"
 #include "publish.h"
@@ -150,10 +151,8 @@ static void ICACHE_FLASH_ATTR decodeSensorClear(char *idPtr, char *param, MQTT_C
 
 static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *param,
 		MQTT_Client* client) {
-	uint32 ts = system_get_time();
 	int id = atoi(idPtr);
 	int value = atoi(valPtr);
-	checkTime("decodeSensorSet 1", ts);
 	if (os_strcmp("mapping", param) == 0) {
 		INFOP("Set sensor mapping %s -> %s\n", valPtr, idPtr);
 		if (strlen(valPtr) == 0) return; // No mapping data
@@ -176,12 +175,9 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 		if (0 <= id && id < SETTINGS_SIZE) {
 			if (SET_MINIMUM <= value && value <= SET_MAXIMUM) {
 				sysCfg.settings[id] = value;
-				checkTime("decodeSensorSet 2", ts);
 				CFG_dirty();
-				checkTime("decodeSensorSet 3", ts);
 				TESTP("Setting %d = %d (Solar?)\n", id, sysCfg.settings[id]);
 				_publishDeviceInfo();
-				checkTime("decodeSensorSet 4", ts);
 			}
 		}
 	} else if (os_strcmp("temperature", param) == 0) {
@@ -235,11 +231,9 @@ static void ICACHE_FLASH_ATTR decodeTemps(char *bfr) {
 }
 
 void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* data) {
-	uint32 ts = system_get_time();
 #define MAX_TOKENS 10
 	char* tokens[MAX_TOKENS];
 	int tokenCount = splitString((char*) topic, '/', tokens, MAX_TOKENS);
-	checkTime("decodeMessage 1", ts);
 	if (tokenCount > 0) {
 		if (os_strcmp("Raw", tokens[0]) == 0) {
 			if (tokenCount == 4 && os_strcmp(sysCfg.device_id, tokens[1]) == 0
@@ -254,7 +248,6 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 					decodeSensorClear(tokens[2], tokens[4], client);
 				}
 			}
-			checkTime("decodeMessage 2", ts);
 		} else if (os_strcmp("App", tokens[0]) == 0) {
 			if (tokenCount == 2 && os_strcmp("date", tokens[1]) == 0) {
 				setTime((time_t) atol(data));
@@ -269,9 +262,6 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 			} else if (tokenCount == 2 && os_strcmp("Refresh", tokens[1]) == 0) {
 				publishData(0); // publish all I/O & temps
 			}
-			checkTime("decodeMessage 3", ts);
 		}
 	}
-	if (!checkTime("decodeMessage", ts))
-		TEST(printTokens(tokens, 5); os_printf("%s=>%s\n", topic, data););
 }

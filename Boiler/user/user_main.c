@@ -16,6 +16,7 @@
 #include "stdout.h"
 
 #include "config.h"
+#include "sysCfg.h"
 #include "wifi.h"
 #include "debug.h"
 #include "mqtt.h"
