@@ -57,7 +57,7 @@ typedef struct{
 	uint8_t mapping[MAP_TEMP_SIZE];
 	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
 	uint8 outputs;
-
+	uint32 sumcheck;
 } SYSCFG;
 
 typedef struct {
@@ -65,10 +65,13 @@ typedef struct {
     uint8 pad[3];
 } SAVE_FLAG;
 
-void ICACHE_FLASH_ATTR CFG_Save(void);
-void ICACHE_FLASH_ATTR CFG_Load(void);
+void CFG_Save(void);
+void CFG_Load(void);
 void CFG_print(void);
 uint16 sysCfgUpdates(void);
+void CFG_dirty(void);
+void CFG_checkLazyWrite(void);
+
 extern SYSCFG sysCfg;
 
 #endif /* USER_CONFIG_H_ */

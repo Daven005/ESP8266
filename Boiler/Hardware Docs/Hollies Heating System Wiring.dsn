@@ -11,12 +11,12 @@ download the executable.-->
 			<GUIDES horiz='7' vert='5'/>
 			<TITLE>Hollies Heating System Circuit</TITLE>
 			<AUTHOR>with Breakout for CPU control</AUTHOR>
-			<REVISION>2.7</REVISION>
+			<REVISION>2.6</REVISION>
 			<DOCNUMBER>HHS/2</DOCNUMBER>
 			<ORGANISATION>Boiler Room Cupboard</ORGANISATION>
 			<SHEETS>5</SHEETS>
 			<SHOWS>1</SHOWS>
-			<DATE>7/11/2016</DATE>
+			<DATE>05/04/2016</DATE>
 			<GRID spacing='50.00000' snap='1'/>
 		</DETAILS>
 		<FONT id='1'>
@@ -123,26 +123,6 @@ download the executable.-->
 			<STYLE>2</STYLE>
 			<COLOR>000000</COLOR>
 			<THICKNESS>2</THICKNESS>
-		</STYLE>
-		<STYLE id='22'>
-			<STYLE>0</STYLE>
-			<COLOR>404080</COLOR>
-			<THICKNESS>2</THICKNESS>
-		</STYLE>
-		<STYLE id='23'>
-			<STYLE>0</STYLE>
-			<COLOR>404080</COLOR>
-			<THICKNESS>3</THICKNESS>
-		</STYLE>
-		<STYLE id='24'>
-			<STYLE>0</STYLE>
-			<COLOR>000000</COLOR>
-			<THICKNESS>3</THICKNESS>
-		</STYLE>
-		<STYLE id='25'>
-			<STYLE>0</STYLE>
-			<COLOR>808080</COLOR>
-			<THICKNESS>3</THICKNESS>
 		</STYLE>
 		<FILL id='0'>
 			<INDEX>-1</INDEX>
@@ -568,6 +548,7 @@ download the executable.-->
 		<WIRE style='12' a='48.00000,90.00000' b='48.00000,85.00000'/>
 		<WIRE style='12' a='56.00000,76.00000' b='56.00000,85.00000'/>
 		<WIRE style='14' a='84.00000,81.00000' b='84.00000,85.00000'/>
+		<WIRE style='15' a='94.00000,81.00000' b='94.00000,85.00000'/>
 		<TEXT pos='84.00000,41.00000' direction='3' font='4' color='000000'>Extn Wireless</TEXT>
 		<TEXT pos='85.00000,44.00000' direction='3' font='4' color='000000'>Thermostat</TEXT>
 		<TEXT pos='41.00000,44.00000' direction='3' font='4' color='000000'>Thermostat</TEXT>
@@ -630,7 +611,7 @@ download the executable.-->
 		<LABEL pos='80.00000,24.00000' direction='3' font='4' color='208000' style='0'>JB1/4</LABEL>
 		<LABEL pos='84.00000,81.00000' direction='2' font='4' color='208000' style='0'>JB1/5</LABEL>
 		<LABEL pos='94.00000,81.00000' direction='3' font='4' color='208000' style='0'>JB1/6</LABEL>
-		<LABEL pos='105.00000,81.00000' direction='3' font='4' color='208000' style='0'>JB1/7</LABEL>
+		<LABEL pos='105.00000,69.00000' direction='3' font='4' color='208000' style='0'>JB1/7</LABEL>
 		<LABEL pos='40.00000,71.00000' direction='2' font='4' color='208000' style='0'>JB1/8</LABEL>
 		<LABEL pos='48.00000,80.00000' direction='3' font='4' color='208000' style='0'>JB1/9</LABEL>
 		<LABEL pos='56.00000,76.00000' direction='3' font='4' color='208000' style='0'>JB1/10</LABEL>
@@ -655,7 +636,7 @@ download the executable.-->
 		<LABEL pos='46.00000,113.00000' direction='3' font='4' color='208000' style='0'>Direct connection</LABEL>
 		<NOCONNECT pos='92.00000,10.00000'/>
 		<WIRE style='6' a='101.00000,61.00000' b='118.00000,61.00000'/>
-		<WIRE style='24' a='101.00000,51.00000' b='101.00000,61.00000'/>
+		<WIRE style='6' a='101.00000,51.00000' b='101.00000,61.00000'/>
 		<TEXT pos='91.00000,36.00000' direction='3' font='4' color='000000'>(Zone 3 used for Rads)</TEXT>
 		<WIRE style='14' a='146.00000,61.00000' b='205.00000,61.00000'/>
 		<WIRE style='0' a='180.00000,174.00000' b='193.00000,174.00000'/>
@@ -670,10 +651,10 @@ download the executable.-->
 		<LABEL pos='205.00000,71.00000' direction='2' font='4' color='208000' style='2'>Lounge UF ON</LABEL>
 		<WIRE style='15' a='94.00000,81.00000' b='84.00000,81.00000'/>
 		<WIRE style='6' a='138.00000,71.00000' b='40.00000,71.00000'/>
-		<WIRE style='24' a='40.00000,50.00000' b='40.00000,71.00000'/>
+		<WIRE style='6' a='40.00000,50.00000' b='40.00000,71.00000'/>
 		<LABEL pos='205.00000,76.00000' direction='2' font='4' color='208000' style='1'>Emerg Heat Dump</LABEL>
 		<WIRE style='12' a='130.00000,76.00000' b='56.00000,76.00000'/>
-		<WIRE style='25' a='56.00000,50.00000' b='56.00000,76.00000'/>
+		<WIRE style='14' a='56.00000,50.00000' b='56.00000,76.00000'/>
 		<WIRE style='4' a='124.00000,125.00000' b='124.00000,81.00000'/>
 		<WIRE style='4' a='124.00000,81.00000' b='205.00000,81.00000'/>
 		<ELLIPSE a='165.00000,58.00000' b='175.00000,78.00000' style='21' fill='0'/>
@@ -707,9 +688,9 @@ download the executable.-->
 		<TEXT pos='137.00000,46.00000' direction='3' font='4' color='000000'>L</TEXT>
 		<TEXT pos='145.00000,46.00000' direction='3' font='4' color='000000'>R</TEXT>
 		<TEXT pos='153.00000,46.00000' direction='3' font='4' color='000000'>F</TEXT>
-		<WIRE style='23' a='92.00000,51.00000' b='92.00000,63.00000'/>
-		<WIRE style='12' a='92.00000,63.00000' b='105.00000,63.00000'/>
-		<WIRE style='12' a='105.00000,63.00000' b='105.00000,85.00000'/>
+		<WIRE style='12' a='92.00000,51.00000' b='92.00000,69.00000'/>
+		<WIRE style='12' a='92.00000,69.00000' b='105.00000,69.00000'/>
+		<WIRE style='12' a='105.00000,69.00000' b='105.00000,85.00000'/>
 		<ELLIPSE a='80.00000,56.00000' b='104.00000,60.00000' style='21' fill='0'/>
 		<ELLIPSE a='37.00000,56.00000' b='60.00000,60.00000' style='21' fill='0'/>
 		<LABEL pos='60.00000,58.00000' direction='3' font='4' color='208000' style='0'>IIII</LABEL>
@@ -719,6 +700,7 @@ download the executable.-->
 		<JUNCTION pos='56.00000,76.00000'/>
 		<JUNCTION pos='116.00000,140.00000'/>
 		<JUNCTION pos='77.00000,137.00000'/>
+		<JUNCTION pos='84.00000,81.00000'/>
 		<JUNCTION pos='118.00000,61.00000'/>
 		<JUNCTION pos='150.00000,140.00000'/>
 		<JUNCTION pos='146.00000,61.00000'/>
@@ -754,13 +736,11 @@ download the executable.-->
 		<JUNCTION pos='48.00000,90.00000'/>
 		<JUNCTION pos='48.00000,85.00000'/>
 		<WIRE style='12' a='48.00000,50.00000' b='48.00000,85.00000'/>
-		<WIRE style='25' a='84.00000,51.00000' b='84.00000,81.00000'/>
-		<JUNCTION pos='84.00000,81.00000'/>
 		<JUNCTION pos='154.00000,66.00000'/>
-		<WIRE style='13' a='154.00000,66.00000' b='94.00000,66.00000'/>
-		<WIRE style='22' a='94.00000,81.00000' b='94.00000,85.00000'/>
-		<JUNCTION pos='94.00000,81.00000'/>
-		<WIRE style='13' a='94.00000,66.00000' b='94.00000,81.00000'/>
+		<WIRE style='13' a='154.00000,66.00000' b='84.00000,66.00000'/>
+		<JUNCTION pos='84.00000,66.00000'/>
+		<WIRE style='14' a='84.00000,51.00000' b='84.00000,66.00000'/>
+		<WIRE style='13' a='84.00000,66.00000' b='84.00000,81.00000'/>
 	</TinyCAD>
 	<TinyCAD>
 		<NAME>Heating Pipework</NAME>
@@ -4736,6 +4716,16 @@ download the executable.-->
 			<DATE>03/04/2016</DATE>
 			<GRID spacing='50.00000' snap='1'/>
 		</DETAILS>
+		<FONT id='0'>
+			<HEIGHT>-13</HEIGHT>
+			<WIDTH>6</WIDTH>
+			<WEIGHT>400</WEIGHT>
+			<ITALIC>0</ITALIC>
+			<UNDERLINE>0</UNDERLINE>
+			<STRIKEOUT>0</STRIKEOUT>
+			<CHARSET>0</CHARSET>
+			<FACENAME>Arial</FACENAME>
+		</FONT>
 		<FONT id='3'>
 			<HEIGHT>-13</HEIGHT>
 			<WIDTH>6</WIDTH>
@@ -4917,7 +4907,7 @@ download the executable.-->
 			<POINT pos='5.00000,0.00000' arc='0'/>
 			<POINT pos='0.00000,5.00000' arc='0'/>
 		</POLYGON>
-		<TEXT pos='120.00000,127.00000' direction='3' font='3' color='000000'>Drain &amp; Filling valve</TEXT>
+		<TEXT pos='120.00000,127.00000' direction='3' font='3' color='000000'>Drain valve</TEXT>
 		<TEXT pos='179.00000,46.00000' direction='3' font='3' color='000000'>Thermal Store</TEXT>
 		<TEXT pos='193.00000,115.00000' direction='3' font='3' color='000000'>Solar Coil</TEXT>
 		<WIRE style='4' a='159.00000,118.00000' b='141.00000,118.00000'/>
@@ -4946,7 +4936,7 @@ download the executable.-->
 		<WIRE style='0' a='97.00000,77.00000' b='97.00000,99.00000'/>
 		<WIRE style='5' a='129.00000,77.00000' b='121.00000,77.00000'/>
 		<JUNCTION pos='129.00000,77.00000'/>
-		<WIRE style='5' a='129.00000,40.00000' b='129.00000,77.00000'/>
+		<WIRE style='5' a='129.00000,53.00000' b='129.00000,77.00000'/>
 		<TEXT pos='106.00000,74.00000' direction='3' font='5' color='000000'>Pressure Sensor</TEXT>
 		<WIRE style='0' a='117.00000,110.00000' b='102.00000,110.00000'/>
 		<ELLIPSE a='156.00000,115.00000' b='162.00000,121.00000' style='22' fill='0'/>
@@ -4981,7 +4971,7 @@ download the executable.-->
 		<WIRE style='4' a='141.00000,110.00000' b='133.00000,110.00000'/>
 		<JUNCTION pos='141.00000,118.00000'/>
 		<WIRE style='4' a='141.00000,118.00000' b='133.00000,118.00000'/>
-		<WIRE style='13' a='155.00000,109.00000' b='155.00000,22.00000'/>
+		<WIRE style='13' a='155.00000,53.00000' b='155.00000,22.00000'/>
 		<JUNCTION pos='49.00000,40.00000'/>
 		<TEXT pos='44.00000,38.00000' direction='3' font='3' color='000000'>10mm T</TEXT>
 		<TEXT pos='116.00000,65.00000' direction='3' font='3' color='000000'>15mm T</TEXT>
@@ -4996,5 +4986,14 @@ download the executable.-->
 		<WIRE style='5' a='89.00000,51.00000' b='89.00000,58.00000'/>
 		<TEXT pos='82.00000,63.00000' direction='3' font='3' color='000000'>Overflow</TEXT>
 		<TEXT pos='82.00000,66.00000' direction='3' font='3' color='000000'>Container</TEXT>
+		<JUNCTION pos='129.00000,53.00000'/>
+		<WIRE style='5' a='129.00000,53.00000' b='138.00000,53.00000'/>
+		<WIRE style='5' a='129.00000,40.00000' b='129.00000,53.00000'/>
+		<JUNCTION pos='155.00000,53.00000'/>
+		<WIRE style='13' a='155.00000,53.00000' b='146.00000,53.00000'/>
+		<WIRE style='13' a='155.00000,109.00000' b='155.00000,53.00000'/>
+		<NOCONNECT pos='134.00000,53.00000'/>
+		<NOCONNECT pos='149.00000,53.00000'/>
+		<TEXT pos='135.00000,50.00000' direction='3' font='0' color='000000'>Filling Loop</TEXT>
 	</TinyCAD>
 </TinyCADSheets>

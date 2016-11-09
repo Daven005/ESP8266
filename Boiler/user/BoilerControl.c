@@ -243,7 +243,6 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 	static bool OB_IsOn = false;
 	uint8 chResult, dhwResult;
 	int tempTS_Top, tempWB_Flow;
-	static int boostCount = 0;
 	int baseSetPoint, modifiedSetPoint;
 	int dhwSetPoint;
 	int chSetPoint;

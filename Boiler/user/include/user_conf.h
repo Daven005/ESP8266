@@ -2,20 +2,21 @@
 #define _USER_CONFIG_H_
 
 #define CFG_HOLDER	0x00FF55A6	/* Change this value to load default configurations */
-#define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
+#define CFG_LOCATION	0x77	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
-#define TEST_OP 2
 #define SWITCH 0 // GPI00
 #define LED 5 // NB same as an_t t);
 
+#if 1
 #define DS18B20_MUX		PERIPHS_IO_MUX_GPIO4_U
 #define DS18B20_FUNC	FUNC_GPIO4
 #define DS18B20_PIN		4
-
-//#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
-//#define DS18B20_FUNC	FUNC_GPIO2
-//#define DS18B20_PIN		2
+#else
+#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
+#define DS18B20_FUNC	FUNC_GPIO2
+#define DS18B20_PIN		2
+#endif
 
 #define IP4 16
 
@@ -37,7 +38,7 @@
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
 
 #define DEFAULT_SECURITY	0
-#define QUEUE_BUFFER_SIZE	4096
+#define QUEUE_BUFFER_SIZE	10000
 
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/

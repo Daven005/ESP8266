@@ -196,17 +196,22 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 	MQTT_Client* client = (MQTT_Client*) args;
 	mqttConnected = false;
-	ERRORP("MQTT disconnected\r\n");
+	ERRORP("MQTT disconnected\n");
 	if (lastAction < WIFI_CONNECT_CHANGE)
 		lastAction = MQTT_DISCONNECTED_CB;
 }
 
 static void ICACHE_FLASH_ATTR time_cb(void *arg) { // Update every 1 second
+	uint32 t = system_get_time();
 	incTime();
+	CFG_checkLazyWrite();
+	checkTime("time_cb", t);
 }
 
 static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
 		const char *data, uint32_t data_len) {
+	uint32 t = system_get_time();
+
 	if (data == NULL || topic == NULL || topic_len == 0 || data_len == 0) {
 		ERRORP("Empty topic/data in mqttDataCb %lx %lx %d %d\n", topic, data, topic_len, data_len);
 	} else {
@@ -216,6 +221,9 @@ static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint
 		if (topicBuf == NULL || dataBuf == NULL || params == NULL) {
 			ERRORP("No memory for mqttDataCb %lx %lx %lx\n", topicBuf, dataBuf, params);
 			os_delay_us(100);
+			if (params != NULL) os_free(params);
+			if (dataBuf != NULL) os_free(dataBuf);
+			if (topicBuf != NULL) os_free(topicBuf);
 		} else {
 			os_memcpy(topicBuf, topic, topic_len);
 			os_memcpy(dataBuf, data, data_len);
@@ -231,18 +239,17 @@ static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint
 		}
 	}
 	lastAction = MQTT_DATA_CB;
+	checkTime("mqttDataCb", t);
 }
 
 static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic, char *data) {
-	char *tokens[10];
 	uint32 t = system_get_time();
 
-	lastAction = MQTT_DATA_FUNC;
 	decodeMessage(client, topic, data);
 	checkMinHeap();
 	os_free(topic);
 	os_free(data);
-	lastAction = MQTT_DATA_CB;
+	lastAction = MQTT_DATA_FUNC;
 	checkTime("mqttDataFunction", t);
 }
 
@@ -423,9 +430,6 @@ void ICACHE_FLASH_ATTR user_init(void) {
 
 	easygpio_pinMode(SWITCH, EASYGPIO_PULLUP, EASYGPIO_INPUT);
 	easygpio_outputDisable(SWITCH);
-
-	easygpio_pinMode(TEST_OP, EASYGPIO_NOPULL, EASYGPIO_INPUT);
-	easygpio_outputDisable(TEST_OP);
 
 	easygpio_pinMode(LED, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
 	easygpio_outputSet(LED, 1);

@@ -37,18 +37,22 @@ void ICACHE_FLASH_ATTR showTime(char *func, uint32 previous) {
 	TESTP("*** %d time in %s\n", (now-previous), func);
 }
 
-void ICACHE_FLASH_ATTR checkTime(char *func, uint32 previous) {
+bool ICACHE_FLASH_ATTR checkTime(char *func, uint32 previous) {
 	uint32 now = system_get_time();
 	if ((now-previous) > 15000) {
-		TESTP("*** %d XS time in %s\n", (now-previous), func);
+		TESTP("*** %ld XS time in %s\n", (now-previous), func);
+		return false;
 	}
+	return true;
 }
 
-void ICACHE_FLASH_ATTR checkTimeFunc(char *func, uint32 previous) {
+bool ICACHE_FLASH_ATTR checkTimeFunc(char *func, uint32 previous) {
 	uint32 now = system_get_time();
 	if ((now-previous) > 130000) {
-		TESTP("*** %d XS time in %s\n", (now-previous), func);
+		TESTP("*** %ld XS time in %s\n", (now-previous), func);
+		return false;
 	}
+	return true;
 }
 
 bool ICACHE_FLASH_ATTR assert_true(char *s, bool condition) {

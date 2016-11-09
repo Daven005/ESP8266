@@ -473,7 +473,7 @@ mqtt_tcpclient_discon_cb(void *arg) {
 
 	struct espconn *pespconn = (struct espconn *) arg;
 	MQTT_Client* client = (MQTT_Client *) pespconn->reverse;
-	INFOP("TCP: Disconnected callback\n");
+	ERRORP("TCP: Disconnected callback %d\n", client->connState);
 	if (TCP_DISCONNECTING == client->connState) {
 		client->connState = TCP_DISCONNECTED;
 	} else if (MQTT_DELETING == client->connState) {
@@ -561,6 +561,10 @@ bool ICACHE_FLASH_ATTR MQTT_Publish(MQTT_Client *client, const char* topic, cons
 
 	if (client == NULL) {
 		ERRORP("Pub Client %lx, topic %s, data %s\n", client, topic, data);
+		return false;
+	}
+	if (!(MQTT_CONNECT_SEND <= client->connState && client->connState <= MQTT_PUBLISHING)) {
+		ERRORP("Pub Client connState %d, topic %s, data %s\n", client->connState, topic, data);
 		return false;
 	}
 	client->mqtt_state.outbound_message = mqtt_msg_publish(&client->mqtt_state.mqtt_connection,
