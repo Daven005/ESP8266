@@ -40,6 +40,7 @@
 SAVE_FLAG saveFlag;
 static uint32 dirtyCount = 0;
 static uint32 lastSetDirty;
+static uint32 lastSaved = 0;
 
 static uint32 ICACHE_FLASH_ATTR doSum(void) {
 	uint32 sum = 0;
@@ -57,7 +58,7 @@ static void ICACHE_FLASH_ATTR saveSum(void) {
 	sysCfg.sumcheck = doSum();
 }
 
-void ICACHE_FLASH_ATTR CFG_Save(void) {
+static void ICACHE_FLASH_ATTR CFG_Save(void) {
 	 spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 	                   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 
@@ -78,6 +79,7 @@ void ICACHE_FLASH_ATTR CFG_Save(void) {
 		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	}
+	lastSaved = system_get_time();
 }
 
 void ICACHE_FLASH_ATTR CFG_Load() {
@@ -125,4 +127,8 @@ void ICACHE_FLASH_ATTR CFG_print(void) {
 	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
 	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
 	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
+}
+
+uint32 ICACHE_FLASH_ATTR CFG_lastSaved(void) {
+	return lastSaved;
 }

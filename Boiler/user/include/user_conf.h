@@ -19,6 +19,7 @@
 #endif
 
 #define IP4 16
+#define IO_TEST 2		// Monitor state of mcp23s17 (OP_EMERGENCY_DUMP_ON)
 
 /*DEFAULT CONFIGURATIONS*/
 
@@ -49,6 +50,8 @@
 #define OUTPUTS 4
 #define INPUTS 5
 #define REQUIRED_SENSORS 6
+#define USE_OUTSIDE_TEMP
+#define USE_TIME
 
 #define MAX_TEMPERATURE_SENSOR 15
 #define INPUT_SENSOR_ID_START 10

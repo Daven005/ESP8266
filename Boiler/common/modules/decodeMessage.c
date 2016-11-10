@@ -13,7 +13,6 @@
 #include "jsmn.h"
 #include "temperature.h"
 #include "mqtt.h"
-#include "config.h"
 #include "sysCfg.h"
 #include "decodeMessage.h"
 #include "debug.h"
@@ -122,11 +121,13 @@ static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_C
 		}
 		resetTransmitTimer();
 	} else if (os_strcmp("inputs", param) == 0) {
+#ifdef INPUTS
 		temp = atoi(dataBuf);
 		if (temp != sysCfg.inputs) {
 			sysCfg.inputs = temp;
 			updated = true;
 		}
+#endif
 	} else if (os_strcmp("outputs", param) == 0) {
 		temp = atoi(dataBuf);
 		if (temp != sysCfg.outputs) {
@@ -143,9 +144,13 @@ static void ICACHE_FLASH_ATTR decodeSensorClear(char *idPtr, char *param, MQTT_C
 		uint8 idx = clearTemperatureOverride(idPtr);
 		publishTemperature(idx);
 	} else if (os_strcmp("output", param) == 0) {
+#ifdef OUTPUTS
 		overrideClearOutput(atoi(idPtr));
+#endif
 	} else if (os_strcmp("input", param) == 0) {
+#ifdef INPUTS
 		overrideClearInput(atoi(idPtr));
+#endif
 	}
 }
 
@@ -184,17 +189,22 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 		uint8 idx = setTemperatureOverride(idPtr, valPtr);
 		publishTemperature(idx);
 	} else if (os_strcmp("output", param) == 0) {
+#ifdef OUTPUTS
 		if (0 <= id && id < OUTPUTS) {
 			overrideSetOutput(id, value);
 		}
+#endif
 	} else if (os_strcmp("input", param) == 0) {
+#ifdef INPUTS
 		if (0 <= id && id < INPUTS) {
 			overrideSetInput(id, value);
 			publishInput(id, value);
 		}
+#endif
 	}
 }
 
+#ifdef USE_OUTSIDE_TEMP
 static void ICACHE_FLASH_ATTR decodeTemps(char *bfr) {
 	jsmn_parser p;
 	jsmntok_t t[20];
@@ -229,6 +239,7 @@ static void ICACHE_FLASH_ATTR decodeTemps(char *bfr) {
 		}
 	}
 }
+#endif
 
 void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* data) {
 #define MAX_TOKENS 10
@@ -250,15 +261,19 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 			}
 		} else if (os_strcmp("App", tokens[0]) == 0) {
 			if (tokenCount == 2 && os_strcmp("date", tokens[1]) == 0) {
+#ifdef USE_TIME
 				setTime((time_t) atol(data));
+#endif
 				os_timer_disarm(&date_timer); // Restart it
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 			} else if (tokenCount == 3 && os_strcmp("Temp", tokens[1]) == 0) {
+#ifdef USE_OUTSIDE_TEMP
 				if (os_strcmp("hourly", tokens[2]) == 0) {
 					decodeTemps(data);
 				} else if (os_strcmp("current", tokens[2]) == 0) {
 					setOutsideTemp(0, atol(data));
 				}
+#endif
 			} else if (tokenCount == 2 && os_strcmp("Refresh", tokens[1]) == 0) {
 				publishData(0); // publish all I/O & temps
 			}

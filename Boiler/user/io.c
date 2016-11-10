@@ -12,23 +12,21 @@
 #include "easygpio.h"
 #include "mcp23s17.h"
 #include "io.h"
-
-#include "include/user_conf.h"
-
-extern void publishError(uint8 err, int info);
-extern void publishInput(uint8 idx, uint8 val);
-extern void publishOutput(uint8 idx, uint8 val);
-
+#include "user_conf.h"
+#include "publish.h"
 
 typedef enum { OR_NOT_SET, OR_OFF, OR_ON } override;
-int currentInputs[INPUTS];
-bool currentOutputs[OUTPUTS];
-override inputOverrides[INPUTS];
-override outputOverrides[OUTPUTS];
+static int currentInputs[INPUTS];
+static bool currentOutputs[OUTPUTS];
+static override inputOverrides[INPUTS];
+static override outputOverrides[OUTPUTS];
+static int ioTestErrors = 0;
 
 void ICACHE_FLASH_ATTR initIO(void) {
 	easygpio_pinMode(IP4, EASYGPIO_PULLUP, EASYGPIO_INPUT);
 	easygpio_outputDisable(IP4);
+	easygpio_pinMode(IO_TEST, EASYGPIO_PULLUP, EASYGPIO_INPUT);
+	easygpio_outputDisable(IO_TEST);
 
 	mcp23s17_init();
 	mcp23s17_REG_SET(IODIR_CTRL, PORTA, 0b11110000); // Top 4 bits are inputs
@@ -163,12 +161,23 @@ uint8 ICACHE_FLASH_ATTR readOLAT(void) {
 	return sGPIO_GET(PORTA);
 }
 
-void ICACHE_FLASH_ATTR checkOutputs(void) {
+static void ICACHE_FLASH_ATTR resetOutputs(void) {
 	uint8 op;
-	for (op=0; op < OUTPUTS; op++) { // Repeat outputs in case corrupted
+	for (op = 0; op < OUTPUTS; op++) {
+		// Repeat outputs in case corrupted
 		checkSetOutput(op, currentOutputs[op]);
 	}
-	if (easygpio_inputGet(2) != currentOutputs[OP_EMERGENCY_DUMP_ON]) {
-		publishError(93, easygpio_inputGet(2)); // Problem with IO (GPIO2 != OP_EMERGENCY_DUMP_ON)
+}
+
+void ICACHE_FLASH_ATTR checkOutputs(void) {
+	resetOutputs();
+	// This is just a double check that outputs are bing set
+	if (easygpio_inputGet(IO_TEST) != currentOutputs[OP_EMERGENCY_DUMP_ON]) {
+		publishError(93, easygpio_inputGet(IO_TEST)); // Problem with IO (GPIO2 != OP_EMERGENCY_DUMP_ON)
+		ioTestErrors++;
+		if (ioTestErrors > 5) {
+			initIO();
+			resetOutputs();
+		}
 	}
 }
