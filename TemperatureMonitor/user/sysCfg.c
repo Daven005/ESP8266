@@ -1,4 +1,5 @@
-/* config.h
+/*
+/* config.c
 *
 * Copyright (c) 2014-2015, Tuan PM <tuanpm at live dot com>
 * All rights reserved.
@@ -28,49 +29,47 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef USER_CONFIG_H_
-#define USER_CONFIG_H_
-#include "os_type.h"
+#include <c_types.h>
+#include <osapi.h>
+#include <spi_flash.h>
+#include <user_interface.h>
+#include "espmissingincludes.h"
+#include "sysCfg.h"
+#include "debug.h"
 
-#include "user_conf.h"
-typedef struct{
-	uint32_t cfg_holder;
-	uint8_t device_id[16];
+SYSCFG sysCfg;
 
-	uint8_t sta_ssid[64];
-	uint8_t sta_pwd[64];
-	uint32_t sta_type;
+void ICACHE_FLASH_ATTR initSysCfg(void) {
+	os_memset(&sysCfg, 0x00, sizeof sysCfg);
 
-	uint8_t mqtt_host[64];
-	uint32_t mqtt_port;
-	uint8_t mqtt_user[32];
-	uint8_t mqtt_pass[32];
-	uint32_t mqtt_keepalive;
-	uint8_t security;
+	sysCfg.cfg_holder = CFG_HOLDER;
 
-	uint16 updates;
-	uint8 inputs;
-	uint8 outputs;
-	char deviceID_prefix[8];
-	char deviceName[NAME_SIZE];
-	char deviceLocation[NAME_SIZE];
-	uint16_t settings[SETTINGS_SIZE];
-	uint8_t mapping[MAP_TEMP_SIZE];
-	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
+	os_sprintf(sysCfg.sta_ssid, "%s", STA_SSID);
+	os_sprintf(sysCfg.sta_pwd, "%s", STA_PASS);
+	sysCfg.sta_type = STA_TYPE;
 
-} SYSCFG;
+	os_sprintf(sysCfg.deviceID_prefix, DEVICE_PREFIX);
+	os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
+	os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
+	sysCfg.mqtt_port = MQTT_PORT;
+	os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);
+	os_sprintf(sysCfg.mqtt_pass, "%s", MQTT_PASS);
 
-typedef struct {
-    uint8 flag;
-    uint8 pad[3];
-} SAVE_FLAG;
+	sysCfg.security = DEFAULT_SECURITY;	/* default non ssl */
 
-void ICACHE_FLASH_ATTR CFG_Save(void);
-void ICACHE_FLASH_ATTR CFG_Load(void);
-void CFG_print(void);
-uint32 CFG_lastSaved(void);
-uint16 sysCfgUpdates(void);
+	sysCfg.mqtt_keepalive = MQTT_KEEPALIVE;
 
-extern SYSCFG sysCfg;
+	int idx;
+	for (idx=0; idx < MAP_TEMP_SIZE; idx++) {
+		sysCfg.mapping[idx] = idx;
+	}
 
-#endif /* USER_CONFIG_H_ */
+	sysCfg.updates = UPDATES;
+#ifdef INPUTS
+	sysCfg.inputs = INPUTS;
+#else
+	sysCfg.inputs = 0;
+#endif
+	os_sprintf(sysCfg.deviceName, "Temperature Monitor");
+	os_sprintf(sysCfg.deviceLocation, "Unknown");
+	}

@@ -9,17 +9,24 @@
 #endif
 // Default CONFIG is Not Sleep, No Outputs
 
+#undef INPUTS
+#undef USE_TIME
+#undef USE_OUTSIDE_TEMP
+
 #ifdef SLEEP_MODE
-#undef USE_OUTPUTS
+#undef OUTPUTS
 #undef SWITCH
 #else
 #define SWITCH 0 // GPIO 00
+#ifdef USE_OUTPUTS
+#define OUTPUTS 5
 #define RELAY_1 13
 #define RELAY_2 12
 #define RELAY_3 14
 #define RELAY_4 16
 #define RELAY_ON 1
 #define RELAY_OFF 0
+#endif
 #endif
 
 #define LED 5
@@ -58,8 +65,6 @@
 #define MAP_TEMP_LAST 3
 
 #define SETTINGS_SIZE 10
-#define MAX_OUTPUT 5
-#define MAX_INPUT 1
 
 #define INPUT_SENSOR_ID_START 10
 #define OUTPUT_SENSOR_ID_START 20
@@ -71,7 +76,5 @@
 // Derived temperatures
 
 #define UPDATES 60
-
-
 
 #endif

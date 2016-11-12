@@ -12,22 +12,28 @@
 #include <user_interface.h>
 #include "debug.h"
 #include "easygpio.h"
-#include "output.h"
-
+#include "include/io.h"
 #include "include/user_conf.h"
 
-#ifdef USE_OUTPUTS
+#ifdef OUTPUTS
 #pragma message "Outputs"
-static const uint8 outputMap[MAX_OUTPUT] = { LED, RELAY_1, RELAY_2, RELAY_3, RELAY_4 };
-static bool currentOutputs[MAX_OUTPUT];
-static bool outputOverrides[MAX_OUTPUT];
+static const uint8 outputMap[OUTPUTS] = { LED, RELAY_1, RELAY_2, RELAY_3, RELAY_4 };
+static bool currentOutputs[OUTPUTS];
+static bool outputOverrides[OUTPUTS];
 
 uint8 ICACHE_FLASH_ATTR getOutput(uint8 idx) {
 	return currentOutputs[idx];
 }
 
-void ICACHE_FLASH_ATTR setOutput(int id, int value) {
-	if (0 <= id && id < MAX_OUTPUT) {
+
+void ICACHE_FLASH_ATTR overrideClearOutput(int id) {
+	if (0 <= id && id < OUTPUTS) {
+		outputOverrides[id] = false;
+	}
+}
+
+void ICACHE_FLASH_ATTR overrideSetOutput(int id, int value) {
+	if (0 <= id && id < OUTPUTS) {
 		switch (value) {
 		case 0:
 			currentOutputs[id] = RELAY_OFF;
@@ -48,7 +54,7 @@ void ICACHE_FLASH_ATTR setOutput(int id, int value) {
 
 void ICACHE_FLASH_ATTR initOutput(void) {
 	int idx;
-	for (idx = 0; idx < MAX_OUTPUT; idx++) {
+	for (idx = 0; idx < OUTPUTS; idx++) {
 		easygpio_pinMode(outputMap[idx], EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 		easygpio_outputSet(outputMap[idx], 0);
 	}

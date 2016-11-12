@@ -11,10 +11,10 @@
 #include <osapi.h>
 #include <user_interface.h>
 
-#define DEBUG_OVERRIDE
+//#define DEBUG_OVERRIDE
 #include "debug.h"
 #include "stdout.h"
-#include "config.h"
+#include "include/sysCfg.h"
 #include "wifi.h"
 #include "easygpio.h"
 #include "flash.h"
@@ -22,7 +22,7 @@
 #include "mqtt.h"
 #include "publish.h"
 #include "switch.h"
-#ifdef USE_OUTPUTS
+#ifdef OUTPUTS
 #include "output.h"
 #endif
 #ifndef ESP01
@@ -51,8 +51,8 @@ enum backgroundEvent_t {
 	EVENT_MQTT_DATA,
 	EVENT_PROCESS_TIMER,
 	EVENT_TRANSMIT,
-	EVENT_NEXT_TEMPERATURE,
-	EVENT_PUBLISH_TEMPERATURE
+	EVENT_PUBLISH_TEMPERATURE,
+	EVENT_PUBLISH_DATA
 };
 
 #define str(p) #p
@@ -71,7 +71,7 @@ enum backgroundEvent_t {
 #else
 #define CONFIG1 "TM Awake "
 
-#ifdef USE_OUTPUTS
+#ifdef OUTPUTS
 #define CONFIG CONFIG1 "outputs Pin:" xstr(DS18B20_PIN)
 #else
 
@@ -82,7 +82,7 @@ enum backgroundEvent_t {
 #define CONFIG CONFIG1 "Analogue"
 #endif
 
-#endif // USE_OUTPUTS
+#endif // OUTPUTS
 
 #endif // SLEEP
 #pragma message "Config: " CONFIG
@@ -197,8 +197,10 @@ static void ICACHE_FLASH_ATTR mqttPublishedCb(uint32_t *args) {
 
 #ifdef READ_TEMPERATURES
 static void ICACHE_FLASH_ATTR processTemperatureCb(void) {
+#ifdef SLEEP_MODE
 	if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_TEMPERATURE, 0))
 		ERRORP("Can't post EVENT_PUBLISH_TEMPERATURE\n");
+#endif
 }
 #endif
 
@@ -210,15 +212,12 @@ void ICACHE_FLASH_ATTR resetTransmitTimer(void) {
 }
 #endif
 
-static void ICACHE_FLASH_ATTR processTemperatureFunc(void) {
 #ifdef SLEEP_MODE
+static void ICACHE_FLASH_ATTR processTemperatureFunc(void) {
 	MQTT_OnPublished(&mqttClient, mqttPublishedCb);
 	publishAllTemperatures();
-#else
-	resetTransmitTimer();
-	publishAllTemperatures();
-#endif
 }
+#endif
 
 #ifndef SLEEP_MODE
 static void ICACHE_FLASH_ATTR transmitTimerCb(void) { // Depends on Updates
@@ -228,15 +227,9 @@ static void ICACHE_FLASH_ATTR transmitTimerCb(void) { // Depends on Updates
 
 static void ICACHE_FLASH_ATTR transmitTimerFunc(void) {
 	uint32 t = system_get_time();
-	_publishDeviceInfo();
-#ifdef USE_OUTPUTS
-	publishData();
-#endif
+	publishData(0);
 #ifdef READ_TEMPERATURES
 	ds18b20StartScan(processTemperatureCb);
-#endif
-#ifdef READ_ANALOGUE
-	publishAnalogue(readMoisture());
 #endif
 	lastAction = PROCESS_FUNC;
 	checkTime("processTimerFunc", t);
@@ -289,7 +282,7 @@ static void ICACHE_FLASH_ATTR printAll(void) {
 	for (idx = 0; idx < SETTINGS_SIZE; idx++) {
 		os_printf("%d=%d ", idx, sysCfg.settings[idx]);
 	}
-#ifdef USE_OUTPUTS
+#ifdef OUTPUTS
 	os_printf("\nOutputs: ");
 	for (idx = 0; idx < MAX_OUTPUT; idx++) {
 		os_printf("%d=%d ", idx, getOutput(idx));
@@ -327,8 +320,8 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 }
 #endif
 
-#ifdef USE_OUTPUTS
-void ICACHE_FLASH_ATTR publishData(void) {
+#ifdef OUTPUTS
+void ICACHE_FLASH_ATTR publishOutputs(void) { // param for compatibility
 	char *topic = (char *) os_zalloc(100);
 	char *data = (char *) os_zalloc(100);
 	uint8 i;
@@ -348,6 +341,39 @@ void ICACHE_FLASH_ATTR publishData(void) {
 	lastAction = PUBLISH_DATA;
 }
 #endif
+
+void ICACHE_FLASH_ATTR publishData(uint32 pass) {
+	_publishDeviceInfo();
+	uint32 t = system_get_time();
+	if (mqttConnected) {
+		switch (pass) { // Split into multiple passes to minimise hogging
+		case 0:
+			publishAllTemperatures();
+			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 1))
+				ERRORP("Can't post EVENT_PUBLISH_DATA 1\n");
+			break;
+		case 1:
+			_publishDeviceInfo();
+			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 2))
+				ERRORP("Can't post EVENT_PUBLISH_DATA 2\n");
+			break;
+		case 2:
+#ifdef READ_ANALOGUE
+			publishAnalogue(readMoisture());
+#endif
+			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 3))
+				ERRORP("Can't post EVENT_PUBLISH_DATA 3\n");
+			break;
+		case 3:
+#ifdef OUTPUTS
+			publishOutputs();
+#endif
+			break;
+		}
+	}
+	checkTime("publishData", t);
+
+}
 
 static void ICACHE_FLASH_ATTR dateTimerCb(void) { // 10 mins
 	os_printf("Nothing heard so restarting...\n");
@@ -496,8 +522,13 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 		transmitTimerFunc();
 		break;
 #endif
+#ifdef SLEEP_MODE
 	case EVENT_PUBLISH_TEMPERATURE:
 		processTemperatureFunc();
+		break;
+#endif
+	case EVENT_PUBLISH_DATA:
+		publishData(e->par);
 		break;
 	default:
 		ERRORP("Bad background task event %d\n", e->sig);
@@ -540,7 +571,11 @@ static void ICACHE_FLASH_ATTR startUp() {
 
 static void ICACHE_FLASH_ATTR initDone_cb() {
 	char bfr[100];
-	CFG_Load();
+#ifdef SLEEP_MODE
+	CFG_init(100);
+#else
+	CFG_init(2000);
+#endif
 	CFG_print();
 	os_sprintf(bfr, "%s/%s", sysCfg.deviceLocation, sysCfg.deviceName);
 	TESTP("\n%s ( %s ) starting ...\n", bfr, version);
@@ -568,7 +603,7 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	easygpio_outputEnable(MOISTURE, 1);
 #endif
 #endif
-#ifdef USE_OUTPUTS
+#ifdef OUTPUTS
 	initOutput();
 #endif
 	system_init_done_cb(&initDone_cb);
