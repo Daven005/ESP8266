@@ -32,42 +32,16 @@
 #define USER_CONFIG_H_
 #include "os_type.h"
 
-#include "user_conf.h"
-typedef struct{
-	uint32_t cfg_holder;
-	uint8_t device_id[16];
-
-	uint8_t sta_ssid[64];
-	uint8_t sta_pwd[64];
-	uint32_t sta_type;
-
-	uint8_t mqtt_host[64];
-	uint32_t mqtt_port;
-	uint8_t mqtt_user[32];
-	uint8_t mqtt_pass[32];
-	uint32_t mqtt_keepalive;
-	uint8_t security;
-
-	uint16_t settings[SETTINGS_SIZE];
-	char deviceID_prefix[8];
-	char deviceName[NAME_SIZE];
-	char deviceLocation[NAME_SIZE];
-	uint8_t mapping[MAP_TEMP_SIZE];
-	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
-	uint16 updates;
-	uint8 inputs;
-	uint8 outputs;
-} SYSCFG;
-
 typedef struct {
     uint8 flag;
     uint8 pad[3];
 } SAVE_FLAG;
 
-void CFG_Save(void);
 void CFG_Load(void);
 void CFG_print(void);
 uint16 sysCfgUpdates(void);
-extern SYSCFG sysCfg;
+void CFG_dirty(void);
+uint32 CFG_lastSaved(void);
+void CFG_init(uint32 delay);
 
 #endif /* USER_CONFIG_H_ */

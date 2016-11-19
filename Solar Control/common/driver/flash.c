@@ -11,8 +11,8 @@
 #include <user_interface.h>
 #include "debug.h"
 #include "user_conf.h"
-#include "easygpio.h"
 #include "flash.h"
+#include "easygpio.h"
 typedef enum {
 	OFF, FLASHING_ON, FLASHING_OFF, WAIT
 } flashState_t;
@@ -86,10 +86,15 @@ static void ICACHE_FLASH_ATTR flashCb(void) {
 	}
 }
 
+void startMultiFlashCb(int count, uint8 flashCount, unsigned int flashTime, unsigned int offTime,
+		flashCb_t cb) {
+	startMultiFlash(count, flashCount, flashTime, offTime);
+	if (cb != NULL) flashFinishedCb = cb;
+}
+
 void startMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned int offTime) {
 	TESTP("Start Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
-	easygpio_outputSet(LED, 1);
 	patternRepeatCount = pCount;
 	flashCounter = flashCount = fCount;
 	flashOnTime = flashTime;
@@ -98,13 +103,7 @@ void startMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned 
 	flashState = FLASHING_ON;
 	os_timer_disarm(&flash_timer);
 	os_timer_setfn(&flash_timer, (os_timer_func_t *) flashCb, (void *) 0);
-	os_timer_arm(&flash_timer, flashTime, false);
-}
-
-void startMultiFlashCb(int count, uint8 flashCount, unsigned int flashTime, unsigned int offTime,
-		flashCb_t cb) {
-	startMultiFlash(count, flashCount, flashTime, offTime);
-	if (cb != NULL) flashFinishedCb = cb;
+	os_timer_arm(&flash_timer, flashOnTime, false);
 }
 
 void ICACHE_FLASH_ATTR startFlash(int count, unsigned int flashTime, unsigned int offTime) {

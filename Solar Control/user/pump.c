@@ -10,14 +10,14 @@
 #include <osapi.h>
 #include <user_interface.h>
 #include "stdout.h"
-#include "overrideIO.h"
 #include "IOdefs.h"
-#include "config.h"
 #include "debug.h"
 #include "mqtt.h"
 #include "flowMonitor.h"
 #include "pump.h"
 
+#include "io.h"
+#include "sysCfg.h"
 #include "user_conf.h"
 
 static uint8  cloud[3] = { 10, 10, 10 };

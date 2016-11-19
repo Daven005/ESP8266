@@ -5,18 +5,14 @@
  *      Author: Minh
  */
 
-#include "include/wifi.h"
-
 #include <c_types.h>
 #include <ets_sys.h>
 #include <ip_addr.h>
 #include <osapi.h>
-#include <user_interface.h>
-
+#include "user_interface.h"
+#include "user_conf.h"
 #include "debug.h"
 #include "wifi.h"
-
-#define NAME_SIZE 33
 
 static uint32 startConnectTime;
 static uint32 connectTime;
@@ -78,8 +74,11 @@ static void ICACHE_FLASH_ATTR wifiHandleEventCb(System_Event_t *evt) {
 		TESTP("DHCP_TIMEOUT\n");
 		break;
 	}
-	if (wifiCb)
+	if (wifiCb) {
 		wifiCb(wifiConnectStatus);
+	} else {
+		ERRORP("No wifiCb\n");
+	}
 }
 
 static void ICACHE_FLASH_ATTR wifi_station_scanCb(void *arg, STATUS status) {
@@ -88,7 +87,8 @@ static void ICACHE_FLASH_ATTR wifi_station_scanCb(void *arg, STATUS status) {
 
 	if ((scanStatus = status) == OK) {
 		struct bss_info *bss_link = (struct bss_info *) arg;
-
+		if (bss_link == NULL)
+			ERRORP("No station info from WiFi scan\n");
 		while (bss_link != NULL) {
 			os_memset(ssid, 0, 33);
 			if (os_strlen(bss_link->ssid) <= 32) {
@@ -115,15 +115,18 @@ static void ICACHE_FLASH_ATTR wifi_station_scanCb(void *arg, STATUS status) {
 }
 
 void ICACHE_FLASH_ATTR initWiFi(enum phy_mode phyMode, char *deviceName, char *ssidPrfx, InitWiFiCb_t cb) {
+	uint8 errorFlags = 0;
 	initWiFiCb = cb;
-	wifi_set_phy_mode(phyMode);
-	wifi_set_opmode(STATION_MODE);
-	wifi_station_set_hostname(deviceName);
+	if (!wifi_set_phy_mode(phyMode)) errorFlags |= 1 << 0;
+	if (!wifi_set_opmode(STATION_MODE)) errorFlags |= 1 << 1;
+	if (!wifi_station_set_hostname(deviceName)) errorFlags |= 1 << 2;
 	os_strncpy(ssidPrefix, ssidPrfx, NAME_SIZE-1);
-	wifi_station_set_auto_connect(false);
-	wifi_station_set_reconnect_policy(false);
+	if (!wifi_station_set_auto_connect(false)) errorFlags |= 1 << 3;
+	if (!wifi_station_set_reconnect_policy(false)) errorFlags |= 1 << 4;
 	wifi_set_event_handler_cb(wifiHandleEventCb);
-	wifi_station_scan(NULL, wifi_station_scanCb);
+	if (!wifi_station_scan(NULL, wifi_station_scanCb)) errorFlags |= 1 << 5;
+	if (errorFlags)
+		ERRORP("InitWiFi errors %x\n", errorFlags);
 }
 
 uint32 ICACHE_FLASH_ATTR WIFI_ConnectTime(void) { // mS
@@ -132,19 +135,21 @@ uint32 ICACHE_FLASH_ATTR WIFI_ConnectTime(void) { // mS
 
 void ICACHE_FLASH_ATTR WIFI_Connect(uint8_t* ssid, uint8_t* pass, uint8_t* deviceName, WifiCallback cb) {
 	struct station_config stationConf;
+	uint8 errorFlags = 0;
 
 	startConnectTime = system_get_time();
-	wifi_set_opmode(STATION_MODE);
-	wifi_station_set_auto_connect(false);
 	wifiCb = cb;
-
+	if (!wifi_set_opmode(STATION_MODE)) errorFlags |= 1 << 0;
+	if (!wifi_station_set_auto_connect(false)) errorFlags |= 1 << 1;
 	os_memset(&stationConf, 0, sizeof(struct station_config));
 	os_strcpy(stationConf.ssid, ssid);
 	os_strcpy(stationConf.password, pass);
-	wifi_station_set_config(&stationConf);
-
-	wifi_station_set_auto_connect(true);
-	wifi_station_connect();
+	if (!wifi_station_set_config(&stationConf)) errorFlags |= 1 << 2;
+	if (!wifi_station_set_auto_connect(true)) errorFlags |= 1 << 3;
+	if (!wifi_station_set_reconnect_policy(true)) errorFlags |= 1 << 4;
+	if (!wifi_station_connect()) errorFlags |= 1 << 5;
+	if (errorFlags)
+		ERRORP("WIFI_Connect errors %x\n", errorFlags);
 	TESTP("Hostname is: %s\n", wifi_station_get_hostname());
 }
 

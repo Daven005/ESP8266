@@ -1,21 +1,20 @@
+//#define DEBUG_OVERRIDE
+
 #include <c_types.h>
 #include <mem.h>
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
 #include "stdout.h"
-#include <ds18b20.h>
 #include <dtoa.h>
 
 #include "easygpio.h"
-#include "config.h"
 #include "wifi.h"
 #include "debug.h"
 #include "mqtt.h"
 #include "smartconfig.h"
 #include "version.h"
 #include "time.h"
-#include "overrideIO.h"
 #include "flowMonitor.h"
 #include "temperature.h"
 #include "switch.h"
@@ -24,7 +23,9 @@
 #include "decodeMessage.h"
 #include "user_main.h"
 
-#include "include/user_conf.h"
+#include "io.h"
+#include "sysCfg.h"
+#include "user_conf.h"
 
 os_timer_t transmit_timer;
 os_timer_t date_timer;
@@ -106,12 +107,24 @@ static void ICACHE_FLASH_ATTR publishSensorData(void) {
 	}
 }
 
-void ICACHE_FLASH_ATTR publishData(void) {
+void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 	uint32 t = system_get_time();
 	if (mqttConnected) {
-		publishAllTemperatures();
-		publishSensorData();
-		publishOutput(OP_PUMP, outputState(OP_PUMP));
+		switch (pass) { // Split into multiple passes to minimise hogging
+		case 0:
+			publishAllTemperatures();
+			if (!system_os_post(USER_TASK_PRIO_1, EVENT_TRANSMIT, 1))
+				ERRORP("Can't post EVENT_TRANSMIT 1\n");
+			break;
+		case 1:
+			publishSensorData();
+			if (!system_os_post(USER_TASK_PRIO_1, EVENT_TRANSMIT, 2))
+				ERRORP("Can't post EVENT_TRANSMIT 2\n");
+			break;
+		case 3:
+			publishOutput(OP_PUMP, outputState(OP_PUMP));
+			break;
+		}
 	}
 	checkTime("publishData", t);
 }
@@ -147,7 +160,7 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 			printVaues();
 			break;
 		case 2:
-			publishData();
+			publishData(0);
 			break;
 		case 3:
 			if (!checkSmartConfig(SC_CHECK)) {
@@ -263,6 +276,12 @@ static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 		ERRORP("Can't post EVENT_MQTT_CONNECTED\n");
 }
 
+void ICACHE_FLASH_ATTR resetTransmitTimer(void) {
+	os_timer_disarm(&transmit_timer);
+	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
+	os_timer_arm(&transmit_timer, sysCfgUpdates() * 1000, true);
+}
+
 static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	uint32 t = system_get_time();
 	char *topic = (char*) os_zalloc(100);
@@ -295,19 +314,16 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 		publishError(51, reconnections);
 	} else {
 		mqttConnected = true;
-		publishDeviceReset(version, lastAction);
+		publishDeviceReset(version, savedLastAction);
 		_publishDeviceInfo();
 		publishMapping();
 		initFlowMonitor();
-		initTemperature();
 
 		os_timer_disarm(&date_timer);
 		os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, NULL);
 		os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
 
-		os_timer_disarm(&transmit_timer);
-		os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
-		os_timer_arm(&transmit_timer, sysCfgUpdates() * 1000, true);
+		resetTransmitTimer();
 	}
 	checkMinHeap();
 	os_free(topic);
@@ -363,12 +379,15 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 		processTimerFunc();
 		break;
 	case EVENT_TRANSMIT:
-		publishData();
+		publishData(e->par);
 		break;
 	}
 }
 
 static void ICACHE_FLASH_ATTR startUp() {
+	initTemperature();
+	ds18b20SearchDevices();
+
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass,
 			sysCfg.mqtt_keepalive, 1);
@@ -399,7 +418,7 @@ static void ICACHE_FLASH_ATTR startUp() {
 
 static void ICACHE_FLASH_ATTR initDone_cb() {
 	char bfr[100];
-	CFG_Load();
+	CFG_init(2000);
 	os_sprintf(bfr, "%s/%s", sysCfg.deviceLocation, sysCfg.deviceName);
 	TESTP("\n%s ( %s ) starting ...\n", bfr, version);
 	initWiFi(PHY_MODE_11B, bfr, sysCfg.sta_ssid , startUp);

@@ -11,20 +11,20 @@
 #include <user_interface.h>
 #include "stdout.h"
 
+#define DEBUG_OVERRIDE 1
+#include "debug.h"
+
 #include "gpio.h"
 #include "easygpio.h"
-#include "config.h"
-#include "debug.h"
+#include "sysCfg.h"
 #include "dtoa.h"
 #include "flowMonitor.h"
-
 #include "user_conf.h"
 
 #define round(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
 
-LOCAL os_timer_t flow_timer;
+static os_timer_t flow_timer;
 static uint16 oneSecFlowCount;
-static uint16 oneSecCount;
 static volatile uint16 flowCount; // Interrupt variable
 static uint16 flowCountPerReading;
 static uint16 flowMax;
@@ -48,11 +48,13 @@ void ICACHE_FLASH_ATTR overrideClearFlow(void) {
 
 void ICACHE_FLASH_ATTR overrideSetFlow(int value) {
 	flowOverridden = true;
-	oneSecCount = value;
+	oneSecFlowCount = value;
 }
 
 void ICACHE_FLASH_ATTR resetFlowReadings(void) {
-	flowCountPerReading = oneSecCount = flowMax = 0;
+	if (!flowOverridden)
+		oneSecFlowCount = 0;
+	flowCountPerReading = flowMax = 0;
 #ifdef USE_ENERGY
 	energy = 0.0;
 #endif
@@ -75,9 +77,11 @@ uint16 ICACHE_FLASH_ATTR flowMinReading(void) {
 	return 0;
 }
 
-uint16 ICACHE_FLASH_ATTR flowInLitresPerHour(void) {
-	if (sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0)
-		return ((uint32)flowCountPerReading*3600) / (oneSecCount * sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]);
+uint32 ICACHE_FLASH_ATTR flowInLitresPerHour(void) {
+	if (oneSecFlowCount > 0 && sysCfg.settings[SET_FLOW_COUNT_PER_LITRE] > 0) {
+		return ((uint32) flowCountPerReading * 3600)
+				/ (oneSecFlowCount * sysCfg.settings[SET_FLOW_COUNT_PER_LITRE]);
+	}
 	return 0;
 }
 
@@ -99,12 +103,9 @@ uint16 ICACHE_FLASH_ATTR secondsNotFlowing(void) {
 	return secondsNotFlowingCount;
 }
 
-static void flowIntrHandler(void *arg) {
-	uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+void isrFlowMonitor(uint32 gpio_status) {
 	if (gpio_status & BIT(FLOW_SENSOR)) {
-		// This interrupt was intended for us - clear interrupt status
 		flowCount++;
-		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(FLOW_SENSOR));
 	}
 }
 
@@ -143,11 +144,14 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 		ETS_GPIO_INTR_ENABLE();
 	}
 
-	if (oneSecFlowCount != 0) {
-		TESTP(">");
+	flowSetAverage(oneSecFlowCount);
+	if (flowAverage == 0) { // Use average to deal with any timing issues when demand oscillates
+		INFOP("!");
+		secondsNotFlowingCount++;
+	} else {
+		INFOP(">");
 		secondsNotFlowingCount = 0;
 	}
-	flowSetAverage(oneSecFlowCount);
 	flowCountPerReading += oneSecFlowCount;
 	if (oneSecFlowCount < flowMin) {
 		flowMin = oneSecFlowCount;
@@ -155,7 +159,6 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 	if (oneSecFlowCount > flowMax) {
 		flowMax = oneSecFlowCount;
 	}
-	oneSecCount++;
 	calcFlows();
 }
 
@@ -179,8 +182,7 @@ void ICACHE_FLASH_ATTR printFlows(void) {
 #endif
 
 void ICACHE_FLASH_ATTR initFlowMonitor(void) {
-	easygpio_attachInterrupt(FLOW_SENSOR, EASYGPIO_PULLUP, flowIntrHandler, NULL);
-	gpio_pin_intr_state_set(GPIO_ID_PIN(FLOW_SENSOR), GPIO_PIN_INTR_NEGEDGE); // Enable
+	easygpio_pinMode(FLOW_SENSOR, EASYGPIO_NOPULL, EASYGPIO_INPUT);
 	oneSecFlowCount = 0;
 	flowAverage = 0;
 	resetFlowReadings();

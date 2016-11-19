@@ -11,6 +11,7 @@
 #include "mqtt.h"
 void publishAllTemperatures(void);
 void publishTemperature(int idx);
+void publishAnalogue(uint16 val);
 void publishError(uint8 err, int info);
 void publishAlarm(uint8 alarm, int info);
 void publishDeviceReset(char *version, int lastAction);

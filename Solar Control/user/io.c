@@ -10,7 +10,7 @@
 #include <os_type.h>
 #include <osapi.h>
 #include "easygpio.h"
-#include "overrideIO.h"
+#include "io.h"
 #include "publish.h"
 
 #include "user_conf.h"

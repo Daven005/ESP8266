@@ -16,6 +16,7 @@
 #include "http.h"
 
 #include "config.h"
+#include "sysCfg.h"
 #include "espmissingincludes.h"
 
 #define HTTPD_METHOD_GET 1
@@ -213,7 +214,7 @@ static void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned sh
 						reboot = true;
 					}
 				}
-				CFG_Save();
+				CFG_dirty();
 			}
 		}
 		replyOK(conn);
@@ -239,6 +240,12 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err) {
 	TESTP("Reconnected\n");
 }
 
+static void ICACHE_FLASH_ATTR setupCb(void) {
+	httpSetupMode = false;
+	stopFlash();
+}
+
+#ifndef ESP01
 bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port) {
 	int ret;
 
@@ -262,11 +269,6 @@ bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port) {
 	return true;
 }
 
-static void ICACHE_FLASH_ATTR setupCb(void) {
-	httpSetupMode = false;
-	stopFlash();
-}
-
 bool ICACHE_FLASH_ATTR toggleHttpSetupMode(void) {
 	httpSetupMode = !httpSetupMode;
 	if (httpSetupMode) {
@@ -280,3 +282,4 @@ bool ICACHE_FLASH_ATTR toggleHttpSetupMode(void) {
 	}
 	return httpSetupMode;
 }
+#endif

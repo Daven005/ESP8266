@@ -2,16 +2,20 @@
 #define _USER_CONFIG_H_
 
 #include "IOdefs.h"
-#define USE_FLOWS 1
-#define USE_ENERGY 1
+#define USE_FLOWS
+#define USE_ENERGY
+#define USE_FLOAT
+#define USE_CLOUD
+#define USE_SUN
+#define USE_TS_BOTTOM
+#undef USE_TIME
 
-#define CFG_HOLDER	0x00FF55A6	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A7	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
 #define MAX_DS18B20_SENSOR 3
 #define MAX_TEMPERATURE_SENSOR 5
-
 
 /*DEFAULT CONFIGURATIONS*/
 
@@ -31,7 +35,7 @@
 #define MQTT_RECONNECT_TIMEOUT 	10	/*second*/
 
 #define DEFAULT_SECURITY	0
-#define QUEUE_BUFFER_SIZE		 		4096
+#define QUEUE_BUFFER_SIZE	10000
 
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/
@@ -43,12 +47,13 @@
 #define SETTINGS_SIZE 15
 #define MAP_TEMP_SIZE 4
 
+#define UPDATES 60
+#undef INPUTS
 #define OUTPUTS 1
-#define MAX_INPUT 1
 #define SET_MINIMUM 0
 #define SET_MAXIMUM 60000
 
-#define INPUT_SENSOR_ID_START 10
+#define INPUT_SENSOR_ID_START 20
 #define OUTPUT_SENSOR_ID_START 10
 
 #define SET_T0 0
@@ -73,11 +78,9 @@
 #define MAP_TEMP_TS_BOTTOM 1
 #define MAP_TEMP_SUPPLY 2
 #define MAP_TEMP_RETURN 3
+#define MAP_TEMP_LAST 3
 
 #define OP_PUMP 0
 #define PROCESS_REPEAT 5000
-
-#define UPDATES 60
-#define INPUTS 0
 
 #endif
