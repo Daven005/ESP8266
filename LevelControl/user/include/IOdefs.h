@@ -16,6 +16,9 @@
 #define SCOPE 16
 #define SOUNDER 14
 
+#define LED_OFF 0
+#define LED_ON 1
+
 // Just to allow temperature.c to compile
 #define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
 #define DS18B20_FUNC	FUNC_GPIO2

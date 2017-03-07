@@ -19,51 +19,21 @@
 #include "debug.h"
 #include "sounder.h"
 #include "pump.h"
+#include "io.h"
+#include "sysCfg.h"
 
-static pumpState_t _pumpState;
-static uint16 currentPressure;
 static int pumpOnCount = 0;
-static bool overridePressure = false;
 
 void ICACHE_FLASH_ATTR initPump(void) {
 	easygpio_pinMode(PUMP, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputEnable(PUMP, 0);
-	_pumpState = AUTO_OFF;
-}
-
-void ICACHE_FLASH_ATTR overrideSetPressure(uint16 p) {
-	currentPressure = p;
-	overridePressure = true;
-}
-
-void ICACHE_FLASH_ATTR overrideClearPressure(void) {
-	overridePressure = false;
-}
-
-static void ICACHE_FLASH_ATTR pumpState_OffManual(void) {
-	_pumpState = MANUAL_OFF;
-	startMultiFlash(-1, 2, 100, 2700);
-}
-
-static void ICACHE_FLASH_ATTR pumpState_OnManual(void) {
-	_pumpState = MANUAL_ON;
-	startMultiFlash(-1, 2, 700, 900);
-}
-
-static void ICACHE_FLASH_ATTR pumpState_OffAuto(void) {
-	_pumpState = AUTO_OFF;
-	startMultiFlash(-1, 1, 100, 2900);
-}
-
-static void ICACHE_FLASH_ATTR pumpState_OnAuto(void) {
-	_pumpState = AUTO_ON;
-	startMultiFlash(-1, 1, 700, 2300);
+	pumpState_OffAuto();
 }
 
 void ICACHE_FLASH_ATTR setPump_Manual(void) { // Pump On/OFF
 	sounderClear();
 	startCheckIsFlowing();
-	switch (_pumpState) {
+	switch (pumpState()) {
 	case AUTO_OFF:
 	case AUTO_ON:
 	case MANUAL_OFF:
@@ -74,14 +44,14 @@ void ICACHE_FLASH_ATTR setPump_Manual(void) { // Pump On/OFF
 		pumpState_OffManual();
 		break;
 	}
-	TESTP("Pump->%d\n", _pumpState);
+	TESTP("Pump->%d\n", pumpState());
 	processPump();
 }
 
 void ICACHE_FLASH_ATTR setPump_Auto(void) {
 	sounderClear();
 	pumpState_OffAuto();
-	TESTP("Pump->%d\n", _pumpState);
+	TESTP("Pump->%d\n", pumpState());
 	processPump();
 }
 
@@ -90,8 +60,8 @@ static void ICACHE_FLASH_ATTR checkNotFlowing(void) {
 
 	if (flowCurrentReading() > 1) {
 		isflowingCount++;
-		if (isflowingCount > 3) {
-			publishAlarm(3, flowCurrentReading()); // Still Flowing when pump off
+		if (isflowingCount > 10) {
+			publishAlarm(3, flowCurrentReading()); // Still Flowing when pump off for 1S
 		}
 	} else {
 		isflowingCount = 0;
@@ -99,11 +69,8 @@ static void ICACHE_FLASH_ATTR checkNotFlowing(void) {
 }
 
 void ICACHE_FLASH_ATTR processPump(void) { // Every 100mS
-	uint16 newPressure = system_adc_read();
-	if (!overridePressure) {
-		currentPressure = (currentPressure * 9 + newPressure)/10; // Average over 1 second
-	}
-	switch (_pumpState) {
+	updatePressure();
+	switch (pumpState()) {
 	case MANUAL_OFF:
 		easygpio_outputSet(PUMP, 0);
 		pumpOnCount = 0;
@@ -119,7 +86,7 @@ void ICACHE_FLASH_ATTR processPump(void) { // Every 100mS
 		}
 		break;
 	case AUTO_OFF:
-		if (currentPressure < sysCfg.settings[SET_PUMP_ON]) {
+		if (getCurrentPressure() < sysCfg.settings[SET_PUMP_ON]) {
 			startCheckIsFlowing();
 			pumpState_OnAuto();
 			easygpio_outputSet(PUMP, 1);
@@ -131,27 +98,28 @@ void ICACHE_FLASH_ATTR processPump(void) { // Every 100mS
 		sounderClear();
 		break;
 	case AUTO_ON:
-		if (currentPressure > sysCfg.settings[SET_PUMP_OFF]) {
+		if (getCurrentPressure() > sysCfg.settings[SET_PUMP_OFF]) {
 			pumpState_OffAuto();
 			easygpio_outputSet(PUMP, 0);
 		} else {
-			if (secondsNotFlowing() > 10) {
+			if (secondsNotFlowing() > sysCfg.settings[SET_NO_FLOW_AUTO_ERROR]) {
 				publishAlarm(1, flowCurrentReading()); // No flow for 10S in Auto
 				sounderAlarm(1);
+				publishAlarm(6, secondsNotFlowing());
 				pumpState_OffManual();
 			} else {
 				pumpOnCount++;
-				if (pumpOnCount >= MAX_PUMP_ON_WARNING
-						&& currentPressure < sysCfg.settings[SET_LOW_PRESSURE_WARNING]) {
-					publishError(3, currentPressure);
+				if (pumpOnCount >= sysCfg.settings[SET_MAX_PUMP_ON_WARNING]
+						&& getCurrentPressure() < sysCfg.settings[SET_LOW_PRESSURE_WARNING]) {
+					publishError(3, getCurrentPressure());
 				}
-				if (pumpOnCount == MAX_PUMP_ON_WARNING) { // 1 minute
-					publishError(1, pumpOnCount);
-				} else if (pumpOnCount == MAX_PUMP_ON_ERROR) { // 5 minutes
+				if (pumpOnCount >= sysCfg.settings[SET_MAX_PUMP_ON_WARNING]) { // 1 minute
+					publishError(1, sysCfg.settings[SET_MAX_PUMP_ON_WARNING]);
+				} else if (pumpOnCount == sysCfg.settings[SET_MAX_PUMP_ON_ERROR]) { // 5 minutes
 					publishAlarm(2, pumpOnCount); // Running for 5 Minutes in Auto
 					sounderAlarm(2);
-				} else if (pumpOnCount > MAX_PUMP_ON_ERROR) {
-					pumpOnCount = MAX_PUMP_ON_ERROR + 1;
+				} else if (pumpOnCount > sysCfg.settings[SET_MAX_PUMP_ON_ERROR]) {
+					pumpOnCount = sysCfg.settings[SET_MAX_PUMP_ON_ERROR] + 1;
 				}
 			}
 		}
@@ -159,14 +127,6 @@ void ICACHE_FLASH_ATTR processPump(void) { // Every 100mS
 	}
 }
 
-uint16 getCurrentPressure(void) {
-	return currentPressure;
-}
-
 uint16 getPumpOnCount(void){
 	return pumpOnCount;
-}
-
-pumpState_t ICACHE_FLASH_ATTR pumpState(void) {
-	return _pumpState;
 }

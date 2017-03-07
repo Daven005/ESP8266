@@ -18,6 +18,8 @@
 
 #include "espconn.h"
 #include "user_conf.h"
+
+#ifdef READ_TEMPERATURES
 #include "ds18b20.h"
 
 // global search state
@@ -316,3 +318,5 @@ uint16_t ICACHE_FLASH_ATTR crc16(const uint16_t *data, const uint16_t  len)
     }
     return crc;
 }
+
+#endif

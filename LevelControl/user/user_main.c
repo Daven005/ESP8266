@@ -24,6 +24,7 @@
 #include "LevelSignal.h"
 #include "decodeMessage.h"
 #include "sounder.h"
+#include "sysCfg.h"
 #include "pump.h"
 #include "user_main.h"
 
@@ -121,7 +122,7 @@ static void ICACHE_FLASH_ATTR printData(void) {
 	os_printf("Level: %d\n", getLevel());
 }
 
-void ICACHE_FLASH_ATTR publishData(void) {
+void ICACHE_FLASH_ATTR publishData(uint32 idx) {
 	if (mqttConnected) {
 		char *topic = (char *) os_zalloc(100);
 		char *data = (char *) os_zalloc(100);
@@ -160,7 +161,7 @@ static void ICACHE_FLASH_ATTR transmitTimerCb(uint32_t *args) {
 }
 
 static void ICACHE_FLASH_ATTR transmitTimerFunc(void) {
-	publishData();
+	publishData(0);
 }
 
 static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {

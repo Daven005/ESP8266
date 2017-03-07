@@ -18,10 +18,10 @@ FLASH_SIZE		:= 4m
 else
 ifeq ($(DEVICE), ESP-01)
 USER_ROM_SIZE   := 0x080000
-INIT_START		:= 0x0FC000
-PARAM_START		:= 0x0FE000
-LD_SCRIPT		:= eagle.app.v6.ld
-FLASH_SIZE		:= 1m
+INIT_START		:= 0x07C000
+PARAM_START		:= 0x07E000
+LD_SCRIPT		:= eagle.app.v6.new.512.app1.ld
+FLASH_SIZE		:= 4m
 endif
 endif
 endif

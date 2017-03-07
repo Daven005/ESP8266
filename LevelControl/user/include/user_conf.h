@@ -1,7 +1,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A7	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A9	/* Change this value to load default configurations */
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
@@ -33,6 +33,7 @@
 #define USE_FLOWS 1
 #define MAP_TEMP_SIZE 0
 #define MAX_TEMPERATURE_SENSOR 0
+#define MAP_TEMP_LAST 0
 
 #define NAME_SIZE 32
 #define MAP_SIZE 4
@@ -47,6 +48,9 @@
 #define SET_FLOW_COUNT_PER_LITRE 3
 #define SET_LOW_PRESSURE_WARNING 4
 #define SET_LOW_LEVEL_WARNING 5
+#define SET_MAX_PUMP_ON_WARNING 6
+#define SET_MAX_PUMP_ON_ERROR 7
+#define SET_NO_FLOW_AUTO_ERROR 8
 
 #define DEFAULT_PUMP_ON 100
 #define DEFAULT_PUMP_OFF 200
@@ -54,12 +58,12 @@
 #define DEFAULT_FLOW_COUNT_PER_LITRE 450
 #define DEFAULT_LOW_PRESSURE_WARNING 110
 #define DEFAULT_LOW_LEVEL_WARNING 110
-
-#define MAX_PUMP_ON_WARNING 1200 // 120 Sec
-#define MAX_PUMP_ON_ERROR 3000 // 5 Min
+#define DEFAULT_MAX_PUMP_ON_WARNING 1800 // 3 mins
+#define DEFAULT_MAX_PUMP_ON_ERROR 3000 // 5 Min
+#define DEFAULT_NO_FLOW_AUTO 10
 
 #define SET_MINIMUM 0
-#define SET_MAXIMUM 1024
+#define SET_MAXIMUM 10000
 
 #define UPDATES 60
 #define INPUTS 0
