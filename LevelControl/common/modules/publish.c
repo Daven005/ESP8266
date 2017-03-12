@@ -112,6 +112,27 @@ void ICACHE_FLASH_ATTR publishAnalogue(uint16 val) {
 	}
 }
 
+#ifdef USE_OVERRIDE
+void ICACHE_FLASH_ATTR publishOverride(void) {
+
+	if (checkClient("publishOverride")) {
+		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
+		if (!checkAlloc(topic, data)) return;
+
+		os_sprintf(topic, (const char*) "/Raw/%s/Override/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Temp\":%d, \"Hour\":%d, \"Minute\":%d}",
+				sysCfg.overrideTemp, sysCfg.overrideHour, sysCfg.overrideMinute);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+			printMQTTstate();
+		TESTP("%s=>%s\n", topic, data);
+
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
+	}
+}
+#endif
+
 void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	static uint8 last_err = 0xff;
 	static int last_info = -1;
@@ -138,8 +159,10 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	static uint8 last_alarm = 0xff;
 	static int last_info = -1;
-	if (alarm == last_alarm && info == last_info)
+	if (alarm == last_alarm && info == last_info) {
+		TESTP("#");
 		return; // Ignore repeated identical alarms
+	}
 	last_alarm = alarm;
 	last_info = info;
 	char *topic = (char*) os_zalloc(100);

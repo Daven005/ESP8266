@@ -185,6 +185,7 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 		break;
 	case 3:
 		printData();
+		publishAlarm(155, 66); // Test
 		break;
 	case 4:
 		if (!checkSmartConfig(SC_CHECK))
@@ -192,8 +193,6 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 		break;
 	case 5:
 		checkSmartConfig(SC_TOGGLE);
-		break;
-	case 6:
 		break;
 	}
 }
@@ -225,7 +224,7 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	if (mqttConnected) { // Has REconnected
 		_publishDeviceInfo();
 		reconnections++;
-		publishError(51, reconnections);
+		publishError(51, reconnections); // Has reconnected
 	} else {
 		mqttConnected = true; // To enable messages to be published
 		publishDeviceReset(version, lastAction);
@@ -389,7 +388,8 @@ static void ICACHE_FLASH_ATTR startUp(void) {
 
 static void ICACHE_FLASH_ATTR initDone_cb() {
 	char bfr[100];
-	CFG_Load();
+	CFG_init(2000);
+	CFG_print();
 	os_sprintf(bfr, "%s/%s:%s", sysCfg.deviceLocation, sysCfg.deviceName, sysCfg.device_id);
 	TESTP("\n%s ( %s ) starting ...\n", bfr, version);
 	initWiFi(PHY_MODE_11B, bfr, sysCfg.sta_ssid , startUp);

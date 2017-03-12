@@ -84,7 +84,7 @@ static void ICACHE_FLASH_ATTR CFG_Save(void) {
 	lastSaved = system_get_time();
 }
 
-void ICACHE_FLASH_ATTR CFG_Load() {
+static void ICACHE_FLASH_ATTR CFG_Load() {
 	os_printf("\nload (%x/%x)...\n", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 				   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
