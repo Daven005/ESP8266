@@ -8,7 +8,9 @@
 #ifndef INCLUDE_TEMPERATURE_H_
 #define INCLUDE_TEMPERATURE_H_
 
-enum temperatureType_t { NOT_SET, SENSOR, DERIVED };
+enum temperatureType_t {
+	NOT_SET, SENSOR, DERIVED
+};
 typedef void (*TemperatureCallback)(void);
 
 struct Temperature {
@@ -35,14 +37,18 @@ char *mappedStrTemperature(uint8 name, char *s);
 int mappedTemperature(uint8 name);
 char *unmappedSensorID(uint8 name);
 bool mappedTemperatureIsSet(uint8 name);
-int setUnmappedSensorTemperature(char *sensorID, enum temperatureType_t temperatureType, int val, int fract);
+int setUnmappedSensorTemperature(char *sensorID, enum temperatureType_t temperatureType, int val,
+		int fract);
+void setMappedSensorTemperature(uint8 mapId, char *sensorID, enum temperatureType_t temperatureType,
+		int val, int fract);
 double getUnmappedFloatTemperature(uint8 name);
 void checkMappedFloat(uint8 name);
 
 // Override used for testing
 int setTemperatureOverride(char *sensorID, char *value);
 int clearTemperatureOverride(char *sensorID);
-int checkAddNewTemperature(char* sensorID, uint8 *sensorAddress, enum temperatureType_t temperatureType);
+int checkAddNewTemperature(char* sensorID, uint8 *sensorAddress,
+		enum temperatureType_t temperatureType);
 void checkSetTemperature(int idx, int val, int fract);
 void initTemperature(void);
 

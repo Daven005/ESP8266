@@ -11,12 +11,12 @@
 #include <user_interface.h>
 #include "stdout.h"
 
-#define DEBUG_OVERRIDE 1
+//#define DEBUG_OVERRIDE
 #include "debug.h"
 
 #include "gpio.h"
 #include "easygpio.h"
-#include "config.h"
+#include "sysCfg.h"
 #include "dtoa.h"
 #include "flowMonitor.h"
 #include "user_conf.h"

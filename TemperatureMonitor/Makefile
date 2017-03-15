@@ -84,13 +84,13 @@ $(USER_ROM_ADDR) $(FIRMWARE_USER)
 verifyinit:
 	$(vecho) "vi $(BOOT_START)"
 	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) verify_flash --diff yes \
-$(BOOT_START) $(SDK_BASE)/bin/boot_v1.5.bin \
+$(BOOT_START) $(SDK_BASE)/bin/boot_v1.2.bin \
 $(INIT_START) $(SDK_BASE)/bin/esp_init_data_default.bin \
 $(PARAM_START) $(SDK_BASE)/bin/blank.bin
 
 flashinit:
 	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash \
-$(BOOT_START) $(SDK_BASE)/bin/boot_v1.5.bin \
+$(BOOT_START) $(SDK_BASE)/bin/boot_v1.2.bin \
 $(INIT_START) $(SDK_BASE)/bin/esp_init_data_default.bin \
 $(PARAM_START) $(SDK_BASE)/bin/blank.bin
 

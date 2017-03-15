@@ -5,6 +5,7 @@
  *      Author: User
  */
 
+#define DEBUG_OVERRIDE
 #include <c_types.h>
 #include <mem.h>
 #include <os_type.h>
@@ -12,8 +13,8 @@
 #include <user_interface.h>
 #include "debug.h"
 #include "easygpio.h"
-#include "include/io.h"
-#include "include/user_conf.h"
+#include "io.h"
+#include "user_conf.h"
 
 #ifdef OUTPUTS
 #pragma message "Outputs"
@@ -25,10 +26,9 @@ uint8 ICACHE_FLASH_ATTR getOutput(uint8 idx) {
 	return currentOutputs[idx];
 }
 
-
 void ICACHE_FLASH_ATTR overrideClearOutput(int id) {
 	if (0 <= id && id < OUTPUTS) {
-		outputOverrides[id] = false;
+		outputOverrides[id] = RELAY_OFF;
 	}
 }
 
@@ -54,12 +54,13 @@ void ICACHE_FLASH_ATTR overrideSetOutput(int id, int value) {
 
 void ICACHE_FLASH_ATTR initOutput(void) {
 	int idx;
-	for (idx = 0; idx < OUTPUTS; idx++) {
+	for (idx = 1; idx < OUTPUTS; idx++) { // Ignore LED as already set up
 		easygpio_pinMode(outputMap[idx], EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
-		easygpio_outputSet(outputMap[idx], 0);
+		easygpio_outputSet(outputMap[idx], RELAY_OFF);
+		currentOutputs[idx] = RELAY_OFF;
+		outputOverrides[idx] = false;
 	}
 }
 #else
 #pragma message "No Outputs"
-
 #endif

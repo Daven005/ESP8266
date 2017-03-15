@@ -134,6 +134,7 @@ mqtt_send_keepalive(MQTT_Client *client) {
 		client->connState = MQTT_DATA;
 		system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);
 	} else {
+		ERRORP("MQTT: TCP send err %d\n", result);
 		client->connState = TCP_RECONNECT_DISCONNECTING;
 		system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);
 	}
@@ -558,6 +559,7 @@ bool ICACHE_FLASH_ATTR MQTT_Publish(MQTT_Client *client, const char* topic, cons
 		int data_length, int qos, int retain) {
 	uint8_t dataBuffer[MQTT_BUF_SIZE];
 	uint16_t dataLen;
+	int attempts = 0;
 
 	if (client == NULL) {
 		ERRORP("Pub Client %lx, topic %s, data %s\n", client, topic, data);
@@ -578,11 +580,12 @@ bool ICACHE_FLASH_ATTR MQTT_Publish(MQTT_Client *client, const char* topic, cons
 			client->msgQueue.rb.size);
 	while (QUEUE_Puts(&client->msgQueue, client->mqtt_state.outbound_message->data,
 			client->mqtt_state.outbound_message->length) == -1) {
-		ERRORP("MQTT: Queue full\n");
+		ERRORP("MQTT: Queue full (Pub. topic=%s) %d\n", topic, attempts);
 		if (QUEUE_Gets(&client->msgQueue, dataBuffer, &dataLen, MQTT_BUF_SIZE) == -1) {
 			ERRORP("MQTT: Serious buffer error\n");
 			return false;
 		}
+		if (++attempts > 20) return false;
 	}
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);
 	return true;
@@ -599,17 +602,19 @@ BOOL ICACHE_FLASH_ATTR
 MQTT_Subscribe(MQTT_Client *client, char* topic, uint8_t qos) {
 	uint8_t dataBuffer[MQTT_BUF_SIZE];
 	uint16_t dataLen;
+	int attempts = 0;
 
 	client->mqtt_state.outbound_message = mqtt_msg_subscribe(&client->mqtt_state.mqtt_connection,
 			topic, qos, &client->mqtt_state.pending_msg_id);
 	INFOP("MQTT: queue subscribe, topic\"%s\", id: %d\n", topic, client->mqtt_state.pending_msg_id);
 	while (QUEUE_Puts(&client->msgQueue, client->mqtt_state.outbound_message->data,
 			client->mqtt_state.outbound_message->length) == -1) {
-		ERRORP("MQTT: Queue full\n");
+		ERRORP("MQTT: Queue full (Sub. topic=%s) %d\n", topic, attempts);
 		if (QUEUE_Gets(&client->msgQueue, dataBuffer, &dataLen, MQTT_BUF_SIZE) == -1) {
 			ERRORP("MQTT: Serious buffer error\n");
 			return FALSE;
 		}
+		if (++attempts > 20) return false;
 	}
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);
 	return TRUE;
@@ -625,17 +630,20 @@ BOOL ICACHE_FLASH_ATTR
 MQTT_UnSubscribe(MQTT_Client *client, char* topic) {
 	uint8_t dataBuffer[MQTT_BUF_SIZE];
 	uint16_t dataLen;
+	int attempts = 0;
+
 	client->mqtt_state.outbound_message = mqtt_msg_unsubscribe(&client->mqtt_state.mqtt_connection,
 			topic, &client->mqtt_state.pending_msg_id);
 	INFOP("MQTT: queue un-subscribe, topic\"%s\", id: %d\n", topic,
 			client->mqtt_state.pending_msg_id);
 	while (QUEUE_Puts(&client->msgQueue, client->mqtt_state.outbound_message->data,
 			client->mqtt_state.outbound_message->length) == -1) {
-		ERRORP("MQTT: Queue full\n");
+		ERRORP("MQTT: Queue full (UnSub. topic = %s)\n", topic);
 		if (QUEUE_Gets(&client->msgQueue, dataBuffer, &dataLen, MQTT_BUF_SIZE) == -1) {
 			ERRORP("MQTT: Serious buffer error\n");
 			return FALSE;
 		}
+		if (++attempts > 20) return false;
 	}
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);
 	return TRUE;
@@ -650,6 +658,8 @@ static BOOL ICACHE_FLASH_ATTR
 MQTT_Ping(MQTT_Client *client) {
 	uint8_t dataBuffer[MQTT_BUF_SIZE];
 	uint16_t dataLen;
+	int attempts = 0;
+
 	client->mqtt_state.outbound_message = mqtt_msg_pingreq(&client->mqtt_state.mqtt_connection);
 	if (client->mqtt_state.outbound_message->length == 0) {
 		INFOP("MQTT: Queuing publish failed\n");
@@ -660,11 +670,12 @@ MQTT_Ping(MQTT_Client *client) {
 			client->msgQueue.rb.size);
 	while (QUEUE_Puts(&client->msgQueue, client->mqtt_state.outbound_message->data,
 			client->mqtt_state.outbound_message->length) == -1) {
-		ERRORP("MQTT: Queue full\n");
+		ERRORP("MQTT: Queue full (Ping)\n");
 		if (QUEUE_Gets(&client->msgQueue, dataBuffer, &dataLen, MQTT_BUF_SIZE) == -1) {
 			ERRORP("MQTT: Serious buffer error\n");
 			return FALSE;
 		}
+		if (++attempts > 20) return false;
 	}
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);
 	return TRUE;

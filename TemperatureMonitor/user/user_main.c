@@ -14,7 +14,7 @@
 //#define DEBUG_OVERRIDE
 #include "debug.h"
 #include "stdout.h"
-#include "include/sysCfg.h"
+#include "sysCfg.h"
 #include "wifi.h"
 #include "easygpio.h"
 #include "flash.h"
@@ -23,14 +23,14 @@
 #include "publish.h"
 #include "switch.h"
 #ifdef OUTPUTS
-#include "output.h"
+#include "io.h"
 #endif
 #ifndef ESP01
 #include "smartconfig.h"
 #include "doSmartConfig.h"
 #endif
 #include "version.h"
-#include "include/user_conf.h"
+#include "user_conf.h"
 #include "temperature.h"
 #include "time.h"
 #include "decodeMessage.h"
@@ -72,7 +72,11 @@ enum backgroundEvent_t {
 #define CONFIG1 "TM Awake "
 
 #ifdef OUTPUTS
-#define CONFIG CONFIG1 "outputs Pin:" xstr(DS18B20_PIN)
+#ifdef INVERT_RELAYS
+#define CONFIG CONFIG1 "Outputs (I) Pin:" xstr(DS18B20_PIN)
+#else
+#define CONFIG CONFIG1 "Outputs Pin:" xstr(DS18B20_PIN)
+#endif
 #else
 
 #ifdef READ_TEMPERATURES
@@ -199,13 +203,16 @@ static void ICACHE_FLASH_ATTR mqttPublishedCb(uint32_t *args) {
 static void ICACHE_FLASH_ATTR processTemperatureCb(void) {
 #ifdef SLEEP_MODE
 	if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_TEMPERATURE, 0))
-		ERRORP("Can't post EVENT_PUBLISH_TEMPERATURE\n");
+	ERRORP("Can't post EVENT_PUBLISH_TEMPERATURE\n");
+#else
+	// In non-sleep mode temperatures are published by transmitTimer
 #endif
 }
 #endif
 
 #ifndef SLEEP_MODE
 void ICACHE_FLASH_ATTR resetTransmitTimer(void) {
+	TESTP("Reset TT\n");
 	os_timer_disarm(&transmit_timer);
 	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitTimerCb, NULL);
 	os_timer_arm(&transmit_timer, sysCfg.updates * 1000, true); // Repeat
@@ -227,6 +234,7 @@ static void ICACHE_FLASH_ATTR transmitTimerCb(void) { // Depends on Updates
 
 static void ICACHE_FLASH_ATTR transmitTimerFunc(void) {
 	uint32 t = system_get_time();
+	INFOP("TT\n");
 	publishData(0);
 #ifdef READ_TEMPERATURES
 	ds18b20StartScan(processTemperatureCb);
@@ -236,8 +244,8 @@ static void ICACHE_FLASH_ATTR transmitTimerFunc(void) {
 }
 #endif
 
-static void ICACHE_FLASH_ATTR checkCanSleep(void) {
 #ifdef SLEEP_MODE
+static void ICACHE_FLASH_ATTR checkCanSleep(void) {
 	if (!checkSmartConfig(SC_CHECK) && !httpSetupMode) {
 		MQTT_Disconnect(&mqttClient);
 		TESTP("Sleep %dS\n", sysCfg.updates);
@@ -246,10 +254,8 @@ static void ICACHE_FLASH_ATTR checkCanSleep(void) {
 	} else {
 		mqttPublishedCb(NULL);
 	}
-#else
-	resetTransmitTimer();
-#endif
 }
+#endif
 
 static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 	os_printf("WiFi status: %d\n", status);
@@ -272,7 +278,7 @@ static void ICACHE_FLASH_ATTR printAll(void) {
 	os_printf("Temperature Mappings:\n");
 	for (idx = 0; idx < sizeof(sysCfg.mapping); idx++) {
 		if (printMappedTemperature(idx))
-			os_printf("\n");
+		os_printf("\n");
 	}
 #endif
 #ifdef READ_ANALOGUE
@@ -284,7 +290,7 @@ static void ICACHE_FLASH_ATTR printAll(void) {
 	}
 #ifdef OUTPUTS
 	os_printf("\nOutputs: ");
-	for (idx = 0; idx < MAX_OUTPUT; idx++) {
+	for (idx = 0; idx < OUTPUTS; idx++) {
 		os_printf("%d=%d ", idx, getOutput(idx));
 	}
 #endif
@@ -306,8 +312,13 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 #ifndef ESP01
 	case 3:
 		if (!checkSmartConfig(SC_CHECK)) {
-			if (!toggleHttpSetupMode())
+			if (!toggleHttpSetupMode()) {
+#ifdef SLEEP_MODE
 				checkCanSleep();
+#else
+				resetTransmitTimer();
+#endif
+			}
 		}
 		break;
 	case 5:
@@ -321,7 +332,7 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 #endif
 
 #ifdef OUTPUTS
-void ICACHE_FLASH_ATTR publishOutputs(void) { // param for compatibility
+static void ICACHE_FLASH_ATTR publishOutputs(void) { // param for compatibility
 	char *topic = (char *) os_zalloc(100);
 	char *data = (char *) os_zalloc(100);
 	uint8 i;
@@ -343,26 +354,29 @@ void ICACHE_FLASH_ATTR publishOutputs(void) { // param for compatibility
 #endif
 
 void ICACHE_FLASH_ATTR publishData(uint32 pass) {
-	_publishDeviceInfo();
 	uint32 t = system_get_time();
 	if (mqttConnected) {
+		INFOP("Pub %d\n", pass);
 		switch (pass) { // Split into multiple passes to minimise hogging
 		case 0:
 			publishAllTemperatures();
 			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 1))
-				ERRORP("Can't post EVENT_PUBLISH_DATA 1\n");
+				ERRORP("Can't post EVENT_PUBLISH_DATA 1\n")
+			;
 			break;
 		case 1:
 			_publishDeviceInfo();
 			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 2))
-				ERRORP("Can't post EVENT_PUBLISH_DATA 2\n");
+				ERRORP("Can't post EVENT_PUBLISH_DATA 2\n")
+			;
 			break;
 		case 2:
 #ifdef READ_ANALOGUE
 			publishAnalogue(readMoisture());
 #endif
 			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 3))
-				ERRORP("Can't post EVENT_PUBLISH_DATA 3\n");
+				ERRORP("Can't post EVENT_PUBLISH_DATA 3\n")
+			;
 			break;
 		case 3:
 #ifdef OUTPUTS
@@ -370,9 +384,10 @@ void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 #endif
 			break;
 		}
+	} else {
+		ERRORP("mqtt not connected\n");
 	}
 	checkTime("publishData", t);
-
 }
 
 static void ICACHE_FLASH_ATTR dateTimerCb(void) { // 10 mins
@@ -402,12 +417,17 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 		_publishDeviceInfo();
 		publishMapping();
 	}
+	// This subscription used to get settings when starting up in SLEEP and non-SLEEP modes
 	char *topic = (char*) os_zalloc(100);
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
 	INFOP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
 
+#ifdef READ_TEMPERATURES
+	ds18b20StartScan(processTemperatureCb);
+#endif
 #ifndef SLEEP_MODE
+	// These subscriptions not used in SLEEP_MODE
 	os_sprintf(topic, "/Raw/%s/+/set/#", sysCfg.device_id);
 	INFOP("Subscribe to: %s\n", topic);
 	MQTT_Subscribe(client, topic, 0);
@@ -420,13 +440,10 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 
 	os_timer_disarm(&date_timer);
 	os_timer_setfn(&date_timer, (os_timer_func_t *) dateTimerCb, (void *) 0);
-	os_timer_arm(&date_timer, 10 * 60 * 1000, true);
+	os_timer_arm(&date_timer, 10 * 60 * 1000, false);
 
-	transmitTimerCb(); // Get temperature reading etc started
+	resetTransmitTimer(); // Get temperature reading etc started
 #else // Sleep Mode
-#ifdef READ_TEMPERATURES
-	ds18b20StartScan(processTemperatureCb);
-#endif
 #ifdef READ_ANALOGUE
 	publishAnalogue(readMoisture());
 	MQTT_OnPublished(&mqttClient, mqttPublishedCb);
@@ -473,7 +490,7 @@ static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic,
 	uint32 t = system_get_time();
 
 	lastAction = MQTT_DATA_FUNC;
-	INFOP("mqd topic %s; data %s\n", topic, data);
+	TESTP("mqd topic %s; data %s\n", topic, data);
 
 	decodeMessage(client, topic, data);
 	checkMinHeap();
@@ -486,10 +503,10 @@ static void ICACHE_FLASH_ATTR mqttDataFunction(MQTT_Client *client, char* topic,
 static size_t ICACHE_FLASH_ATTR fs_size(void) { // returns the flash chip's size, in BYTES
 	uint32_t id = spi_flash_get_id();
 	uint8_t mfgr_id = id & 0xff;
-	uint8_t type_id = (id >> 8) & 0xff; // not relevant for size calculation
-	uint8_t size_id = (id >> 16) & 0xff; // lucky for us, WinBond ID's their chips as a form that lets us calculate the size
-	if (mfgr_id != 0xEF) // 0xEF is WinBond; that's all we care about (for now)
-		return 0;
+	uint8_t type_id = (id >> 8) & 0xff;// not relevant for size calculation
+	uint8_t size_id = (id >> 16) & 0xff;// lucky for us, WinBond ID's their chips as a form that lets us calculate the size
+	if (mfgr_id != 0xEF)// 0xEF is WinBond; that's all we care about (for now)
+	return 0;
 	return 1 << size_id;
 }
 
@@ -507,7 +524,7 @@ static void ICACHE_FLASH_ATTR showSysInfo(void) {
 
 static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 	mqttData_t *mqttData;
-	INFOP("Background task %d\n", e->sig);
+	INFOP("Background task %d/%d\n", e->sig, e->par);
 	switch (e->sig) {
 	case EVENT_MQTT_CONNECTED:
 		mqttConnectedFunction((MQTT_Client *) e->par);
@@ -523,7 +540,7 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 		break;
 #endif
 #ifdef SLEEP_MODE
-	case EVENT_PUBLISH_TEMPERATURE:
+		case EVENT_PUBLISH_TEMPERATURE:
 		processTemperatureFunc();
 		break;
 #endif
@@ -531,14 +548,14 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 		publishData(e->par);
 		break;
 	default:
-		ERRORP("Bad background task event %d\n", e->sig);
+		ERRORP("Bad background task event %d\n", e->sig)
+		;
 		break;
 	}
 }
 
 static void ICACHE_FLASH_ATTR startUp() {
 	initTemperature();
-	checkAddNewTemperature("Time", NULL, DERIVED);
 	ds18b20SearchDevices();
 
 	INFOP("wifi_get_phy_mode = %d\n", wifi_get_phy_mode());
@@ -591,6 +608,11 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	gpio_init();
 	savedLastAction = lastAction;
 
+#ifdef SLEEP_MODE
+	system_deep_sleep_set_option(0);
+	easygpio_pinMode(16, EASYGPIO_PULLUP, EASYGPIO_INPUT);
+	easygpio_outputDisable(16);
+#endif
 #ifdef SWITCH
 	easygpio_pinMode(SWITCH, EASYGPIO_PULLUP, EASYGPIO_INPUT);
 	easygpio_outputDisable(SWITCH);

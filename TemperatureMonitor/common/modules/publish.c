@@ -47,6 +47,7 @@ static void ICACHE_FLASH_ATTR printMQTTstate(void) {
 	startFlash(-1, 1000, 1000);
 }
 
+#ifdef READ_TEMPERATURES
 void ICACHE_FLASH_ATTR publishAllTemperatures(void) {
 	struct Temperature *t;
 	int idx;
@@ -62,7 +63,7 @@ void ICACHE_FLASH_ATTR publishAllTemperatures(void) {
 						t->sign, t->val, t->fract);
 				if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
 					printMQTTstate();
-				INFOP("%s=>%s\n", topic, data);
+				TESTP("%s=>%s\n", topic, data);
 			}
 		}
 		checkMinHeap();
@@ -91,6 +92,7 @@ void ICACHE_FLASH_ATTR publishTemperature(int idx) {
 		os_free(data);
 	}
 }
+#endif
 
 void ICACHE_FLASH_ATTR publishAnalogue(uint16 val) {
 
@@ -109,6 +111,27 @@ void ICACHE_FLASH_ATTR publishAnalogue(uint16 val) {
 		os_free(data);
 	}
 }
+
+#ifdef USE_OVERRIDE
+void ICACHE_FLASH_ATTR publishOverride(void) {
+
+	if (checkClient("publishOverride")) {
+		char *topic = (char*) os_malloc(100), *data = (char*) os_malloc(100);
+		if (!checkAlloc(topic, data)) return;
+
+		os_sprintf(topic, (const char*) "/Raw/%s/Override/info", sysCfg.device_id);
+		os_sprintf(data, (const char*) "{ \"Temp\":%d, \"Hour\":%d, \"Minute\":%d}",
+				sysCfg.overrideTemp, sysCfg.overrideHour, sysCfg.overrideMinute);
+		if (!MQTT_Publish(mqttClient, topic, data, os_strlen(data), 0, 0))
+			printMQTTstate();
+		TESTP("%s=>%s\n", topic, data);
+
+		checkMinHeap();
+		os_free(topic);
+		os_free(data);
+	}
+}
+#endif
 
 void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 	static uint8 last_err = 0xff;
@@ -136,8 +159,10 @@ void ICACHE_FLASH_ATTR publishError(uint8 err, int info) {
 void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	static uint8 last_alarm = 0xff;
 	static int last_info = -1;
-	if (alarm == last_alarm && info == last_info)
+	if (alarm == last_alarm && info == last_info) {
+		TESTP("#");
 		return; // Ignore repeated identical alarms
+	}
 	last_alarm = alarm;
 	last_info = info;
 	char *topic = (char*) os_zalloc(100);
@@ -226,6 +251,7 @@ void ICACHE_FLASH_ATTR publishDeviceInfo(char *version, char *mode, uint8 wifiCh
 	}
 }
 
+#ifdef READ_TEMPERATURES
 void ICACHE_FLASH_ATTR publishMapping(void) {
 #define MSG_SIZE 1200
 	if (checkClient("publishMapping")) {
@@ -240,7 +266,7 @@ void ICACHE_FLASH_ATTR publishMapping(void) {
 			if (os_strlen(unmappedSensorID(idx)) == 0) {
 				struct Temperature *t;
 				getUnmappedTemperature(idx, &t);
-				dump((void *)t, sizeof(*t));
+				INFO(dump((void *)t, sizeof(*t)););
 				ERRORP("Missing temperature %d\n", idx); // NB Outside temperature may not yet be received
 			} else {
 				if (os_strlen(data) > (MSG_SIZE - 80)) {
@@ -264,6 +290,7 @@ void ICACHE_FLASH_ATTR publishMapping(void) {
 		os_free(data);
 	}
 }
+#endif
 
 #ifdef INPUTS
 void ICACHE_FLASH_ATTR publishInput(uint8 idx, uint8 val) {

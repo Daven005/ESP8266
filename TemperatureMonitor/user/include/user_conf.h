@@ -1,7 +1,7 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
-#define CFG_HOLDER	0x00FF55A7	/* Change this value to load default configurations */
+#define CFG_HOLDER	0x00FF55A9	/* Change this value to load default configurations */
 #ifdef ESP01
 #define CFG_LOCATION	0x78	/* Please don't change or if you know what you doing */
 #else
@@ -13,29 +13,7 @@
 #undef USE_TIME
 #undef USE_OUTSIDE_TEMP
 
-#ifdef SLEEP_MODE
-#undef OUTPUTS
-#undef SWITCH
-#else
-#define SWITCH 0 // GPIO 00
-#ifdef USE_OUTPUTS
-#define OUTPUTS 5
-#define RELAY_1 13
-#define RELAY_2 12
-#define RELAY_3 14
-#define RELAY_4 16
-#define RELAY_ON 1
-#define RELAY_OFF 0
-#endif
-#endif
-
-#define LED 5
-#define MOISTURE 4
-
-#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
-#define DS18B20_FUNC	FUNC_GPIO2
-#define DS18B20_PIN		2
-
+#include "IOdefs.h"
 
 /*DEFAULT MQTT CONFIGURATIONS*/
 

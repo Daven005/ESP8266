@@ -24,8 +24,10 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "easygpio.h"
-#include "dht22.h"
 #include "debug.h"
+
+#ifdef USE_DHT
+#include "dht22.h"
 
 //#define PULSE 4
 
@@ -241,3 +243,4 @@ void ICACHE_FLASH_ATTR dhtInit(int id, enum DHTType dht_type, uint8 pin, uint32_
 	_dhtInit(&reading[id - 1], id, dht_type, pin, poll_time);
 }
 
+#endif

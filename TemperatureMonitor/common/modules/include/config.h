@@ -37,7 +37,6 @@ typedef struct {
     uint8 pad[3];
 } SAVE_FLAG;
 
-void CFG_Load(void);
 void CFG_print(void);
 uint16 sysCfgUpdates(void);
 void CFG_dirty(void);
