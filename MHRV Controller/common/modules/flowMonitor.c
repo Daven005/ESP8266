@@ -11,13 +11,14 @@
 #include <user_interface.h>
 #include "stdout.h"
 
+//#define DEBUG_OVERRIDE
+#include "debug.h"
+
 #include "gpio.h"
 #include "easygpio.h"
-#include "config.h"
-#include "debug.h"
+#include "sysCfg.h"
 #include "dtoa.h"
 #include "flowMonitor.h"
-
 #include "user_conf.h"
 
 #define round(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
@@ -143,15 +144,14 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 		ETS_GPIO_INTR_ENABLE();
 	}
 
-	if (oneSecFlowCount == 0) {
+	flowSetAverage(oneSecFlowCount);
+	if (flowAverage == 0) { // Use average to deal with any timing issues when demand oscillates
 		INFOP("!");
 		secondsNotFlowingCount++;
 	} else {
 		INFOP(">");
 		secondsNotFlowingCount = 0;
 	}
-	os_delay_us(100);
-	flowSetAverage(oneSecFlowCount);
 	flowCountPerReading += oneSecFlowCount;
 	if (oneSecFlowCount < flowMin) {
 		flowMin = oneSecFlowCount;

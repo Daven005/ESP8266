@@ -15,7 +15,7 @@
 #include "mqtt.h"
 #include "doSmartConfig.h"
 
-#include "config.h"
+#include "sysCfg.h"
 #include "user_conf.h"
 #include "debug.h"
 

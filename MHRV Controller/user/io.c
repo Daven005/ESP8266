@@ -12,6 +12,7 @@
 #include "gpio.h"
 #include "easygpio.h"
 #include "stdout.h"
+#include "sysCfg.h"
 #include "config.h"
 #include "io.h"
 #include "debug.h"
@@ -26,15 +27,15 @@ static const uint8 pirPins[3] = {0, PIN_PIR1, PIN_PIR2 };
 static os_timer_t pirFanTmer[3];
 static os_timer_t pirLightTmer[3];
 
-const uint8 outputMap[MAX_OUTPUT] = { PIN_LED1, PIN_LED2, PIN_RELAY1, PIN_RELAY2 };
+const uint8 outputMap[OUTPUTS] = { PIN_LED1, PIN_LED2, PIN_RELAY1, PIN_RELAY2 };
 
-static bool currentOutputs[MAX_OUTPUT];
-static bool outputOverrides[MAX_OUTPUT];
+static bool currentOutputs[OUTPUTS];
+static bool outputOverrides[OUTPUTS];
 static enum speedSelect oldSpeed;
 
 void ICACHE_FLASH_ATTR initOutputs(void) {
 	int id;
-	for (id = 0; id < MAX_OUTPUT; id++) {
+	for (id = 0; id < OUTPUTS; id++) {
 		easygpio_pinMode(outputMap[id], EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 		easygpio_outputSet(outputMap[id], 0);
 	}
@@ -48,7 +49,7 @@ void ICACHE_FLASH_ATTR initInputs(void) {
 }
 
 void ICACHE_FLASH_ATTR setOutput(uint8 id, bool set) {
-	if (id < MAX_OUTPUT) {
+	if (id < OUTPUTS) {
 		currentOutputs[id] = set;
 		if (!outputOverrides[id]) {
 			easygpio_outputSet(outputMap[id], set);
@@ -56,16 +57,16 @@ void ICACHE_FLASH_ATTR setOutput(uint8 id, bool set) {
 	}
 }
 
-void ICACHE_FLASH_ATTR forceOutput(uint8 id, bool set) { // Sets override
-	if (id < MAX_OUTPUT) {
+void ICACHE_FLASH_ATTR overrideSetOutput(uint8 id, bool set) { // Sets override
+	if (id < OUTPUTS) {
 		outputOverrides[id] = true;
 		easygpio_outputSet(outputMap[id], set);
 		TESTP("o/p %d(%d)-->%d\n", id, outputMap[id], set);
 	}
 }
 
-void ICACHE_FLASH_ATTR clrOverride(uint8 id) {
-	if (id < MAX_OUTPUT) {
+void ICACHE_FLASH_ATTR overrideClearOutput(uint8 id) {
+	if (id < OUTPUTS) {
 		outputOverrides[id] = false;
 		easygpio_outputSet(outputMap[id], currentOutputs[id]);
 		TESTP("o/p %d(%d)x->%d\n", id, outputMap[id], currentOutputs[id]);
@@ -129,7 +130,7 @@ void ICACHE_FLASH_ATTR printOutputs(void) {
 		os_printf("PIR[%d]: %d (%d)\n", idx, pirFanStatus[idx], easygpio_inputGet(pirPins[idx]));
 	}
 	os_printf("OP: ");
-	for (idx = 0; idx < MAX_OUTPUT; idx++) {
+	for (idx = 0; idx < OUTPUTS; idx++) {
 		os_printf("%d [%d] ", currentOutputs[idx], outputOverrides[idx]);
 	}
 	os_printf("\n");
@@ -138,14 +139,14 @@ void ICACHE_FLASH_ATTR printOutputs(void) {
 static void ICACHE_FLASH_ATTR pirFanTimeoutCb(uint32 args) {
 	enum pir_t pir = args;
 	TESTP("pirFanTimeoutCb %d\n", pir);
-	publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR FAN ON", "0");
+	publishSensorData(SENSOR_FAN_PIR_ACTIVE1 - 1 + pir, "PIR FAN ON", "0");
 	oldPirFanstatus[pir] = pirFanStatus[pir] = false;
 }
 
 static void ICACHE_FLASH_ATTR pirLightTimeoutCb(uint32 args) {
 	enum pir_t pir = args;
 	TESTP("pirLightTimeoutCb %d\n", pir);
-	publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR LIGHT ON", "0");
+	publishSensorData(SENSOR_LIGHT_PIR_ACTIVE1 - 1 + pir, "PIR LIGHT ON", "0");
 	oldPirLightstatus[pir] = pirLightStatus[pir] = false;
 }
 
@@ -154,7 +155,7 @@ static void setPirLightActive(enum pir_t pir) {
 		pirLightStatus[pir] = true;
 		if (pirLightStatus[pir] != oldPirLightstatus[pir]) {
 			TESTP("PIR Lt:%d ", pir);
-			publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR LIGHT ON", "1");
+			publishSensorData(SENSOR_LIGHT_PIR_ACTIVE1 - 1 + pir, "PIR LIGHT ON", "1");
 			oldPirLightstatus[pir] = true;
 		}
 		os_timer_disarm(&pirLightTmer[pir]);
@@ -196,7 +197,7 @@ void ICACHE_FLASH_ATTR setPirFanActive(enum pir_t pir) {
 		pirFanStatus[pir] = true;
 		if (pirFanStatus[pir] != oldPirFanstatus[pir]) {
 			TESTP("PIR Fan:%d ", pir);
-			publishSensorData(SENSOR_PIR_ACTIVE1 - 1 + pir, "PIR FAN ON", "1");
+			publishSensorData(SENSOR_FAN_PIR_ACTIVE1 - 1 + pir, "PIR FAN ON", "1");
 			oldPirFanstatus[pir] = true;
 		}
 		os_timer_disarm(&pirFanTmer[pir]);

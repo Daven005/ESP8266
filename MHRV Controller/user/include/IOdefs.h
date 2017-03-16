@@ -26,6 +26,9 @@
 
 #define SWITCH 0 // GPIO 00
 #define LED PIN_LED1
+#define LED_OFF 0
+#define LED_ON 1
+
 #define PIN_DHT1 12
 #define PIN_DHT2 14
 #define PIN_PIR1 13

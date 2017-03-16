@@ -19,9 +19,11 @@
 #define SENSOR_HUMIDITY2 3
 #define SENSOR_PIR1 4
 #define SENSOR_PIR2 5
-#define SENSOR_PIR_ACTIVE1 6
-#define SENSOR_PIR_ACTIVE2 7
+#define SENSOR_FAN_PIR_ACTIVE1 6
+#define SENSOR_FAN_PIR_ACTIVE2 7
 #define SENSOR_FAN 8
+#define SENSOR_LIGHT_PIR_ACTIVE1 9
+#define SENSOR_LIGHT_PIR_ACTIVE2 10
 
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #define MQTT_PORT			1883
@@ -48,10 +50,14 @@
 #define MAP_SIZE 4
 #define MAP_TEMP_SIZE 1
 #define SETTINGS_SIZE 15
-#define MAX_OUTPUT 4
 #define MAX_TEMPERATURE_SENSOR 2
 #define INPUT_SENSOR_ID_START 10
 #define OUTPUT_SENSOR_ID_START 20
+#undef INPUTS
+#define OUTPUTS 4
+#define USE_TIME
+
+#define MAP_TEMP_LAST 0
 
 #define SETTING_HUMIDTY1 0
 #define SETTING_HUMIDTY2 1
@@ -85,6 +91,5 @@
 #define SET_MAXIMUM 95
 
 #define UPDATES 60
-#define INPUTS 0
 
 #endif

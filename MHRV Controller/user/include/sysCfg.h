@@ -28,8 +28,8 @@
 * POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef USER_CONFIG_H_
-#define USER_CONFIG_H_
+#ifndef USER_SYSCFH_H_
+#define USER_SYSCFH_H_
 #include "os_type.h"
 
 #include "user_conf.h"
@@ -50,25 +50,17 @@ typedef struct{
 
 	uint16 updates;
 	uint8 inputs;
+	uint8 outputs;
 	char deviceID_prefix[8];
 	char deviceName[NAME_SIZE];
 	char deviceLocation[NAME_SIZE];
 	uint16_t settings[SETTINGS_SIZE];
 	uint8_t mapping[MAP_TEMP_SIZE];
 	uint8_t mappingName[MAP_TEMP_SIZE][NAME_SIZE];
+	uint32 sumcheck;
 } SYSCFG;
 
-typedef struct {
-    uint8 flag;
-    uint8 pad[3];
-} SAVE_FLAG;
-
-void ICACHE_FLASH_ATTR CFG_Save(void);
-void ICACHE_FLASH_ATTR CFG_Load(void);
-void CFG_print(void);
-uint32 CFG_lastSaved(void);
-uint16 sysCfgUpdates(void);
-void CFG_printSettings(void);
+void initSysCfg(void);
 extern SYSCFG sysCfg;
 
 #endif /* USER_CONFIG_H_ */

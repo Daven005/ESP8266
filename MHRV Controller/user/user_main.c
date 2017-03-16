@@ -8,6 +8,7 @@
 #include "gpio.h"
 #include "easygpio.h"
 #include "stdout.h"
+#include "sysCfg.h"
 #include "config.h"
 #include "wifi.h"
 #include "debug.h"
@@ -29,7 +30,7 @@
 #include "user_conf.h"
 
 os_timer_t transmit_timer;
-static os_timer_t time_timer;
+os_timer_t date_timer;
 static os_timer_t process_timer;
 static os_timer_t reconnect_timer;
 
@@ -137,7 +138,7 @@ void ICACHE_FLASH_ATTR _publishDeviceInfo(void) {
 	publishDeviceInfo(version, "MHRV", wifiChannel, WIFI_ConnectTime(), getBestSSID(), 0);
 }
 
-void ICACHE_FLASH_ATTR publishData(void) {
+void ICACHE_FLASH_ATTR publishData(uint32 idx) {
 	char bfr[20];
 	if (mqttConnected) {
 		struct dht_sensor_data* r1 = dhtRead(1);
@@ -167,7 +168,7 @@ static void ICACHE_FLASH_ATTR printAll(void) {
 	struct dht_sensor_data* r2 = dhtRead(2);
 
 	printOutputs();
-	CFG_printSettings();
+	CFG_print();
 	if (r1->valid) {
 		os_printf("Temp 1: %d", (int) r1->temperature);
 		os_printf(" Hum 1: %d\n", (int) r1->humidity);
@@ -289,7 +290,7 @@ static void ICACHE_FLASH_ATTR transmitCb(uint32_t *args) {
 
 static void ICACHE_FLASH_ATTR transmitFunc(void) {
 	uint32 t = system_get_time();
-	publishData();
+	publishData(0);
 	lastAction = TRANSMIT_FUNC;
 	checkTimeFunc("transmitFunc", t);
 }
@@ -353,9 +354,11 @@ static void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status) {
 }
 
 static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
-//	MQTT_Client* client = (MQTT_Client*)args;
+	TESTP("mqttDisconnectedCb (%d)\n", mqttClient.connState);
 	MQTT_Connect(&mqttClient);
-	mqttConnected = false;
+	if (mqttClient.connState != TCP_RECONNECT_REQ) {
+		mqttConnected = false;
+	} // else assume will reconnect
 }
 
 void ICACHE_FLASH_ATTR setExternalTemperature(char* dataBuf) {
@@ -370,16 +373,15 @@ static void ICACHE_FLASH_ATTR timeOnCb(void) {
 	system_restart();
 }
 
-void ICACHE_FLASH_ATTR setTime(char* dataBuf) {
-	time_t t = atoi(dataBuf);
+void ICACHE_FLASH_ATTR setTime(time_t t) {
 	struct tm* timeInfo = localtime(&t);
 	inWorkingHours = (sysCfg.settings[SETTING_START_ON] <= timeInfo->tm_hour
 			&& timeInfo->tm_hour <= sysCfg.settings[SETTING_FINISH_ON]);
 	INFOP("time - %02d:%02d <%02d-%02d> [%d]\n", timeInfo->tm_hour, timeInfo->tm_min,
 			sysCfg.settings[SETTING_START_ON], sysCfg.settings[SETTING_FINISH_ON], inWorkingHours);
-	os_timer_disarm(&time_timer);
-	os_timer_setfn(&time_timer, (os_timer_func_t *) timeOnCb, NULL);
-	os_timer_arm(&time_timer, 6 * 60 * 1000, false); // 6 minutes
+	os_timer_disarm(&date_timer);
+	os_timer_setfn(&date_timer, (os_timer_func_t *) timeOnCb, NULL);
+	os_timer_arm(&date_timer, 6 * 60 * 1000, false); // 6 minutes
 }
 
 static void ICACHE_FLASH_ATTR mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len,
@@ -424,13 +426,19 @@ static void ICACHE_FLASH_ATTR mqttConnectedCb(uint32_t *args) {
 		ERRORP("Can't post EVENT_MQTT_CONNECTED\n");
 }
 
+void ICACHE_FLASH_ATTR resetTransmitTimer(void) {
+	os_timer_disarm(&transmit_timer);
+	os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
+	os_timer_arm(&transmit_timer, sysCfgUpdates() * 1000, true);
+}
+
 static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 	lastAction = MQTT_CONNECTED_FUNC;
 	uint32 t = system_get_time();
 	char *topic = (char*) os_zalloc(100);
 	static int reconnections = 0;
 
-	TESTP("MQTT: Connected to %s:%d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
+	TESTP("MQTT: %sConnected to %s:%d\n", mqttConnected ? "re-" : "", sysCfg.mqtt_host, sysCfg.mqtt_port);
 
 	os_sprintf(topic, "/Raw/%s/set/#", sysCfg.device_id);
 	INFOP("Subscribe to: %s\n", topic);
@@ -450,13 +458,11 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 		publishError(51, reconnections);
 	} else {
 		mqttConnected = true;
-		publishDeviceReset(version, lastAction);
+		publishDeviceReset(version, savedLastAction);
 		_publishDeviceInfo();
 		// publishMapping();
 
-		os_timer_disarm(&transmit_timer);
-		os_timer_setfn(&transmit_timer, (os_timer_func_t *) transmitCb, (void *) &mqttClient);
-		os_timer_arm(&transmit_timer, sysCfgUpdates() * 1000, true);
+		resetTransmitTimer();
 	}
 	checkMinHeap();
 	os_free(topic);
@@ -546,7 +552,7 @@ static void ICACHE_FLASH_ATTR startUp() {
 
 static void ICACHE_FLASH_ATTR initDone_cb() {
 	char bfr[100];
-	CFG_Load();
+	CFG_init(2000);
 	os_sprintf(bfr, "%s/%s", sysCfg.deviceLocation, sysCfg.deviceName);
 	TESTP("\n%s ( V %s ) starting ...\n", bfr, version);
 	initWiFi(PHY_MODE_11B, bfr, sysCfg.sta_ssid, startUp);
