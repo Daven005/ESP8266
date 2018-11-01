@@ -1,8 +1,8 @@
 #include "easygpio.h"
 #include "osapi.h"
-#include "IOdefs.h"
 
 #ifdef USE_LCD
+#include "IOdefs.h"
 
 #include "LCD.h"
 

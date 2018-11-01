@@ -51,5 +51,6 @@ int checkAddNewTemperature(char* sensorID, uint8 *sensorAddress,
 		enum temperatureType_t temperatureType);
 void checkSetTemperature(int idx, int val, int fract);
 void initTemperature(void);
+bool allTemperaturesSet(void);
 
 #endif /* INCLUDE_TEMPERATURE_H_ */

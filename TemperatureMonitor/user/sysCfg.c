@@ -33,7 +33,7 @@
 #include <osapi.h>
 #include <spi_flash.h>
 #include <user_interface.h>
-#include "espmissingincludes.h"
+//#include "espmissingincludes.h"
 #include "sysCfg.h"
 #include "debug.h"
 
@@ -56,7 +56,6 @@ void ICACHE_FLASH_ATTR initSysCfg(void) {
 	os_sprintf(sysCfg.mqtt_pass, "%s", MQTT_PASS);
 
 	sysCfg.security = DEFAULT_SECURITY;	/* default non ssl */
-
 	sysCfg.mqtt_keepalive = MQTT_KEEPALIVE;
 
 	int idx;
@@ -69,6 +68,11 @@ void ICACHE_FLASH_ATTR initSysCfg(void) {
 	sysCfg.inputs = INPUTS;
 #else
 	sysCfg.inputs = 0;
+#endif
+#ifdef OUTPUTS
+	sysCfg.outputs = OUTPUTS;
+#else
+	sysCfg.outputs = 0;
 #endif
 	os_sprintf(sysCfg.deviceName, "Temperature Monitor");
 	os_sprintf(sysCfg.deviceLocation, "Unknown");

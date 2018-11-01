@@ -106,6 +106,23 @@ environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.198316
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.1467162753/ESPPORT/value=COM3
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.1467162753/append=true
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.1467162753/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/CONFIG_NAME/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/CONFIG_NAME/operation=append
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/CONFIG_NAME/value=Outputs
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/DEFINES/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/DEFINES/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/DEFINES/value=-DREAD_TEMPERATURES -DUSE_OUTPUTS\=1 -USLEEP_MODE -UREAD_ANALOGUE -DUSE_I2C
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/DEVICE/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/DEVICE/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/DEVICE/value=ESP-12
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/ESPBAUD/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/ESPBAUD/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/ESPBAUD/value=230400
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/ESPPORT/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/ESPPORT/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/ESPPORT/value=COM3
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/append=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608.938254131/appendContributed=true
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/CONFIG_NAME/delimiter=;
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/CONFIG_NAME/operation=append
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/CONFIG_NAME/value=Outputs
@@ -113,13 +130,13 @@ environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.198316
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEFINES/operation=replace
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEFINES/value=-DREAD_TEMPERATURES -DUSE_OUTPUTS\=1 -USLEEP_MODE -UREAD_ANALOGUE
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEVICE/delimiter=;
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEVICE/operation=append
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEVICE/value=ESP-07
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEVICE/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/DEVICE/value=ESP-12
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPBAUD/delimiter=;
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPBAUD/operation=append
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPBAUD/value=460800
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPBAUD/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPBAUD/value=230400
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPPORT/delimiter=;
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPPORT/operation=append
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPPORT/operation=replace
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/ESPPORT/value=COM3
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/append=true
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.746307618.1983169608/appendContributed=true

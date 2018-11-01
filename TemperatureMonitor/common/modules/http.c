@@ -15,9 +15,8 @@
 #include "flash.h"
 #include "http.h"
 
-#include "config.h"
 #include "sysCfg.h"
-#include "espmissingincludes.h"
+//#include "espmissingincludes.h"
 
 #define HTTPD_METHOD_GET 1
 #define HTTPD_METHOD_POST 2

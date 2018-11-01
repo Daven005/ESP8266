@@ -17,14 +17,19 @@
 #include "decodeMessage.h"
 #include "debug.h"
 #include "publish.h"
-#include "io.h"
 #include "time.h"
+#include "io.h"
 
 #include "user_conf.h"
+
+#ifdef USE_DECODE
 #include "user_main.h"
+#include "io.h"
 
 extern os_timer_t date_timer;
 static char *nullStr = "";
+
+extraDecode deviceSettings;
 
 static int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[], int tokenCount) {
 	char *endString;
@@ -144,6 +149,9 @@ static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_C
 			updated = true;
 		}
 #endif
+	} else {
+		if (deviceSettings)
+			deviceSettings(param);
 	}
 	if (updated) _publishDeviceInfo();
 	CFG_dirty();
@@ -230,6 +238,7 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 	} else if (os_strcmp("output", param) == 0) {
 		if (0 <= id && id < OUTPUTS) {
 			overrideSetOutput(id, value);
+			publishOutput(id, getOutput(id));
 		}
 #endif
 #ifdef INPUTS
@@ -442,6 +451,7 @@ static void ICACHE_FLASH_ATTR saveTSbottom(char *data) {
 void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* data) {
 #define MAX_TOKENS 10
 	char* tokens[MAX_TOKENS];
+	TESTP("%s=>%s\n", topic, data);
 	int tokenCount = splitString((char*) topic, '/', tokens, MAX_TOKENS);
 	if (tokenCount > 0) {
 		if (os_strcmp("Raw", tokens[0]) == 0) {
@@ -462,8 +472,10 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 #ifdef USE_TIME
 				setTime((time_t) atol(data));
 #endif
+#ifndef SLEEP_MODE
 				os_timer_disarm(&date_timer); // Restart it
 				os_timer_arm(&date_timer, 10 * 60 * 1000, false); //10 minutes
+#endif
 			} else if (tokenCount == 3 && os_strcmp("Temp", tokens[1]) == 0) {
 #ifdef USE_OUTSIDE_TEMP
 				if (os_strcmp("hourly", tokens[2]) == 0) {
@@ -496,3 +508,8 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 		}
 	}
 }
+
+void ICACHE_FLASH_ATTR setExtraDecode(extraDecode f) {
+	deviceSettings = f;
+}
+#endif

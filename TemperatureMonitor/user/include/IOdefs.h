@@ -14,12 +14,15 @@
 #else
 #define SWITCH 0 // GPIO 00
 #ifdef USE_OUTPUTS
+#ifdef USE_I2C
+#define OUTPUTS 8
+#else
 #define OUTPUTS 5
 #define RELAY_1 4
 #define RELAY_2 14
 #define RELAY_3 12
 #define RELAY_4 13
-
+#endif
 #ifdef INVERT_RELAYS
 #define RELAY_ON 0
 #define RELAY_OFF 1
@@ -38,6 +41,15 @@
 #define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
 #define DS18B20_FUNC	FUNC_GPIO2
 #define DS18B20_PIN		2
+
+#ifdef USE_I2C
+#define I2C_MASTER_SDA_MUX PERIPHS_IO_MUX_MTMS_U
+#define I2C_MASTER_SCL_MUX PERIPHS_IO_MUX_MTCK_U
+#define I2C_MASTER_SDA_GPIO 14
+#define I2C_MASTER_SCL_GPIO 13
+#define I2C_MASTER_SDA_FUNC FUNC_GPIO14
+#define I2C_MASTER_SCL_FUNC FUNC_GPIO13
+#endif
 
 
 #endif /* USER_INCLUDE_IODEFS_H_ */

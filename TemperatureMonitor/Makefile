@@ -11,9 +11,9 @@ export PATH := ../buildCmds;$(PATH)
 
 VERBOSE 	?= 0
 
-ESPPORT		?= COM3
+ESPPORT		?= COM8
 ESPBAUD		?= 115200
-DEVICE 		?= ESP-07
+DEVICE 		?= ESP-12
 CONFIG_NAME	?= $(DEVICE)
 MAPFILE		?= $(CONFIG_NAME).map
 COMMON_MODULES ?=  common/driver common/mqtt common/modules common/temperature
@@ -84,13 +84,13 @@ $(USER_ROM_ADDR) $(FIRMWARE_USER)
 verifyinit:
 	$(vecho) "vi $(BOOT_START)"
 	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) verify_flash --diff yes \
-$(BOOT_START) $(SDK_BASE)/bin/boot_v1.2.bin \
+$(BOOT_START) $(SDK_BASE)/bin/boot_v1.7.bin \
 $(INIT_START) $(SDK_BASE)/bin/esp_init_data_default.bin \
 $(PARAM_START) $(SDK_BASE)/bin/blank.bin
 
 flashinit:
 	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash \
-$(BOOT_START) $(SDK_BASE)/bin/boot_v1.2.bin \
+$(BOOT_START) $(SDK_BASE)/bin/boot_v1.7.bin \
 $(INIT_START) $(SDK_BASE)/bin/esp_init_data_default.bin \
 $(PARAM_START) $(SDK_BASE)/bin/blank.bin
 

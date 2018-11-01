@@ -11,7 +11,7 @@
 #include <user_interface.h>
 #include "stdout.h"
 
-//#define DEBUG_OVERRIDE
+#define DEBUG_OVERRIDE 1
 #include "debug.h"
 
 #include "gpio.h"

@@ -197,7 +197,6 @@ static void ICACHE_FLASH_ATTR ds18b20_next(int idx) {
 			temperatureCb();
 		}
 	} else {
-		TEST(startFlash(1, 1, 10));
 		reset();
 		ETS_GPIO_INTR_DISABLE();
 		select(temperature[idx].binAddress);
@@ -363,6 +362,14 @@ int ICACHE_FLASH_ATTR clearTemperatureOverride(char *sensorID) {
 		temperature[idx].override = false;
 	}
 	return idx;
+}
+
+bool ICACHE_FLASH_ATTR allTemperaturesSet(void) {
+	int idx;
+	for (idx=0; idx <MAX_TEMPERATURE_SENSOR; idx++) {
+		if (!temperature[idx].set) return false;
+	}
+	return true;
 }
 
 void ICACHE_FLASH_ATTR initTemperature(void) {

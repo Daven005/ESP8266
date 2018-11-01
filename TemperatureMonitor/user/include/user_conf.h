@@ -12,7 +12,7 @@
 #undef INPUTS
 #undef USE_TIME
 #undef USE_OUTSIDE_TEMP
-
+#define USE_DECODE
 #include "IOdefs.h"
 
 /*DEFAULT MQTT CONFIGURATIONS*/

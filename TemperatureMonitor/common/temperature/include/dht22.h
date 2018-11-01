@@ -25,6 +25,10 @@
 #include "ets_sys.h"
 #include "osapi.h"
 
+enum DHTType {
+	DHT11 = 1, DHT22 = 2
+};
+
 struct dht_sensor_data {
 	float temperature;
 	float humidity;

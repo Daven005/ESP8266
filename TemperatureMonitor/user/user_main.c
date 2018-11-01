@@ -71,11 +71,19 @@ enum backgroundEvent_t {
 #else
 #define CONFIG1 "TM Awake "
 
-#ifdef OUTPUTS
+#ifdef USE_OUTPUTS
 #ifdef INVERT_RELAYS
+#ifdef USE_I2C
+#define CONFIG CONFIG1 "Outputs (I2C I) Pin:" xstr(DS18B20_PIN)
+#else
 #define CONFIG CONFIG1 "Outputs (I) Pin:" xstr(DS18B20_PIN)
+#endif
+#else
+#ifdef USE_I2C
+#define CONFIG CONFIG1 "Outputs (I2C) Pin:" xstr(DS18B20_PIN)
 #else
 #define CONFIG CONFIG1 "Outputs Pin:" xstr(DS18B20_PIN)
+#endif
 #endif
 #else
 
@@ -331,28 +339,6 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 }
 #endif
 
-#ifdef OUTPUTS
-static void ICACHE_FLASH_ATTR publishOutputs(void) { // param for compatibility
-	char *topic = (char *) os_zalloc(100);
-	char *data = (char *) os_zalloc(100);
-	uint8 i;
-	if (topic == NULL || data == NULL) {
-		startFlash(-1, 50, 50); // fast
-		return;
-	}
-	for (i = 0; i < sysCfg.outputs; i++) {
-		os_sprintf(topic, (const char*) "/Raw/%s/%d/info", sysCfg.device_id, i);
-		os_sprintf(data, "{ \"Type\":\"Output\", \"Value\":\"%d\"}", getOutput(i));
-		MQTT_Publish(&mqttClient, topic, data, strlen(data), 0, false);
-		INFOP("%s=>%s\n", topic, data);
-	}
-	checkMinHeap();
-	os_free(topic);
-	os_free(data);
-	lastAction = PUBLISH_DATA;
-}
-#endif
-
 void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 	uint32 t = system_get_time();
 	if (mqttConnected) {
@@ -378,9 +364,16 @@ void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 				ERRORP("Can't post EVENT_PUBLISH_DATA 3\n")
 			;
 			break;
-		case 3:
+		default: {// 3 ==> 3+OUTPUTS
 #ifdef OUTPUTS
-			publishOutputs();
+			int opIdx = pass-3;
+			publishOutput(opIdx, getOutput(opIdx));
+			if (++opIdx < OUTPUTS) {
+				if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, pass+1)) {
+					ERRORP("Can't post EVENT_PUBLISH_DATA 3 + %d\n", opIdx);
+				}
+			}
+		}
 #endif
 			break;
 		}
