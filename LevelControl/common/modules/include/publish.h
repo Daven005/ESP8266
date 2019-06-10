@@ -9,6 +9,8 @@
 #define USER_PUBLISH_H_
 
 #include "mqtt.h"
+void publish(char *name, char *topicTemplate, char *data);
+void publishInt(char *type, char * sensor, int16_t value);
 void publishAllTemperatures(void);
 void publishTemperature(int idx);
 void publishAnalogue(uint16 val);

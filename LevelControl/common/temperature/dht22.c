@@ -140,14 +140,13 @@ static enum errorCode ICACHE_FLASH_ATTR readByte(struct dht_sensor_data *reading
  *                                                             ....70uS....
  *                                                   \..50uS../            \..50uS . . etc
  */
-
-static bool ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
-	uint8 data[10] = { 0, 0, 0, 0, 0 };
-	uint32 t = system_get_time();
-	int32 tDiff;
-	uint8 byteCount, checkSum;
-
 	//   Section   b
+
+// NB not using ICACHE_FLASH_ATTR as interrupts disabled
+static bool dhtBitBang(struct dht_sensor_data *reading, uint8 data[]) {
+	int32 tDiff;
+	uint8 byteCount;
+
 	easygpio_outputSet(reading->pin, 1);
 	easygpio_outputDisable(reading->pin);
 	if ((tDiff = waitWhile(reading->pin, 1, 1, 60)) < 0) { //    Section b
@@ -174,6 +173,18 @@ static bool ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
 	if (reading->error != E_NONE) {
 		return reading->success = false;
 	}
+	return true;
+}
+
+static bool ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
+	uint8 data[10] = { 0, 0, 0, 0, 0 };
+	uint8 checkSum;
+	bool result;
+
+//	ETS_GPIO_INTR_DISABLE();
+	result = dhtBitBang(reading, data);
+//	ETS_GPIO_INTR_ENABLE();
+	if (!result) return false;
 	checkSum = data[0] + data[1] + data[2] + data[3];
 	if (data[4] != checkSum) {
 		ERRORP("Checksum incorrect. Expected %02x.\n", checkSum);

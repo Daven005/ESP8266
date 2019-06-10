@@ -18,6 +18,7 @@
 
 #include "espconn.h"
 #include "user_conf.h"
+#include "IOdefs.h"
 
 #ifdef READ_TEMPERATURES
 #include "ds18b20.h"

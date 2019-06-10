@@ -11,6 +11,7 @@
 #include <osapi.h>
 #include <user_interface.h>
 #include "user_conf.h"
+#include "IOdefs.h"
 #include "switch.h"
 
 #ifdef SWITCH

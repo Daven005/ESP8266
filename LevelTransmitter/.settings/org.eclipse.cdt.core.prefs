@@ -7,7 +7,7 @@ environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/CWD/o
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/CWD/value=C\:\\Users\\User\\Documents\\ESP8266\\TestBed
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/DEVICE/delimiter=;
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/DEVICE/operation=replace
-environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/DEVICE/value=ESP-07
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/DEVICE/value=ESP-12
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/ESPBAUD/delimiter=;
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/ESPBAUD/operation=append
 environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.2129376956/ESPBAUD/value=460800

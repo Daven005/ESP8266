@@ -10,6 +10,7 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
+#ifdef USE_WIFI
 #include "smartconfig.h"
 
 #include "doSmartConfig.h"
@@ -80,3 +81,6 @@ bool ICACHE_FLASH_ATTR checkSmartConfig(enum SmartConfigAction action) {
 	}
 	return doingSmartConfig;
 }
+#else
+#pragma message "No WiFi"
+#endif

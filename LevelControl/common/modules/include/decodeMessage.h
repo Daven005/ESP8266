@@ -8,6 +8,9 @@
 #ifndef USER_INCLUDE_DECODEMESSAGE_H_
 #define USER_INCLUDE_DECODEMESSAGE_H_
 
+typedef void (*extraDecode)(char *s);
+
 void decodeMessage(MQTT_Client* client, char* topic, char* data);
+void setExtraDecode(extraDecode f);
 
 #endif /* USER_INCLUDE_DECODEMESSAGE_H_ */

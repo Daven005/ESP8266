@@ -31,6 +31,7 @@
 #include "IOdefs.h"
 
 #define USE_FLOWS 1
+#define USE_DECODE
 #define MAP_TEMP_SIZE 0
 #define MAX_TEMPERATURE_SENSOR 0
 #define MAP_TEMP_LAST 0

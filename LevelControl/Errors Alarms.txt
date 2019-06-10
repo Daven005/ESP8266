@@ -1,0 +1,20 @@
+LevelControl
+user
+io.c (2 matches)
+pumpState_OffManual, line 65:  publishAlarm(4, _pumpState); // Warn when going Manual OFF
+pumpState_OnManual, line 71:  publishAlarm(5, _pumpState); // Warn when going Manual ON
+pump.c (5 matches)
+checkNotFlowing, line 64:  publishAlarm(3, flowCurrentReading()); // Still Flowing when pump off for 2S
+checkLevel, line 73:  publishAlarm(10, getLevel()); // Tank level out of range
+processPump, line 113:  publishAlarm(1, flowAverageReading()); // No flow for SET_NO_FLOW_AUTO_ERROR (10S) in Auto
+processPump, line 115:  publishAlarm(6, secondsNotFlowing()); // No flow for SET_NO_FLOW_AUTO_ERROR (10S) in Auto
+processPump, line 126:  publishAlarm(2, pumpOnCount); // Running for SET_MAX_PUMP_ON_ERROR (5 Minutes) in Auto
+user_main.c
+switchAction, line 188:  publishAlarm(155, 66); // Test
+LevelControl
+user
+pump.c (2 matches)
+processPump, line 121:  publishError(3, getCurrentPressure()); // Low pressure and Pump On > SET_MAX_PUMP_ON_WARNING
+processPump, line 124:  publishError(1, sysCfg.settings[SET_MAX_PUMP_ON_WARNING]);
+user_main.c
+mqttConnectedFunction, line 227:  publishError(51, reconnections); // Has reconnected

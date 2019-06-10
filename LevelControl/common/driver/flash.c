@@ -11,6 +11,7 @@
 #include <user_interface.h>
 #include "debug.h"
 #include "user_conf.h"
+#include "IOdefs.h"
 #include "flash.h"
 #include "easygpio.h"
 typedef enum {

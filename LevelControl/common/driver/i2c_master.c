@@ -11,9 +11,10 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "gpio.h"
-#include "IOdefs.h"
+#include "user_conf.h"
 
 #ifdef USE_I2C
+#include "IOdefs.h"
 #include "i2c_master.h"
 
 LOCAL uint8 m_nLastSDA;
@@ -316,5 +317,7 @@ i2c_master_writeByte(uint8 wrdata)
         i2c_master_wait(5);
     }
 }
+#else
+#pragma message "No I2C"
 
 #endif
