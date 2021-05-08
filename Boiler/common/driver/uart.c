@@ -20,10 +20,11 @@
 #define UART0   0
 #define UART1   1
 
-// UartDev is defined and initialized in rom code.
+// UartDev is defined and initialised in rom code.
 extern UartDevice UartDev;
 
 LOCAL void uart0_rx_intr_handler(void *para);
+extern receiveCharCb(char);
 
 /******************************************************************************
  * FunctionName : uart_config
@@ -134,19 +135,21 @@ uart0_rx_intr_handler(void *para)
 
         /* you can add your handle code below.*/
 
-        *(pRxBuff->pWritePos) = RcvChar;
+        receiveCharCb(RcvChar);
 
-        // insert here for get one command line from uart
-        if (RcvChar == '\r') {
-            pRxBuff->BuffState = WRITE_OVER;
-        }
-
-        pRxBuff->pWritePos++;
-
-        if (pRxBuff->pWritePos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
-            // overflow ...we may need more error handle here.
-            pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff ;
-        }
+//        *(pRxBuff->pWritePos) = RcvChar;
+//
+//        // insert here for get one command line from uart
+//        if (RcvChar == '\r') {
+//            pRxBuff->BuffState = WRITE_OVER;
+//        }
+//
+//        pRxBuff->pWritePos++;
+//
+//        if (pRxBuff->pWritePos == (pRxBuff->pRcvMsgBuff + RX_BUFF_SIZE)) {
+//            // overflow ...we may need more error handle here.
+//            pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff ;
+//        }
     }
 }
 
@@ -195,6 +198,6 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
     ETS_UART_INTR_ENABLE();
 
     // install uart1 putc callback
-    os_install_putc1((void *)uart1_write_char);
+//    os_install_putc1((void *)uart1_write_char);
 }
 

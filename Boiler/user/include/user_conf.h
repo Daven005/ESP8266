@@ -5,19 +5,6 @@
 #define CFG_LOCATION	0x77	/* Please don't change or if you know what you doing */
 #define CLIENT_SSL_ENABLE
 
-#define SWITCH 0 // GPI00
-#define LED 5 // NB same as an_t t);
-
-#if 1
-#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO4_U
-#define DS18B20_FUNC	FUNC_GPIO4
-#define DS18B20_PIN		4
-#else
-#define DS18B20_MUX		PERIPHS_IO_MUX_GPIO2_U
-#define DS18B20_FUNC	FUNC_GPIO2
-#define DS18B20_PIN		2
-#endif
-
 #define IP4 16
 #define IO_TEST 2		// Monitor state of mcp23s17 (OP_EMERGENCY_DUMP_ON)
 
@@ -44,11 +31,15 @@
 #define PROTOCOL_NAMEv31	/*MQTT version 3.1 compatible with Mosquitto v0.15*/
 //PROTOCOL_NAMEv311			/*MQTT version 3.11 compatible with https://eclipse.org/paho/clients/testing/*/
 
+#define USE_WIFI
+#define OUTPUTS 4
+#define INPUTS 5
+#define READ_TEMPERATURES
+#define USE_DECODE
+
 #define NAME_SIZE 32
 #define MAP_TEMP_SIZE 15
 #define SETTINGS_SIZE 20
-#define OUTPUTS 4
-#define INPUTS 5
 #define REQUIRED_SENSORS 6
 #define USE_OUTSIDE_TEMP
 #define USE_TIME
@@ -70,6 +61,8 @@
 #define SETTING_OB_PUMP_DELAY 10
 #define SETTING_DHW_ON_HOUR 11
 #define SETTING_DHW_OFF_HOUR 12
+#define SETTING_OB_FAULTY 13
+#define SETTING_INVERT_OPS 14
 
 #define DEFAULT_DHW_SET_POINT 60
 #define DEFAULT_UFH_SET_POINT 50
@@ -84,6 +77,8 @@
 #define DEFAULT_OB_PUMP_DELAY 0
 #define DEFAULT_DHW_ON_HOUR 7
 #define DEFAULT_DHW_OFF_HOUR 22
+#define DEFAULT_OB_FAULTY 0
+#define DEFAULT_INVERT_OPS 1
 
 #define SET_MINIMUM 0
 #define SET_MAXIMUM 95

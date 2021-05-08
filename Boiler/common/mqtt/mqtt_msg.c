@@ -31,8 +31,9 @@
 
 #include "user_interface.h"
 #include "osapi.h"
-#include "mqtt_msg.h"
 #include "user_conf.h"
+#ifdef USE_WIFI
+#include "mqtt_msg.h"
 #include "debug.h"
 #define MQTT_MAX_FIXED_HEADER_SIZE 3
 
@@ -466,3 +467,6 @@ mqtt_message_t* ICACHE_FLASH_ATTR mqtt_msg_disconnect(mqtt_connection_t* connect
 	}
 	return fini_message(connection, MQTT_MSG_TYPE_DISCONNECT, 0, 0, 0);
 }
+#else
+#pragma message "No WiFi"
+#endif

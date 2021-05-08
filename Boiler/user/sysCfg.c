@@ -43,6 +43,8 @@ void ICACHE_FLASH_ATTR initSysCfg(void) {
 	sysCfg.settings[SETTING_OB_PUMP_DELAY] = DEFAULT_OB_PUMP_DELAY;
 	sysCfg.settings[SETTING_DHW_ON_HOUR] = DEFAULT_DHW_ON_HOUR;
 	sysCfg.settings[SETTING_DHW_OFF_HOUR] = DEFAULT_DHW_OFF_HOUR;
+	sysCfg.settings[SETTING_OB_FAULTY] = DEFAULT_OB_FAULTY;
+	sysCfg.settings[SETTING_INVERT_OPS] = DEFAULT_INVERT_OPS;
 	sysCfg.updates = UPDATES;
 	sysCfg.inputs = INPUTS;
 	os_sprintf(sysCfg.deviceName, "Boiler Control");

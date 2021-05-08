@@ -18,6 +18,7 @@ void overrideSetInput(uint8 op, uint8 set);
 void overrideClearInput(uint8 id);
 void checkInputs(bool);
 void checkOutputs(void);
+void clearOutputs(void);
 
 void printOutput(uint8 op);
 void printInput(uint8 op);

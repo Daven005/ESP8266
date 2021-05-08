@@ -11,6 +11,7 @@
 #include <osapi.h>
 #include "easygpio.h"
 #include "mcp23s17.h"
+#include "sysCfg.h"
 #include "io.h"
 #include "user_conf.h"
 #include "publish.h"
@@ -34,7 +35,7 @@ void ICACHE_FLASH_ATTR initIO(void) {
 	sGPIO_SET(PORTA, 0); // All outputs OFF
 }
 
-static void checkUpDown(int *val, bool ip) {
+static void ICACHE_FLASH_ATTR checkUpDown(int *val, bool ip) {
 	if (ip) {
 		if (*val < 10) (*val)++;
 	} else {
@@ -78,6 +79,11 @@ bool ICACHE_FLASH_ATTR outputState(uint8 id) {
 	return false;
 }
 
+static void ICACHE_FLASH_ATTR setOutput(uint8 op, bool opValue) {
+	if (sysCfg.settings[SETTING_INVERT_OPS]) opValue = !opValue;
+	sGPIO_SET_PIN(PORTA, op+1, opValue);
+}
+
 void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
 	if (op < OUTPUTS) {
 		if (currentOutputs[op] != newSetting) {
@@ -85,9 +91,9 @@ void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
 			currentOutputs[op] = newSetting;
 		}
 		switch (outputOverrides[op]) {
-		case OR_NOT_SET: sGPIO_SET_PIN(PORTA, op+1, newSetting); break;
-		case OR_OFF: sGPIO_SET_PIN(PORTA, op+1, false); break;
-		case OR_ON: sGPIO_SET_PIN(PORTA, op+1, true); break;
+		case OR_NOT_SET: setOutput(op, newSetting); break;
+		case OR_OFF: setOutput(op, false); break;
+		case OR_ON: setOutput(op, true); break;
 		}
 		return;
 	}
@@ -98,7 +104,7 @@ void ICACHE_FLASH_ATTR checkSetOutput(uint8 op, bool newSetting) {
 void ICACHE_FLASH_ATTR overrideSetOutput(uint8 op, uint8 set) {
 	if (op < OUTPUTS) {
 		outputOverrides[op] = set ? OR_ON : OR_OFF;
-		sGPIO_SET_PIN(PORTA, op + 1, set);
+		setOutput(op, set);
 		printOutput(op);
 	}
 }
@@ -106,7 +112,7 @@ void ICACHE_FLASH_ATTR overrideSetOutput(uint8 op, uint8 set) {
 void ICACHE_FLASH_ATTR overrideClearOutput(uint8 op) {
 	if (op < OUTPUTS) {
 		outputOverrides[op] = OR_NOT_SET;
-		sGPIO_SET_PIN(PORTA, op + 1, currentOutputs[op]);
+		setOutput(op, currentOutputs[op]);
 		printOutput(op);
 	}
 }
@@ -179,5 +185,12 @@ void ICACHE_FLASH_ATTR checkOutputs(void) {
 			initIO();
 			resetOutputs();
 		}
+	}
+}
+
+void ICACHE_FLASH_ATTR clearOutputs(void) {
+	uint8 op;
+	for (op = 0; op < OUTPUTS; op++) {
+		currentOutputs[op] = 0;
 	}
 }

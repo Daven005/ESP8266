@@ -26,7 +26,7 @@
 #include "osapi.h"
 
 enum DHTType {
-	DHT11 = 1, DHT22 = 2
+	DHTnone=0, DHT11 = 1, DHT22 = 2, DHTremote = 3
 };
 
 struct dht_sensor_data {
@@ -37,6 +37,7 @@ struct dht_sensor_data {
 	int count;
 	bool success;
 	bool valid;
+	uint32 lastGoodReadingTime;
 	enum DHTType sensorType;
 	uint8 id;
 	uint8 pin;
@@ -50,5 +51,8 @@ struct dht_sensor_data {
 
 void dhtInit(int id, enum DHTType dht_type, uint8 pin, uint32_t poll_time);
 struct dht_sensor_data *dhtRead(int id);
+void setRemoteHumidity(int id, float value);
+void setRemoteTemperature(int id, float value);
+
 
 #endif

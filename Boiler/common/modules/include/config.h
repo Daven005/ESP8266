@@ -37,11 +37,10 @@ typedef struct {
     uint8 pad[3];
 } SAVE_FLAG;
 
-void CFG_Load(void);
 void CFG_print(void);
 uint16 sysCfgUpdates(void);
 void CFG_dirty(void);
-void CFG_checkLazyWrite(void);
 uint32 CFG_lastSaved(void);
+void CFG_init(uint32 delay);
 
 #endif /* USER_CONFIG_H_ */

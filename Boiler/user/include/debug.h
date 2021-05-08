@@ -13,7 +13,7 @@
 #pragma message "DEBUG_OVERRIDE"
 #define DEBUG 3
 #else
-#define DEBUG 2 // Normal case
+#define DEBUG 1 // Normal case
 #endif
 
 #ifndef INFOP

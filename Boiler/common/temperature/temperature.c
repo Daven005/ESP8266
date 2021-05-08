@@ -5,7 +5,7 @@
  *      Author: User
  */
 
-//#define DEBUG_OVERRIDE
+#undef DEBUG_OVERRIDE
 #include "debug.h"
 
 #include <c_types.h>
@@ -13,10 +13,15 @@
 #include <os_type.h>
 #include <osapi.h>
 #include <ds18b20.h>
-#include "temperature.h"
 #include "sysCfg.h"
 #include "check.h"
 #include "user_conf.h"
+#include "flash.h"
+
+#ifdef READ_TEMPERATURES
+#include "io.h"
+#include "IOdefs.h"
+#include "temperature.h"
 #ifdef USE_FLOAT
 #include "dtoa.h"
 #include "assert.h"
@@ -68,7 +73,7 @@ int ICACHE_FLASH_ATTR checkAddNewTemperature(char* sensorID, uint8 *sensorAddres
 			if (sensorAddress != NULL) {
 				os_memcpy(temperature[i].binAddress, sensorAddress, sizeof(temperature[i].binAddress));
 			}
-			INFOP("New ");
+			TESTP("New (%d - %s)", i, sensorID);
 			return i;
 		}
 	}
@@ -110,6 +115,11 @@ int ICACHE_FLASH_ATTR setUnmappedSensorTemperature(char *sensorID,
 	}
 	checkSetTemperature(idx, val, fract);
 	return idx;
+}
+
+void ICACHE_FLASH_ATTR setMappedSensorTemperature(uint8 mapId, char *sensorID,
+		enum temperatureType_t temperatureType, int val, int fract) {
+	sysCfg.mapping[mapId] = setUnmappedSensorTemperature(sensorID, temperatureType, val, fract);
 }
 
 bool ICACHE_FLASH_ATTR printTemperature(int idx) {
@@ -190,11 +200,13 @@ static void ICACHE_FLASH_ATTR ds18b20_next(int idx) {
 		}
 	} else {
 		reset();
+		ETS_GPIO_INTR_DISABLE();
 		select(temperature[idx].binAddress);
 		write(DS1820_READ_SCRATCHPAD, 0);
 		for (i = 0; i < 9; i++) {
 			data[i] = read();
 		}
+		ETS_GPIO_INTR_ENABLE();
 		if (crc8(data, 8) == data[8]) {
 			uint16 tReading, tVal, tFract;
 			char tSign;
@@ -211,12 +223,17 @@ static void ICACHE_FLASH_ATTR ds18b20_next(int idx) {
 			checkSetTemperature(idx, tVal, tFract);
 			INFO(if (idx != 0xff) {printTemperature(idx); os_printf("\n");});
 		} else {
+			TEST(
+				easygpio_outputSet(CRC_ERROR_FLAG, 1);
+				os_delay_us(5);
+				easygpio_outputSet(CRC_ERROR_FLAG, 0);
+			);
 			ERRORP("Data CRC error, crc=%02x, data[8]=%02x\n", crc8(data, 8), data[8]);
 			for (i = 0; i <= 8; i++) {
 				TESTP("%02x ", data[i]);
 			}
 			TESTP("\n");
-			publishError(57, temperature[idx].binAddress[6]);  // Data CRC error
+			publishError(57, idx);  // Data CRC error
 		}
 		os_timer_disarm(&ds18b20_next_timer);
 		os_timer_setfn(&ds18b20_next_timer, (os_timer_func_t *) ds18b20_next, (void *) (idx + 1));
@@ -354,6 +371,16 @@ int ICACHE_FLASH_ATTR clearTemperatureOverride(char *sensorID) {
 	return idx;
 }
 
+bool ICACHE_FLASH_ATTR allTemperaturesSet(void) {
+	int idx;
+	for (idx=0; idx <MAX_TEMPERATURE_SENSOR; idx++) {
+		if (!temperature[idx].set) return false;
+	}
+	return true;
+}
+
 void ICACHE_FLASH_ATTR initTemperature(void) {
 	os_memset(temperature, 0, sizeof(temperature));
 }
+
+#endif

@@ -11,6 +11,7 @@
 #include <user_interface.h>
 #include "debug.h"
 #include "user_conf.h"
+#include "IOdefs.h"
 #include "flash.h"
 #include "easygpio.h"
 typedef enum {
@@ -42,7 +43,7 @@ flashCb_t flashActionFinishedCb;
 
 #ifdef LED
 void ICACHE_FLASH_ATTR stopFlash(void) {
-	easygpio_outputSet(LED, 0);
+	easygpio_outputSet(LED, LED_OFF);
 	flashState = OFF;
 	os_timer_disarm(&flash_timer);
 }
@@ -51,21 +52,21 @@ static void ICACHE_FLASH_ATTR flashCb(void) {
 	os_timer_disarm(&flash_timer);
 	switch (flashState) {
 	case OFF:
-		easygpio_outputSet(LED, 0);
+		easygpio_outputSet(LED, LED_OFF);
 		break;
 	case FLASHING_ON:
-		easygpio_outputSet(LED, 0);
+		easygpio_outputSet(LED, LED_OFF);
 		os_timer_arm(&flash_timer, flashOnTime, false);
 		flashState = FLASHING_OFF;
 		break;
 	case FLASHING_OFF:
 		flashCounter--;
 		if (flashCounter > 0) {
-			easygpio_outputSet(LED, 1);
+			easygpio_outputSet(LED, LED_ON);
 			os_timer_arm(&flash_timer, flashOnTime, false);
 			flashState = FLASHING_ON;
 		} else {
-			easygpio_outputSet(LED, 0);
+			easygpio_outputSet(LED, LED_OFF);
 			os_timer_arm(&flash_timer, patternOffTime, false);
 			flashState = WAIT;
 		}
@@ -77,7 +78,7 @@ static void ICACHE_FLASH_ATTR flashCb(void) {
 			stopFlash();
 			if (flashFinishedCb) flashFinishedCb();
 		} else { // if -ve will keep going
-			easygpio_outputSet(LED, 1);
+			easygpio_outputSet(LED, LED_ON);
 			flashCounter = flashCount;
 			os_timer_arm(&flash_timer, flashOnTime, false);
 			flashState = FLASHING_ON;
@@ -95,6 +96,7 @@ void startMultiFlashCb(int count, uint8 flashCount, unsigned int flashTime, unsi
 void startMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned int offTime) {
 	TESTP("Start Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
 	easygpio_pinMode(LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
+	easygpio_outputEnable(LED, LED_ON);
 	patternRepeatCount = pCount;
 	flashCounter = flashCount = fCount;
 	flashOnTime = flashTime;
@@ -113,7 +115,7 @@ void ICACHE_FLASH_ATTR startFlash(int count, unsigned int flashTime, unsigned in
 
 #ifdef ACTION_LED
 void ICACHE_FLASH_ATTR stopActionFlash(void) {
-	easygpio_outputSet(ACTION_LED, 0);
+	easygpio_outputSet(ACTION_LED, LED_OFF);
 	flashActionState = OFF;
 	os_timer_disarm(&flashA_timer);
 }
@@ -122,21 +124,21 @@ static void ICACHE_FLASH_ATTR flashActionCb(void) {
 	os_timer_disarm(&flashA_timer);
 	switch (flashActionState) {
 	case OFF:
-		easygpio_outputSet(ACTION_LED, 0);
+		easygpio_outputSet(ACTION_LED, LED_OFF);
 		break;
 	case FLASHING_ON:
-		easygpio_outputSet(ACTION_LED, 0);
+		easygpio_outputSet(ACTION_LED, LED_OFF);
 		os_timer_arm(&flashA_timer, flashActionOnTime, false);
 		flashActionState = FLASHING_OFF;
 		break;
 	case FLASHING_OFF:
 		flashActionCounter--;
 		if (flashActionCounter > 0) {
-			easygpio_outputSet(ACTION_LED, 1);
+			easygpio_outputSet(ACTION_LED, LED_ON);
 			os_timer_arm(&flashA_timer, flashActionOnTime, false);
 			flashActionState = FLASHING_ON;
 		} else {
-			easygpio_outputSet(ACTION_LED, 0);
+			easygpio_outputSet(ACTION_LED, LED_OFF);
 			os_timer_arm(&flashA_timer, patternActionOffTime, false);
 			flashActionState = WAIT;
 		}
@@ -148,7 +150,7 @@ static void ICACHE_FLASH_ATTR flashActionCb(void) {
 			stopActionFlash();
 			if (flashActionFinishedCb) flashActionFinishedCb();
 		} else { // if -ve will keep going
-			easygpio_outputSet(ACTION_LED, 1);
+			easygpio_outputSet(ACTION_LED, LED_ON);
 			flashActionCounter = flashActionCount;
 			os_timer_arm(&flashA_timer, flashActionOnTime, false);
 			flashActionState = FLASHING_ON;
@@ -160,7 +162,7 @@ static void ICACHE_FLASH_ATTR flashActionCb(void) {
 void startActionMultiFlash(int pCount, uint8 fCount, unsigned int flashTime, unsigned int offTime) {
 	TESTP("Start Action Flash %d (*%d) %d/%d\n", pCount, fCount, flashTime, offTime);
 	easygpio_pinMode(ACTION_LED, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
-	easygpio_outputSet(ACTION_LED, 1);
+	easygpio_outputEnable(ACTION_LED, LED_ON);
 	patternActionRepeatCount = pCount;
 	flashActionCounter = flashActionCount = fCount;
 	flashActionOnTime = flashTime;

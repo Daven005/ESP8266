@@ -35,6 +35,8 @@
 #include "time.h"
 #include "BoilerControl.h"
 #include "user_main.h"
+#include "IOdefs.h"
+
 
 static os_timer_t process_timer;
 static os_timer_t time_timer;
@@ -73,10 +75,39 @@ enum lastAction_t savedLastAction;
 MQTT_Client mqttClient;
 static uint8 wifiChannel = 255;
 
-void user_rf_pre_init(void);
+void user_pre_init(void);
+uint32 user_rf_cal_sector_set(void);
 
-void user_rf_pre_init(void) {
+void user_pre_init(void) {
 }
+
+uint32 ICACHE_FLASH_ATTR user_rf_cal_sector_set(void) {
+	enum flash_size_map size_map = system_get_flash_size_map();
+	uint32 rf_cal_sec = 0;
+
+	switch (size_map) {
+	case FLASH_SIZE_4M_MAP_256_256:
+		rf_cal_sec = 128 - 5;
+		break;
+	case FLASH_SIZE_8M_MAP_512_512:
+		rf_cal_sec = 256 - 5;
+		break;
+	case FLASH_SIZE_16M_MAP_512_512:
+	case FLASH_SIZE_16M_MAP_1024_1024:
+		rf_cal_sec = 512 - 5;
+		break;
+	case FLASH_SIZE_32M_MAP_512_512:
+	case FLASH_SIZE_32M_MAP_1024_1024:
+		rf_cal_sec = 1024 - 5;
+		break;
+	default:
+		rf_cal_sec = 0;
+		break;
+	}
+	TESTP("Flash type: %d, size 0x%x\n", size_map, rf_cal_sec);
+	return rf_cal_sec;
+}
+
 
 bool ICACHE_FLASH_ATTR mqttIsConnected(void) {
 	return mqttConnected;
@@ -205,7 +236,6 @@ static void ICACHE_FLASH_ATTR mqttDisconnectedCb(uint32_t *args) {
 static void ICACHE_FLASH_ATTR time_cb(void *arg) { // Update every 1 second
 	uint32 t = system_get_time();
 	incTime();
-	CFG_checkLazyWrite();
 	checkTime("time_cb", t);
 }
 
@@ -322,8 +352,12 @@ static void ICACHE_FLASH_ATTR processTimerFunc(void) {
 	uint32 t = system_get_time();
 	lastAction = PROCESS_FUNC;
 	checkInputs(false);
-	checkControl();
-	checkOutputs();
+	if (sysCfg.settings[SETTING_OB_FAULTY]) {
+		clearOutputs();
+	} else {
+		checkControl();
+		checkOutputs();
+	}
 	ds18b20StartScan(NULL); // For next time
 	checkTime("processTimerFunc", t);
 }
@@ -367,7 +401,7 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 }
 
 LOCAL void ICACHE_FLASH_ATTR startUp() {
-	CFG_Load();
+	CFG_init(2000);
 	CFG_print();
 	os_printf("\n%s ( %s/%s ) starting ...\n", sysCfg.deviceLocation, sysCfg.deviceName, version);
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);

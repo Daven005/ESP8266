@@ -11,17 +11,19 @@
 #include <user_interface.h>
 #include "stdout.h"
 
-#define DEBUG_OVERRIDE 1
+//#define DEBUG_OVERRIDE 1
 #include "debug.h"
 
 #include "gpio.h"
 #include "easygpio.h"
-#include "config.h"
+#include "sysCfg.h"
 #include "dtoa.h"
 #include "flowMonitor.h"
 #include "user_conf.h"
 
 #define round(x) ((x)>=0?(int)((x)+0.5):(int)((x)-0.5))
+
+#ifdef USE_FLOWS // use to avoid bringing in floats
 
 static os_timer_t flow_timer;
 static uint16 oneSecFlowCount;
@@ -34,7 +36,6 @@ static uint16 secondsNotFlowingCount;
 
 static bool flowOverridden;
 
-#ifdef USE_FLOWS // use to avoid bringing in floats
 #ifdef USE_ENERGY
 static double power; // watts
 static double energy; // wattSeconds
@@ -147,7 +148,7 @@ static void ICACHE_FLASH_ATTR flowTimerCb(void) { // 1 second
 	flowSetAverage(oneSecFlowCount);
 	if (flowAverage == 0) { // Use average to deal with any timing issues when demand oscillates
 		INFOP("!");
-		secondsNotFlowingCount++;
+		if (secondsNotFlowingCount <= 60000) secondsNotFlowingCount++;
 	} else {
 		INFOP(">");
 		secondsNotFlowingCount = 0;

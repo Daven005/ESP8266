@@ -347,7 +347,7 @@ void ICACHE_FLASH_ATTR checkControl(void) {
 static void ICACHE_FLASH_ATTR TemperatureMonitor_cb(void) { // Every minute
 	int idx;
 
-	temperatureError = false;
+	temperatureError = false; // Check all critical temperature sensors are working
 	for (idx=0; idx < MAX_CRITICAL_SENSOR; idx++) {
 		if (!mappedTemperatureIsSet(criticalSensors[idx])) {
 			temperatureError = true;

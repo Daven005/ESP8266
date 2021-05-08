@@ -18,6 +18,9 @@
 
 #include "espconn.h"
 #include "user_conf.h"
+#include "IOdefs.h"
+
+#ifdef READ_TEMPERATURES
 #include "ds18b20.h"
 
 // global search state
@@ -267,9 +270,9 @@ int ICACHE_FLASH_ATTR read_bit(void)
 {
 	int r;
 	GPIO_OUTPUT_SET(DS18B20_PIN, 0);
-	os_delay_us(3);
+	os_delay_us(2);
 	GPIO_DIS_OUTPUT(DS18B20_PIN);
-	os_delay_us(10);
+	os_delay_us(14);
 	r = GPIO_INPUT_GET(DS18B20_PIN);
 	os_delay_us(53);
 	return r;
@@ -316,3 +319,5 @@ uint16_t ICACHE_FLASH_ATTR crc16(const uint16_t *data, const uint16_t  len)
     }
     return crc;
 }
+
+#endif

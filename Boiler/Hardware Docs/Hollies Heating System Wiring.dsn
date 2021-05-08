@@ -11,12 +11,12 @@ download the executable.-->
 			<GUIDES horiz='7' vert='5'/>
 			<TITLE>Hollies Heating System Circuit</TITLE>
 			<AUTHOR>with Breakout for CPU control</AUTHOR>
-			<REVISION>2.6</REVISION>
+			<REVISION>2.8</REVISION>
 			<DOCNUMBER>HHS/2</DOCNUMBER>
 			<ORGANISATION>Boiler Room Cupboard</ORGANISATION>
 			<SHEETS>5</SHEETS>
 			<SHOWS>1</SHOWS>
-			<DATE>05/04/2016</DATE>
+			<DATE>20/12/18</DATE>
 			<GRID spacing='50.00000' snap='1'/>
 		</DETAILS>
 		<FONT id='1'>
@@ -49,39 +49,44 @@ download the executable.-->
 			<CHARSET>0</CHARSET>
 			<FACENAME>Arial</FACENAME>
 		</FONT>
-		<STYLE id='0'>
-			<STYLE>0</STYLE>
-			<COLOR>000000</COLOR>
-			<THICKNESS>1</THICKNESS>
-		</STYLE>
 		<STYLE id='2'>
 			<STYLE>0</STYLE>
-			<COLOR>808080</COLOR>
+			<COLOR>0000FF</COLOR>
 			<THICKNESS>3</THICKNESS>
 		</STYLE>
 		<STYLE id='3'>
 			<STYLE>0</STYLE>
-			<COLOR>0000FF</COLOR>
+			<COLOR>000000</COLOR>
 			<THICKNESS>3</THICKNESS>
 		</STYLE>
 		<STYLE id='4'>
 			<STYLE>0</STYLE>
 			<COLOR>000000</COLOR>
-			<THICKNESS>3</THICKNESS>
-		</STYLE>
-		<STYLE id='6'>
-			<STYLE>0</STYLE>
-			<COLOR>000000</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
-		<STYLE id='12'>
+		<STYLE id='5'>
 			<STYLE>0</STYLE>
 			<COLOR>404080</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
-		<STYLE id='13'>
+		<STYLE id='6'>
 			<STYLE>0</STYLE>
 			<COLOR>FF0000</COLOR>
+			<THICKNESS>2</THICKNESS>
+		</STYLE>
+		<STYLE id='7'>
+			<STYLE>0</STYLE>
+			<COLOR>808080</COLOR>
+			<THICKNESS>2</THICKNESS>
+		</STYLE>
+		<STYLE id='8'>
+			<STYLE>0</STYLE>
+			<COLOR>000080</COLOR>
+			<THICKNESS>2</THICKNESS>
+		</STYLE>
+		<STYLE id='9'>
+			<STYLE>0</STYLE>
+			<COLOR>000000</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
 		<STYLE id='14'>
@@ -91,35 +96,40 @@ download the executable.-->
 		</STYLE>
 		<STYLE id='15'>
 			<STYLE>0</STYLE>
-			<COLOR>000080</COLOR>
+			<COLOR>404080</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
 		<STYLE id='16'>
 			<STYLE>0</STYLE>
-			<COLOR>000000</COLOR>
+			<COLOR>FF0000</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
 		<STYLE id='17'>
 			<STYLE>0</STYLE>
 			<COLOR>000000</COLOR>
-			<THICKNESS>1</THICKNESS>
+			<THICKNESS>2</THICKNESS>
 		</STYLE>
 		<STYLE id='18'>
-			<STYLE>2</STYLE>
+			<STYLE>0</STYLE>
 			<COLOR>000000</COLOR>
 			<THICKNESS>1</THICKNESS>
 		</STYLE>
 		<STYLE id='19'>
-			<STYLE>0</STYLE>
-			<COLOR>C08000</COLOR>
+			<STYLE>2</STYLE>
+			<COLOR>000000</COLOR>
 			<THICKNESS>1</THICKNESS>
 		</STYLE>
 		<STYLE id='20'>
 			<STYLE>0</STYLE>
-			<COLOR>404080</COLOR>
+			<COLOR>C08000</COLOR>
 			<THICKNESS>1</THICKNESS>
 		</STYLE>
 		<STYLE id='21'>
+			<STYLE>0</STYLE>
+			<COLOR>404080</COLOR>
+			<THICKNESS>1</THICKNESS>
+		</STYLE>
+		<STYLE id='22'>
 			<STYLE>2</STYLE>
 			<COLOR>000000</COLOR>
 			<THICKNESS>2</THICKNESS>
@@ -160,38 +170,38 @@ download the executable.-->
 			</FIELD>
 			<REF_POINT power='0' part='0' pos='98.00000,45.00000'/>
 			<TinyCAD>
-				<ELLIPSE a='89.00000,42.00000' b='91.00000,44.00000' style='16' fill='0'/>
-				<ELLIPSE a='89.00000,38.00000' b='91.00000,40.00000' style='16' fill='0'/>
-				<ELLIPSE a='91.00000,43.00000' b='91.00000,43.00000' style='17' fill='0'/>
-				<ELLIPSE a='91.00000,40.00000' b='91.00000,40.00000' style='17' fill='0'/>
-				<POLYGON pos='84.80000,41.00000' style='17' fill='0'>
+				<ELLIPSE a='89.00000,42.00000' b='91.00000,44.00000' style='17' fill='0'/>
+				<ELLIPSE a='89.00000,38.00000' b='91.00000,40.00000' style='17' fill='0'/>
+				<ELLIPSE a='91.00000,43.00000' b='91.00000,43.00000' style='18' fill='0'/>
+				<ELLIPSE a='91.00000,40.00000' b='91.00000,40.00000' style='18' fill='0'/>
+				<POLYGON pos='84.80000,41.00000' style='18' fill='0'>
 					<POINT pos='0.07802,0.12012' arc='0'/>
 					<POINT pos='4.64974,0.69431' arc='0'/>
 				</POLYGON>
 				<PIN pos='77.00000,41.00000' which='0' elec='4' direction='3' part='0' number='1' show='1' length='30' number_pos='0' centre_name='0'></PIN>
 				<PIN pos='98.00000,39.00000' which='0' elec='4' direction='2' part='0' number='3' show='1' length='30' number_pos='0' centre_name='0'></PIN>
 				<PIN pos='98.00000,43.00000' which='0' elec='4' direction='2' part='0' number='2' show='1' length='30' number_pos='0' centre_name='0'></PIN>
-				<POLYGON pos='91.00000,39.00000' style='17' fill='0'>
+				<POLYGON pos='91.00000,39.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 				</POLYGON>
-				<POLYGON pos='91.00000,43.00000' style='17' fill='0'>
+				<POLYGON pos='91.00000,43.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 				</POLYGON>
-				<ELLIPSE a='83.00000,40.00000' b='85.00000,42.00000' style='16' fill='0'/>
-				<POLYGON pos='82.00000,41.00000' style='17' fill='0'>
+				<ELLIPSE a='83.00000,40.00000' b='85.00000,42.00000' style='17' fill='0'/>
+				<POLYGON pos='82.00000,41.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 				</POLYGON>
-				<POLYGON pos='88.00000,37.00000' style='18' fill='0'>
+				<POLYGON pos='88.00000,37.00000' style='19' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,7.00000' arc='0'/>
 				</POLYGON>
-				<RECTANGLE a='80.00000,32.00000' b='95.00000,45.00000' style='17' fill='0'/>
-				<RECTANGLE a='82.00000,33.00000' b='94.00000,36.00000' style='17' fill='0'/>
-				<RECTANGLE a='69.00000,24.00000' b='83.00000,25.00000' style='17' fill='0'/>
-				<POLYGON pos='83.00000,24.00000' style='17' fill='0'>
+				<RECTANGLE a='80.00000,32.00000' b='95.00000,45.00000' style='18' fill='0'/>
+				<RECTANGLE a='82.00000,33.00000' b='94.00000,36.00000' style='18' fill='0'/>
+				<RECTANGLE a='69.00000,24.00000' b='83.00000,25.00000' style='18' fill='0'/>
+				<POLYGON pos='83.00000,24.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='5.00000,8.00000' arc='1'/>
 				</POLYGON>
@@ -225,8 +235,8 @@ download the executable.-->
 			</FIELD>
 			<REF_POINT power='0' part='0' pos='104.00000,64.00000'/>
 			<TinyCAD>
-				<ELLIPSE a='92.00000,44.00000' b='104.00000,56.00000' style='17' fill='0'/>
-				<POLYGON pos='92.00000,46.00000' style='17' fill='0'>
+				<ELLIPSE a='92.00000,44.00000' b='104.00000,56.00000' style='18' fill='0'/>
+				<POLYGON pos='92.00000,46.00000' style='18' fill='0'>
 					<POINT pos='10.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,4.57143' arc='0'/>
 					<POINT pos='10.00000,8.00000' arc='0'/>
@@ -264,77 +274,77 @@ download the executable.-->
 			</FIELD>
 			<REF_POINT power='0' part='0' pos='50.00000,52.00000'/>
 			<TinyCAD>
-				<ELLIPSE a='43.00000,46.00000' b='45.00000,48.00000' style='16' fill='0'/>
-				<POLYGON pos='37.80000,45.00000' style='17' fill='0'>
+				<ELLIPSE a='43.00000,46.00000' b='45.00000,48.00000' style='17' fill='0'/>
+				<POLYGON pos='37.80000,45.00000' style='18' fill='0'>
 					<POINT pos='0.08264,1.68127' arc='0'/>
 					<POINT pos='5.20000,0.00000' arc='0'/>
 				</POLYGON>
 				<PIN pos='30.00000,47.00000' which='0' elec='4' direction='3' part='0' number='1' show='1' length='25' number_pos='0' centre_name='0'></PIN>
 				<PIN pos='50.00000,47.00000' which='0' elec='4' direction='2' part='0' number='2' show='1' length='20' number_pos='0' centre_name='0'></PIN>
-				<ELLIPSE a='36.00000,46.00000' b='38.00000,48.00000' style='16' fill='0'/>
-				<POLYGON pos='35.00000,47.00000' style='17' fill='0'>
+				<ELLIPSE a='36.00000,46.00000' b='38.00000,48.00000' style='17' fill='0'/>
+				<POLYGON pos='35.00000,47.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 				</POLYGON>
-				<POLYGON pos='45.00000,47.00000' style='17' fill='0'>
+				<POLYGON pos='45.00000,47.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,0.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='40.00000,44.00000' style='18' fill='0'>
+				<POLYGON pos='40.00000,44.00000' style='19' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,7.00000' arc='0'/>
 				</POLYGON>
 				<PIN pos='50.00000,41.00000' which='0' elec='4' direction='2' part='0' number='1' show='1' length='25' number_pos='0' centre_name='0'></PIN>
 				<PIN pos='30.00000,41.00000' which='0' elec='4' direction='3' part='0' number='2' show='1' length='25' number_pos='0' centre_name='0'></PIN>
-				<POLYGON pos='43.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='43.00000,40.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='44.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='44.00000,40.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='41.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='41.00000,40.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='42.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='42.00000,40.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='39.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='39.00000,40.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='40.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='40.00000,40.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='37.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='37.00000,40.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='38.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='38.00000,40.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='35.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='35.00000,40.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='36.00000,40.00000' style='17' fill='0'>
+				<POLYGON pos='36.00000,40.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,1.00000' arc='2'/>
 				</POLYGON>
-				<POLYGON pos='36.00000,43.00000' style='17' fill='0'>
+				<POLYGON pos='36.00000,43.00000' style='18' fill='0'>
 					<POINT pos='8.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 				</POLYGON>
-				<POLYGON pos='36.00000,42.00000' style='17' fill='0'>
+				<POLYGON pos='36.00000,42.00000' style='18' fill='0'>
 					<POINT pos='8.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,0.00000' arc='2'/>
 				</POLYGON>
-				<RECTANGLE a='33.00000,39.00000' b='47.00000,52.00000' style='17' fill='0'/>
+				<RECTANGLE a='33.00000,39.00000' b='47.00000,52.00000' style='18' fill='0'/>
 			</TinyCAD>
 		</SYMBOLDEF>
 		<SYMBOLDEF id='4'>
@@ -449,30 +459,30 @@ download the executable.-->
 			</FIELD>
 			<REF_POINT power='0' part='0' pos='52.00000,52.00000'/>
 			<TinyCAD>
-				<ELLIPSE a='43.00000,46.00000' b='45.00000,48.00000' style='16' fill='0'/>
+				<ELLIPSE a='43.00000,46.00000' b='45.00000,48.00000' style='17' fill='0'/>
 				<PIN pos='32.00000,47.00000' which='0' elec='4' direction='3' part='0' number='1' show='1' length='15' number_pos='0' centre_name='0'></PIN>
 				<PIN pos='32.00000,50.00000' which='0' elec='4' direction='3' part='0' number='2' show='1' length='15' number_pos='0' centre_name='0'></PIN>
-				<ELLIPSE a='36.00000,46.00000' b='38.00000,48.00000' style='16' fill='0'/>
-				<POLYGON pos='35.00000,47.00000' style='17' fill='0'>
+				<ELLIPSE a='36.00000,46.00000' b='38.00000,48.00000' style='17' fill='0'/>
+				<POLYGON pos='35.00000,47.00000' style='18' fill='0'>
 					<POINT pos='1.00000,0.00000' arc='0'/>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 				</POLYGON>
-				<POLYGON pos='45.00000,47.00000' style='17' fill='0'>
+				<POLYGON pos='45.00000,47.00000' style='18' fill='0'>
 					<POINT pos='0.00000,0.00000' arc='0'/>
 					<POINT pos='1.00000,0.00000' arc='2'/>
 				</POLYGON>
-				<RECTANGLE a='47.00000,47.00000' b='47.00000,47.00000' style='17' fill='0'/>
+				<RECTANGLE a='47.00000,47.00000' b='47.00000,47.00000' style='18' fill='0'/>
 				<WIRE a='35.00000,50.00000' b='48.00000,50.00000'/>
 				<WIRE a='48.00000,50.00000' b='48.00000,47.00000'/>
 				<WIRE a='48.00000,47.00000' b='46.00000,47.00000'/>
-				<POLYGON pos='37.00000,43.00000' style='16' fill='0'>
+				<POLYGON pos='37.00000,43.00000' style='17' fill='0'>
 					<POINT pos='0.00000,3.00000' arc='0'/>
 					<POINT pos='8.00000,0.00000' arc='2'/>
 				</POLYGON>
-				<ELLIPSE a='44.00000,45.00000' b='44.00000,45.00000' style='16' fill='0'/>
-				<ELLIPSE a='44.00000,45.00000' b='44.00000,45.00000' style='16' fill='0'/>
-				<ELLIPSE a='44.00000,43.00000' b='45.00000,44.00000' style='17' fill='1'/>
-				<RECTANGLE a='35.00000,42.00000' b='52.00000,52.00000' style='17' fill='0'/>
+				<ELLIPSE a='44.00000,45.00000' b='44.00000,45.00000' style='17' fill='0'/>
+				<ELLIPSE a='44.00000,45.00000' b='44.00000,45.00000' style='17' fill='0'/>
+				<ELLIPSE a='44.00000,43.00000' b='45.00000,44.00000' style='18' fill='1'/>
+				<RECTANGLE a='35.00000,42.00000' b='52.00000,52.00000' style='18' fill='0'/>
 			</TinyCAD>
 		</SYMBOLDEF>
 		<OPTIONS>
@@ -491,10 +501,10 @@ download the executable.-->
 			<COLOR_NOTETEXT_LINE>FF0000</COLOR_NOTETEXT_LINE>
 			<COLOR_NOTETEXT_TEXT>FF0000</COLOR_NOTETEXT_TEXT>
 		</OPTIONS>
-		<RECTANGLE a='81.00000,37.00000' b='103.00000,51.00000' style='17' fill='0'/>
-		<RECTANGLE a='37.00000,37.00000' b='59.00000,50.00000' style='17' fill='0'/>
-		<RECTANGLE a='33.00000,9.00000' b='74.00000,26.00000' style='17' fill='0'/>
-		<RECTANGLE a='40.00000,13.00000' b='68.00000,16.00000' style='19' fill='0'/>
+		<RECTANGLE a='81.00000,37.00000' b='103.00000,51.00000' style='18' fill='0'/>
+		<RECTANGLE a='37.00000,37.00000' b='59.00000,50.00000' style='18' fill='0'/>
+		<RECTANGLE a='33.00000,9.00000' b='74.00000,26.00000' style='18' fill='0'/>
+		<RECTANGLE a='40.00000,13.00000' b='68.00000,16.00000' style='20' fill='0'/>
 		<TEXT pos='44.00000,22.00000' direction='3' font='4' color='000000'>Zone Time Clock</TEXT>
 		<SYMBOL id='3' pos='112.00000,130.00000' part='0' rotate='0' can_scale='0' show_power='0' scale_x='1.00000' scale_y='1.00000'>
 			<FIELD type='0' description='Ref' value='ZV3' show='1' pos='-13.00000,3.40000'/>
@@ -538,51 +548,51 @@ download the executable.-->
 			<FIELD type='2' description='$$SPICE_EPILOG_PRIORITY' value='5' show='0' pos='0.00000,0.00000'/>
 			<FIELD type='1' description='Package' value='package name for PCB layout' show='0' pos='0.00000,0.00000'/>
 		</SYMBOL>
-		<RECTANGLE a='37.00000,85.00000' b='69.00000,104.00000' style='17' fill='0'/>
-		<RECTANGLE a='80.00000,85.00000' b='110.00000,104.00000' style='17' fill='0'/>
+		<RECTANGLE a='37.00000,85.00000' b='69.00000,104.00000' style='18' fill='0'/>
+		<RECTANGLE a='80.00000,85.00000' b='110.00000,104.00000' style='18' fill='0'/>
 		<WIRE a='41.00000,26.00000' b='41.00000,37.00000'/>
 		<WIRE a='51.00000,26.00000' b='51.00000,35.00000'/>
 		<WIRE a='51.00000,35.00000' b='86.00000,35.00000'/>
 		<WIRE a='86.00000,35.00000' b='86.00000,37.00000'/>
-		<WIRE style='6' a='40.00000,71.00000' b='40.00000,85.00000'/>
-		<WIRE style='12' a='48.00000,90.00000' b='48.00000,85.00000'/>
-		<WIRE style='12' a='56.00000,76.00000' b='56.00000,85.00000'/>
-		<WIRE style='14' a='84.00000,81.00000' b='84.00000,85.00000'/>
-		<WIRE style='15' a='94.00000,81.00000' b='94.00000,85.00000'/>
+		<WIRE style='4' a='40.00000,71.00000' b='40.00000,85.00000'/>
+		<WIRE style='15' a='48.00000,90.00000' b='48.00000,85.00000'/>
+		<WIRE style='5' a='56.00000,76.00000' b='56.00000,85.00000'/>
+		<WIRE style='7' a='84.00000,81.00000' b='84.00000,85.00000'/>
+		<WIRE style='8' a='94.00000,81.00000' b='94.00000,85.00000'/>
 		<TEXT pos='84.00000,41.00000' direction='3' font='4' color='000000'>Extn Wireless</TEXT>
 		<TEXT pos='85.00000,44.00000' direction='3' font='4' color='000000'>Thermostat</TEXT>
 		<TEXT pos='41.00000,44.00000' direction='3' font='4' color='000000'>Thermostat</TEXT>
 		<TEXT pos='38.00000,41.00000' direction='3' font='4' color='000000'>House Wireless</TEXT>
 		<WIRE a='74.00000,10.00000' b='92.00000,10.00000'/>
-		<TEXT pos='91.00000,90.00000' direction='3' font='4' color='000000'>UF3</TEXT>
-		<TEXT pos='50.00000,90.00000' direction='3' font='4' color='000000'>UF2</TEXT>
-		<TEXT pos='83.00000,94.00000' direction='3' font='4' color='000000'>Heating Zone Cntrl</TEXT>
-		<TEXT pos='42.00000,94.00000' direction='3' font='4' color='000000'>Heating Zone Cntrl</TEXT>
-		<TEXT pos='88.00000,98.00000' direction='3' font='4' color='000000'>Extension</TEXT>
-		<TEXT pos='48.00000,98.00000' direction='3' font='4' color='000000'>House</TEXT>
-		<WIRE style='6' a='92.00000,119.00000' b='83.00000,119.00000'/>
-		<WIRE style='6' a='83.00000,119.00000' b='83.00000,104.00000'/>
-		<WIRE style='15' a='49.00000,119.00000' b='40.00000,119.00000'/>
-		<WIRE style='15' a='40.00000,119.00000' b='40.00000,104.00000'/>
-		<WIRE style='3' a='116.00000,140.00000' b='150.00000,140.00000'/>
-		<WIRE style='3' a='150.00000,140.00000' b='150.00000,125.00000'/>
-		<WIRE style='3' a='150.00000,125.00000' b='147.00000,125.00000'/>
-		<WIRE style='3' a='116.00000,140.00000' b='116.00000,125.00000'/>
-		<WIRE style='3' a='116.00000,125.00000' b='112.00000,125.00000'/>
-		<WIRE style='3' a='72.00000,140.00000' b='72.00000,125.00000'/>
-		<WIRE style='3' a='22.00000,140.00000' b='72.00000,140.00000'/>
-		<WIRE style='3' a='72.00000,125.00000' b='69.00000,125.00000'/>
-		<WIRE style='14' a='118.00000,61.00000' b='118.00000,119.00000'/>
-		<WIRE style='14' a='118.00000,119.00000' b='127.00000,119.00000'/>
+		<TEXT pos='91.00000,96.00000' direction='3' font='4' color='000000'>UF3</TEXT>
+		<TEXT pos='50.00000,96.00000' direction='3' font='4' color='000000'>UF2</TEXT>
+		<TEXT pos='83.00000,100.00000' direction='3' font='4' color='000000'>Heating Zone Cntrl</TEXT>
+		<TEXT pos='42.00000,99.00000' direction='3' font='4' color='000000'>Heating Zone Cntrl</TEXT>
+		<TEXT pos='88.00000,103.00000' direction='3' font='4' color='000000'>Extension</TEXT>
+		<TEXT pos='49.00000,103.00000' direction='3' font='4' color='000000'>House</TEXT>
+		<WIRE style='4' a='92.00000,119.00000' b='83.00000,119.00000'/>
+		<WIRE style='4' a='83.00000,119.00000' b='83.00000,104.00000'/>
+		<WIRE style='8' a='49.00000,119.00000' b='40.00000,119.00000'/>
+		<WIRE style='8' a='40.00000,119.00000' b='40.00000,104.00000'/>
+		<WIRE style='2' a='116.00000,140.00000' b='150.00000,140.00000'/>
+		<WIRE style='2' a='150.00000,140.00000' b='150.00000,125.00000'/>
+		<WIRE style='2' a='150.00000,125.00000' b='147.00000,125.00000'/>
+		<WIRE style='2' a='116.00000,140.00000' b='116.00000,125.00000'/>
+		<WIRE style='2' a='116.00000,125.00000' b='112.00000,125.00000'/>
+		<WIRE style='2' a='72.00000,140.00000' b='72.00000,125.00000'/>
+		<WIRE style='2' a='22.00000,140.00000' b='72.00000,140.00000'/>
+		<WIRE style='2' a='72.00000,125.00000' b='69.00000,125.00000'/>
+		<WIRE style='7' a='118.00000,61.00000' b='118.00000,119.00000'/>
+		<WIRE style='7' a='118.00000,119.00000' b='127.00000,119.00000'/>
 		<LABEL pos='7.00000,140.00000' direction='2' font='4' color='208000' style='0'>PL</LABEL>
-		<WIRE style='4' a='77.00000,137.00000' b='31.00000,137.00000'/>
-		<WIRE style='4' a='31.00000,137.00000' b='31.00000,125.00000'/>
-		<WIRE style='4' a='31.00000,125.00000' b='49.00000,125.00000'/>
-		<WIRE style='4' a='77.00000,137.00000' b='77.00000,125.00000'/>
-		<WIRE style='4' a='124.00000,137.00000' b='77.00000,137.00000'/>
-		<WIRE style='4' a='77.00000,125.00000' b='92.00000,125.00000'/>
-		<WIRE style='4' a='124.00000,137.00000' b='124.00000,125.00000'/>
-		<WIRE style='4' a='124.00000,125.00000' b='127.00000,125.00000'/>
+		<WIRE style='3' a='77.00000,137.00000' b='31.00000,137.00000'/>
+		<WIRE style='3' a='31.00000,137.00000' b='31.00000,125.00000'/>
+		<WIRE style='3' a='31.00000,125.00000' b='49.00000,125.00000'/>
+		<WIRE style='3' a='77.00000,137.00000' b='77.00000,125.00000'/>
+		<WIRE style='3' a='124.00000,137.00000' b='77.00000,137.00000'/>
+		<WIRE style='3' a='77.00000,125.00000' b='92.00000,125.00000'/>
+		<WIRE style='3' a='124.00000,137.00000' b='124.00000,125.00000'/>
+		<WIRE style='3' a='124.00000,125.00000' b='127.00000,125.00000'/>
 		<SYMBOL id='1' pos='140.00000,174.00000' part='0' rotate='0' can_scale='0' show_power='0' scale_x='1.00000' scale_y='1.00000'>
 			<FIELD type='0' description='Ref' value='TS?' show='1' pos='-19.00000,-14.60000'/>
 			<FIELD type='0' description='Name' value='Flue Thermostat' show='1' pos='-18.00000,4.00000'/>
@@ -597,12 +607,12 @@ download the executable.-->
 			<FIELD type='2' description='$$SPICE_EPILOG_PRIORITY' value='5' show='0' pos='0.00000,0.00000'/>
 			<FIELD type='1' description='Package' value='package name for PCB layout' show='0' pos='0.00000,0.00000'/>
 		</SYMBOL>
-		<WIRE style='3' a='116.00000,140.00000' b='116.00000,170.00000'/>
-		<WIRE style='3' a='72.00000,140.00000' b='116.00000,140.00000'/>
-		<WIRE style='3' a='116.00000,170.00000' b='119.00000,170.00000'/>
+		<WIRE style='2' a='116.00000,140.00000' b='116.00000,170.00000'/>
+		<WIRE style='2' a='72.00000,140.00000' b='116.00000,140.00000'/>
+		<WIRE style='2' a='116.00000,170.00000' b='119.00000,170.00000'/>
 		<WIRE a='140.00000,168.00000' b='153.00000,168.00000'/>
-		<WIRE style='3' a='150.00000,140.00000' b='150.00000,174.00000'/>
-		<WIRE style='3' a='150.00000,174.00000' b='153.00000,174.00000'/>
+		<WIRE style='2' a='150.00000,140.00000' b='150.00000,174.00000'/>
+		<WIRE style='2' a='150.00000,174.00000' b='153.00000,174.00000'/>
 		<WIRE a='46.00000,156.00000' b='46.00000,104.00000'/>
 		<WIRE a='87.00000,157.00000' b='87.00000,104.00000'/>
 		<LABEL pos='80.00000,10.00000' direction='3' font='4' color='208000' style='0'>JB1/1</LABEL>
@@ -611,7 +621,7 @@ download the executable.-->
 		<LABEL pos='80.00000,24.00000' direction='3' font='4' color='208000' style='0'>JB1/4</LABEL>
 		<LABEL pos='84.00000,81.00000' direction='2' font='4' color='208000' style='0'>JB1/5</LABEL>
 		<LABEL pos='94.00000,81.00000' direction='3' font='4' color='208000' style='0'>JB1/6</LABEL>
-		<LABEL pos='105.00000,69.00000' direction='3' font='4' color='208000' style='0'>JB1/7</LABEL>
+		<LABEL pos='105.00000,82.00000' direction='3' font='4' color='208000' style='0'>JB1/7</LABEL>
 		<LABEL pos='40.00000,71.00000' direction='2' font='4' color='208000' style='0'>JB1/8</LABEL>
 		<LABEL pos='48.00000,80.00000' direction='3' font='4' color='208000' style='0'>JB1/9</LABEL>
 		<LABEL pos='56.00000,76.00000' direction='3' font='4' color='208000' style='0'>JB1/10</LABEL>
@@ -626,38 +636,38 @@ download the executable.-->
 		<LABEL pos='40.00000,119.00000' direction='2' font='4' color='208000' style='0'>JB1/14</LABEL>
 		<LABEL pos='118.00000,61.00000' direction='2' font='4' color='208000' style='0'>JB1/16</LABEL>
 		<LABEL pos='124.00000,112.00000' direction='3' font='4' color='208000' style='0'>JB1/18</LABEL>
-		<WIRE style='2' a='180.00000,174.00000' b='173.00000,174.00000'/>
-		<RECTANGLE a='95.00000,151.00000' b='204.00000,199.00000' style='18' fill='0'/>
-		<RECTANGLE a='29.00000,7.00000' b='206.00000,145.00000' style='18' fill='0'/>
+		<WIRE style='14' a='180.00000,174.00000' b='173.00000,174.00000'/>
+		<RECTANGLE a='95.00000,151.00000' b='204.00000,199.00000' style='19' fill='0'/>
+		<RECTANGLE a='29.00000,7.00000' b='206.00000,145.00000' style='19' fill='0'/>
 		<LABEL pos='142.00000,168.00000' direction='3' font='4' color='208000' style='0'>JB2/2</LABEL>
-		<RECTANGLE a='107.00000,151.00000' b='111.00000,172.00000' style='20' fill='0'/>
-		<RECTANGLE a='98.00000,172.00000' b='119.00000,190.00000' style='20' fill='0'/>
+		<RECTANGLE a='107.00000,151.00000' b='111.00000,172.00000' style='21' fill='0'/>
+		<RECTANGLE a='98.00000,172.00000' b='119.00000,190.00000' style='21' fill='0'/>
 		<TEXT pos='101.00000,181.00000' direction='3' font='4' color='000000'>Wood Burner</TEXT>
 		<LABEL pos='46.00000,113.00000' direction='3' font='4' color='208000' style='0'>Direct connection</LABEL>
 		<NOCONNECT pos='92.00000,10.00000'/>
-		<WIRE style='6' a='101.00000,61.00000' b='118.00000,61.00000'/>
-		<WIRE style='6' a='101.00000,51.00000' b='101.00000,61.00000'/>
+		<WIRE style='4' a='101.00000,61.00000' b='118.00000,61.00000'/>
+		<WIRE style='4' a='101.00000,51.00000' b='101.00000,61.00000'/>
 		<TEXT pos='91.00000,36.00000' direction='3' font='4' color='000000'>(Zone 3 used for Rads)</TEXT>
-		<WIRE style='14' a='146.00000,61.00000' b='205.00000,61.00000'/>
-		<WIRE style='0' a='180.00000,174.00000' b='193.00000,174.00000'/>
-		<WIRE style='2' a='180.00000,174.00000' b='180.00000,86.00000'/>
-		<WIRE style='2' a='180.00000,86.00000' b='205.00000,86.00000'/>
+		<WIRE style='7' a='188.00000,61.00000' b='205.00000,61.00000'/>
+		<WIRE style='14' a='180.00000,174.00000' b='193.00000,174.00000'/>
+		<WIRE style='14' a='180.00000,174.00000' b='180.00000,86.00000'/>
+		<WIRE style='14' a='180.00000,86.00000' b='205.00000,86.00000'/>
 		<LABEL pos='205.00000,61.00000' direction='2' font='4' color='208000' style='2'>RADS ON</LABEL>
 		<LABEL pos='205.00000,81.00000' direction='2' font='4' color='208000' style='2'>CH ON</LABEL>
 		<LABEL pos='205.00000,86.00000' direction='2' font='4' color='208000' style='2'>WB Supply ON</LABEL>
 		<LABEL pos='205.00000,24.00000' direction='2' font='3' color='208000' style='2'>DHW Timer ON</LABEL>
 		<WIRE a='74.00000,24.00000' b='205.00000,24.00000'/>
-		<LABEL pos='205.00000,66.00000' direction='2' font='4' color='208000' style='2'>Family UF ON</LABEL>
+		<LABEL pos='206.00000,64.00000' direction='2' font='4' color='208000' style='2'>Family UF ON</LABEL>
 		<LABEL pos='205.00000,71.00000' direction='2' font='4' color='208000' style='2'>Lounge UF ON</LABEL>
-		<WIRE style='15' a='94.00000,81.00000' b='84.00000,81.00000'/>
-		<WIRE style='6' a='138.00000,71.00000' b='40.00000,71.00000'/>
-		<WIRE style='6' a='40.00000,50.00000' b='40.00000,71.00000'/>
+		<WIRE style='8' a='94.00000,81.00000' b='84.00000,81.00000'/>
+		<WIRE style='4' a='182.00000,71.00000' b='40.00000,71.00000'/>
+		<WIRE style='4' a='40.00000,50.00000' b='40.00000,71.00000'/>
 		<LABEL pos='205.00000,76.00000' direction='2' font='4' color='208000' style='1'>Emerg Heat Dump</LABEL>
-		<WIRE style='12' a='130.00000,76.00000' b='56.00000,76.00000'/>
-		<WIRE style='14' a='56.00000,50.00000' b='56.00000,76.00000'/>
-		<WIRE style='4' a='124.00000,125.00000' b='124.00000,81.00000'/>
-		<WIRE style='4' a='124.00000,81.00000' b='205.00000,81.00000'/>
-		<ELLIPSE a='165.00000,58.00000' b='175.00000,78.00000' style='21' fill='0'/>
+		<WIRE style='5' a='175.00000,76.00000' b='56.00000,76.00000'/>
+		<WIRE style='7' a='56.00000,50.00000' b='56.00000,76.00000'/>
+		<WIRE style='3' a='124.00000,125.00000' b='124.00000,81.00000'/>
+		<WIRE style='3' a='124.00000,81.00000' b='205.00000,81.00000'/>
+		<ELLIPSE a='195.00000,57.00000' b='205.00000,77.00000' style='22' fill='0'/>
 		<TEXT pos='83.00000,50.00000' direction='3' font='4' color='000000'>F</TEXT>
 		<TEXT pos='91.00000,50.00000' direction='3' font='4' color='000000'>T</TEXT>
 		<TEXT pos='96.00000,50.00000' direction='3' font='4' color='000000'>Rads</TEXT>
@@ -670,29 +680,29 @@ download the executable.-->
 		<TEXT pos='39.00000,49.00000' direction='3' font='4' color='000000'>L</TEXT>
 		<TEXT pos='47.00000,49.00000' direction='3' font='4' color='000000'>H</TEXT>
 		<TEXT pos='55.00000,49.00000' direction='3' font='4' color='000000'>D</TEXT>
-		<RECTANGLE a='126.00000,31.00000' b='156.00000,47.00000' style='17' fill='0'/>
-		<TEXT pos='131.00000,36.00000' direction='3' font='4' color='000000'>WiFi Thermostat</TEXT>
-		<WIRE style='12' a='130.00000,76.00000' b='130.00000,47.00000'/>
-		<WIRE style='12' a='205.00000,76.00000' b='130.00000,76.00000'/>
-		<WIRE style='6' a='138.00000,71.00000' b='138.00000,47.00000'/>
-		<WIRE style='6' a='205.00000,71.00000' b='138.00000,71.00000'/>
-		<WIRE style='13' a='154.00000,66.00000' b='154.00000,47.00000'/>
-		<WIRE style='13' a='205.00000,66.00000' b='154.00000,66.00000'/>
-		<WIRE style='14' a='146.00000,61.00000' b='146.00000,47.00000'/>
-		<WIRE style='14' a='118.00000,61.00000' b='146.00000,61.00000'/>
-		<TEXT pos='151.00000,51.00000' direction='3' font='4' color='000000'>0</TEXT>
-		<TEXT pos='143.00000,51.00000' direction='3' font='4' color='000000'>1</TEXT>
-		<TEXT pos='135.00000,51.00000' direction='3' font='4' color='000000'>2</TEXT>
-		<TEXT pos='127.00000,51.00000' direction='3' font='4' color='000000'>3</TEXT>
-		<TEXT pos='129.00000,46.00000' direction='3' font='4' color='000000'>D</TEXT>
-		<TEXT pos='137.00000,46.00000' direction='3' font='4' color='000000'>L</TEXT>
-		<TEXT pos='145.00000,46.00000' direction='3' font='4' color='000000'>R</TEXT>
-		<TEXT pos='153.00000,46.00000' direction='3' font='4' color='000000'>F</TEXT>
-		<WIRE style='12' a='92.00000,51.00000' b='92.00000,69.00000'/>
-		<WIRE style='12' a='92.00000,69.00000' b='105.00000,69.00000'/>
-		<WIRE style='12' a='105.00000,69.00000' b='105.00000,85.00000'/>
-		<ELLIPSE a='80.00000,56.00000' b='104.00000,60.00000' style='21' fill='0'/>
-		<ELLIPSE a='37.00000,56.00000' b='60.00000,60.00000' style='21' fill='0'/>
+		<RECTANGLE a='143.00000,31.00000' b='198.00000,47.00000' style='18' fill='0'/>
+		<TEXT pos='159.00000,37.00000' direction='3' font='4' color='000000'>Boiler Relay Controller</TEXT>
+		<WIRE style='5' a='175.00000,76.00000' b='175.00000,47.00000'/>
+		<WIRE style='5' a='205.00000,76.00000' b='175.00000,76.00000'/>
+		<WIRE style='4' a='182.00000,71.00000' b='182.00000,47.00000'/>
+		<WIRE style='4' a='205.00000,71.00000' b='182.00000,71.00000'/>
+		<WIRE style='6' a='194.00000,64.00000' b='194.00000,47.00000'/>
+		<WIRE style='6' a='206.00000,64.00000' b='194.00000,64.00000'/>
+		<WIRE style='7' a='188.00000,61.00000' b='188.00000,47.00000'/>
+		<WIRE style='7' a='118.00000,61.00000' b='188.00000,61.00000'/>
+		<TEXT pos='164.00000,51.00000' direction='3' font='4' color='000000'>4</TEXT>
+		<TEXT pos='147.00000,51.00000' direction='3' font='4' color='000000'>1</TEXT>
+		<TEXT pos='153.00000,51.00000' direction='3' font='4' color='000000'>2</TEXT>
+		<TEXT pos='159.00000,51.00000' direction='3' font='4' color='000000'>3</TEXT>
+		<TEXT pos='174.00000,46.00000' direction='3' font='4' color='000000'>D</TEXT>
+		<TEXT pos='181.00000,46.00000' direction='3' font='4' color='000000'>L</TEXT>
+		<TEXT pos='187.00000,46.00000' direction='3' font='4' color='000000'>R</TEXT>
+		<TEXT pos='193.00000,46.00000' direction='3' font='4' color='000000'>F</TEXT>
+		<WIRE style='5' a='92.00000,51.00000' b='92.00000,57.00000'/>
+		<WIRE style='5' a='92.00000,57.00000' b='105.00000,57.00000'/>
+		<WIRE style='5' a='105.00000,57.00000' b='105.00000,85.00000'/>
+		<ELLIPSE a='80.00000,55.00000' b='104.00000,59.00000' style='22' fill='0'/>
+		<ELLIPSE a='37.00000,56.00000' b='60.00000,60.00000' style='22' fill='0'/>
 		<LABEL pos='60.00000,58.00000' direction='3' font='4' color='208000' style='0'>IIII</LABEL>
 		<LABEL pos='80.00000,58.00000' direction='2' font='4' color='208000' style='0'>II</LABEL>
 		<JUNCTION pos='72.00000,140.00000'/>
@@ -703,10 +713,7 @@ download the executable.-->
 		<JUNCTION pos='84.00000,81.00000'/>
 		<JUNCTION pos='118.00000,61.00000'/>
 		<JUNCTION pos='150.00000,140.00000'/>
-		<JUNCTION pos='146.00000,61.00000'/>
 		<JUNCTION pos='124.00000,125.00000'/>
-		<JUNCTION pos='130.00000,76.00000'/>
-		<JUNCTION pos='138.00000,71.00000'/>
 		<JUNCTION pos='180.00000,174.00000'/>
 		<SYMBOL id='4' pos='22.00000,108.00000' part='0' rotate='5' can_scale='0' show_power='0' scale_x='1.00000' scale_y='1.00000'>
 			<FIELD type='1' description='Ref' value='TC?' show='0' pos='1.00000,-5.60000'/>
@@ -729,18 +736,45 @@ download the executable.-->
 		</SYMBOL>
 		<WIRE a='22.00000,103.00000' b='22.00000,140.00000'/>
 		<JUNCTION pos='22.00000,140.00000'/>
-		<WIRE style='3' a='5.00000,140.00000' b='22.00000,140.00000'/>
-		<WIRE a='22.00000,100.00000' b='22.00000,90.00000'/>
-		<WIRE a='22.00000,90.00000' b='48.00000,90.00000'/>
-		<WIRE style='12' a='48.00000,85.00000' b='48.00000,90.00000'/>
+		<WIRE style='2' a='5.00000,140.00000' b='22.00000,140.00000'/>
+		<WIRE style='15' a='22.00000,100.00000' b='22.00000,90.00000'/>
+		<WIRE style='15' a='22.00000,90.00000' b='48.00000,90.00000'/>
+		<WIRE style='15' a='48.00000,85.00000' b='48.00000,90.00000'/>
 		<JUNCTION pos='48.00000,90.00000'/>
 		<JUNCTION pos='48.00000,85.00000'/>
-		<WIRE style='12' a='48.00000,50.00000' b='48.00000,85.00000'/>
-		<JUNCTION pos='154.00000,66.00000'/>
-		<WIRE style='13' a='154.00000,66.00000' b='84.00000,66.00000'/>
-		<JUNCTION pos='84.00000,66.00000'/>
-		<WIRE style='14' a='84.00000,51.00000' b='84.00000,66.00000'/>
-		<WIRE style='13' a='84.00000,66.00000' b='84.00000,81.00000'/>
+		<WIRE style='15' a='48.00000,67.00000' b='48.00000,85.00000'/>
+		<WIRE style='6' a='194.00000,64.00000' b='84.00000,64.00000'/>
+		<WIRE style='7' a='84.00000,51.00000' b='84.00000,64.00000'/>
+		<WIRE style='6' a='84.00000,64.00000' b='84.00000,81.00000'/>
+		<JUNCTION pos='188.00000,61.00000'/>
+		<JUNCTION pos='182.00000,71.00000'/>
+		<JUNCTION pos='175.00000,76.00000'/>
+		<TEXT pos='167.00000,46.00000' direction='3' font='4' color='000000'>T</TEXT>
+		<JUNCTION pos='105.00000,57.00000'/>
+		<WIRE style='16' a='105.00000,57.00000' b='168.00000,57.00000'/>
+		<WIRE style='16' a='168.00000,57.00000' b='168.00000,47.00000'/>
+		<TEXT pos='171.00000,51.00000' direction='3' font='4' color='000000'>5</TEXT>
+		<TEXT pos='178.00000,51.00000' direction='3' font='4' color='000000'>6</TEXT>
+		<TEXT pos='184.00000,51.00000' direction='3' font='4' color='000000'>7</TEXT>
+		<TEXT pos='191.00000,51.00000' direction='3' font='4' color='000000'>8</TEXT>
+		<JUNCTION pos='180.00000,86.00000'/>
+		<WIRE style='14' a='180.00000,86.00000' b='161.00000,86.00000'/>
+		<WIRE style='14' a='161.00000,86.00000' b='161.00000,47.00000'/>
+		<TEXT pos='160.00000,46.00000' direction='3' font='4' color='000000'>W</TEXT>
+		<JUNCTION pos='84.00000,64.00000'/>
+		<JUNCTION pos='194.00000,64.00000'/>
+		<WIRE style='15' a='48.00000,67.00000' b='150.00000,67.00000'/>
+		<WIRE style='15' a='48.00000,50.00000' b='48.00000,67.00000'/>
+		<WIRE style='15' a='150.00000,67.00000' b='150.00000,47.00000'/>
+		<JUNCTION pos='48.00000,67.00000'/>
+		<TEXT pos='149.00000,46.00000' direction='3' font='4' color='000000'>H</TEXT>
+		<WIRE style='9' a='156.00000,53.00000' b='156.00000,47.00000'/>
+		<TEXT pos='155.00000,46.00000' direction='3' font='4' color='000000'>-</TEXT>
+		<TEXT pos='104.00000,89.00000' direction='3' font='4' color='000000'>T</TEXT>
+		<TEXT pos='83.00000,89.00000' direction='3' font='4' color='000000'>FB</TEXT>
+		<TEXT pos='93.00000,89.00000' direction='3' font='4' color='000000'>FF</TEXT>
+		<TEXT pos='55.00000,89.00000' direction='3' font='4' color='000000'>D</TEXT>
+		<TEXT pos='39.00000,89.00000' direction='3' font='4' color='000000'>L</TEXT>
 	</TinyCAD>
 	<TinyCAD>
 		<NAME>Heating Pipework</NAME>
@@ -4708,24 +4742,14 @@ download the executable.-->
 			<GUIDES horiz='7' vert='5'/>
 			<TITLE>Heating System Solar Thermal </TITLE>
 			<AUTHOR></AUTHOR>
-			<REVISION>1.0</REVISION>
+			<REVISION>1.1</REVISION>
 			<DOCNUMBER>HHS/7</DOCNUMBER>
 			<ORGANISATION></ORGANISATION>
 			<SHEETS>7</SHEETS>
 			<SHOWS>1</SHOWS>
-			<DATE>03/04/2016</DATE>
+			<DATE>4/6/2020</DATE>
 			<GRID spacing='50.00000' snap='1'/>
 		</DETAILS>
-		<FONT id='0'>
-			<HEIGHT>-13</HEIGHT>
-			<WIDTH>6</WIDTH>
-			<WEIGHT>400</WEIGHT>
-			<ITALIC>0</ITALIC>
-			<UNDERLINE>0</UNDERLINE>
-			<STRIKEOUT>0</STRIKEOUT>
-			<CHARSET>0</CHARSET>
-			<FACENAME>Arial</FACENAME>
-		</FONT>
 		<FONT id='3'>
 			<HEIGHT>-13</HEIGHT>
 			<WIDTH>6</WIDTH>
@@ -4737,6 +4761,16 @@ download the executable.-->
 			<FACENAME>Arial</FACENAME>
 		</FONT>
 		<FONT id='4'>
+			<HEIGHT>-13</HEIGHT>
+			<WIDTH>6</WIDTH>
+			<WEIGHT>400</WEIGHT>
+			<ITALIC>0</ITALIC>
+			<UNDERLINE>0</UNDERLINE>
+			<STRIKEOUT>0</STRIKEOUT>
+			<CHARSET>0</CHARSET>
+			<FACENAME>Arial</FACENAME>
+		</FONT>
+		<FONT id='5'>
 			<HEIGHT>-15</HEIGHT>
 			<WIDTH>7</WIDTH>
 			<WEIGHT>700</WEIGHT>
@@ -4746,9 +4780,29 @@ download the executable.-->
 			<CHARSET>0</CHARSET>
 			<FACENAME>Arial</FACENAME>
 		</FONT>
-		<FONT id='5'>
+		<FONT id='6'>
 			<HEIGHT>-13</HEIGHT>
 			<WIDTH>6</WIDTH>
+			<WEIGHT>400</WEIGHT>
+			<ITALIC>0</ITALIC>
+			<UNDERLINE>0</UNDERLINE>
+			<STRIKEOUT>0</STRIKEOUT>
+			<CHARSET>0</CHARSET>
+			<FACENAME>Arial</FACENAME>
+		</FONT>
+		<FONT id='7'>
+			<HEIGHT>-21</HEIGHT>
+			<WIDTH>10</WIDTH>
+			<WEIGHT>700</WEIGHT>
+			<ITALIC>0</ITALIC>
+			<UNDERLINE>0</UNDERLINE>
+			<STRIKEOUT>0</STRIKEOUT>
+			<CHARSET>0</CHARSET>
+			<FACENAME>Arial</FACENAME>
+		</FONT>
+		<FONT id='8'>
+			<HEIGHT>-16</HEIGHT>
+			<WIDTH>7</WIDTH>
 			<WEIGHT>400</WEIGHT>
 			<ITALIC>0</ITALIC>
 			<UNDERLINE>0</UNDERLINE>
@@ -4766,11 +4820,6 @@ download the executable.-->
 			<COLOR>FF0000</COLOR>
 			<THICKNESS>4</THICKNESS>
 		</STYLE>
-		<STYLE id='3'>
-			<STYLE>0</STYLE>
-			<COLOR>FF0000</COLOR>
-			<THICKNESS>4</THICKNESS>
-		</STYLE>
 		<STYLE id='4'>
 			<STYLE>0</STYLE>
 			<COLOR>FF0000</COLOR>
@@ -4781,54 +4830,74 @@ download the executable.-->
 			<COLOR>FF0000</COLOR>
 			<THICKNESS>4</THICKNESS>
 		</STYLE>
-		<STYLE id='12'>
+		<STYLE id='6'>
 			<STYLE>0</STYLE>
 			<COLOR>0000FF</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
-		<STYLE id='13'>
+		<STYLE id='16'>
 			<STYLE>0</STYLE>
-			<COLOR>0000FF</COLOR>
-			<THICKNESS>1</THICKNESS>
-		</STYLE>
-		<STYLE id='14'>
-			<STYLE>0</STYLE>
-			<COLOR>FF0000</COLOR>
-			<THICKNESS>6</THICKNESS>
-		</STYLE>
-		<STYLE id='15'>
-			<STYLE>0</STYLE>
-			<COLOR>FF0000</COLOR>
+			<COLOR>000000</COLOR>
 			<THICKNESS>1</THICKNESS>
 		</STYLE>
 		<STYLE id='17'>
 			<STYLE>0</STYLE>
-			<COLOR>000000</COLOR>
-			<THICKNESS>1</THICKNESS>
-		</STYLE>
-		<STYLE id='18'>
-			<STYLE>0</STYLE>
 			<COLOR>FF0000</COLOR>
 			<THICKNESS>3</THICKNESS>
 		</STYLE>
-		<STYLE id='19'>
+		<STYLE id='18'>
 			<STYLE>0</STYLE>
 			<COLOR>000000</COLOR>
+			<THICKNESS>4</THICKNESS>
+		</STYLE>
+		<STYLE id='19'>
+			<STYLE>0</STYLE>
+			<COLOR>FF0000</COLOR>
 			<THICKNESS>4</THICKNESS>
 		</STYLE>
 		<STYLE id='20'>
 			<STYLE>0</STYLE>
-			<COLOR>FF0000</COLOR>
-			<THICKNESS>4</THICKNESS>
-		</STYLE>
-		<STYLE id='21'>
-			<STYLE>0</STYLE>
 			<COLOR>0000FF</COLOR>
 			<THICKNESS>6</THICKNESS>
 		</STYLE>
-		<STYLE id='22'>
+		<STYLE id='21'>
 			<STYLE>0</STYLE>
 			<COLOR>0080FF</COLOR>
+			<THICKNESS>2</THICKNESS>
+		</STYLE>
+		<STYLE id='24'>
+			<STYLE>0</STYLE>
+			<COLOR>000000</COLOR>
+			<THICKNESS>2</THICKNESS>
+		</STYLE>
+		<STYLE id='25'>
+			<STYLE>2</STYLE>
+			<COLOR>FF0000</COLOR>
+			<THICKNESS>4</THICKNESS>
+		</STYLE>
+		<STYLE id='28'>
+			<STYLE>0</STYLE>
+			<COLOR>0000FF</COLOR>
+			<THICKNESS>3</THICKNESS>
+		</STYLE>
+		<STYLE id='30'>
+			<STYLE>2</STYLE>
+			<COLOR>FF0000</COLOR>
+			<THICKNESS>3</THICKNESS>
+		</STYLE>
+		<STYLE id='31'>
+			<STYLE>2</STYLE>
+			<COLOR>0000FF</COLOR>
+			<THICKNESS>3</THICKNESS>
+		</STYLE>
+		<STYLE id='32'>
+			<STYLE>0</STYLE>
+			<COLOR>0000FF</COLOR>
+			<THICKNESS>1</THICKNESS>
+		</STYLE>
+		<STYLE id='33'>
+			<STYLE>0</STYLE>
+			<COLOR>000000</COLOR>
 			<THICKNESS>2</THICKNESS>
 		</STYLE>
 		<FILL id='0'>
@@ -4838,6 +4907,14 @@ download the executable.-->
 		<FILL id='1'>
 			<INDEX>0</INDEX>
 			<COLOR>000000</COLOR>
+		</FILL>
+		<FILL id='2'>
+			<INDEX>0</INDEX>
+			<COLOR>000000</COLOR>
+		</FILL>
+		<FILL id='3'>
+			<INDEX>0</INDEX>
+			<COLOR>0000FF</COLOR>
 		</FILL>
 		<OPTIONS>
 			<GRID>0</GRID>
@@ -4855,21 +4932,18 @@ download the executable.-->
 			<COLOR_NOTETEXT_LINE>FF0000</COLOR_NOTETEXT_LINE>
 			<COLOR_NOTETEXT_TEXT>FF0000</COLOR_NOTETEXT_TEXT>
 		</OPTIONS>
-		<RECTANGLE a='19.00000,19.00000' b='36.00000,33.00000' style='17' fill='0'/>
-		<RECTANGLE a='40.00000,19.00000' b='57.00000,33.00000' style='17' fill='0'/>
-		<RECTANGLE a='61.00000,19.00000' b='78.00000,33.00000' style='17' fill='0'/>
-		<RECTANGLE a='82.00000,19.00000' b='99.00000,33.00000' style='17' fill='0'/>
-		<WIRE style='2' a='36.00000,22.00000' b='40.00000,22.00000'/>
-		<WIRE style='2' a='36.00000,30.00000' b='40.00000,30.00000'/>
+		<RECTANGLE a='40.00000,19.00000' b='57.00000,33.00000' style='16' fill='0'/>
+		<RECTANGLE a='61.00000,19.00000' b='78.00000,33.00000' style='16' fill='0'/>
+		<RECTANGLE a='82.00000,19.00000' b='99.00000,33.00000' style='16' fill='0'/>
+		<WIRE style='17' a='36.00000,30.00000' b='40.00000,30.00000'/>
 		<WIRE style='2' a='57.00000,22.00000' b='61.00000,22.00000'/>
 		<WIRE style='2' a='57.00000,30.00000' b='61.00000,30.00000'/>
 		<WIRE style='2' a='78.00000,22.00000' b='82.00000,22.00000'/>
 		<WIRE style='2' a='78.00000,30.00000' b='82.00000,30.00000'/>
-		<WIRE style='5' a='19.00000,29.00000' b='14.00000,29.00000'/>
-		<WIRE style='15' a='14.00000,29.00000' b='14.00000,40.00000'/>
-		<WIRE style='12' a='99.00000,22.00000' b='155.00000,22.00000'/>
-		<RECTANGLE a='172.00000,40.00000' b='207.00000,123.00000' style='17' fill='0'/>
-		<POLYGON pos='180.00000,109.00000' style='18' fill='0'>
+		<WIRE style='17' a='36.00000,30.00000' b='36.00000,40.00000'/>
+		<WIRE style='6' a='99.00000,22.00000' b='155.00000,22.00000'/>
+		<RECTANGLE a='172.00000,40.00000' b='207.00000,150.00000' style='16' fill='0'/>
+		<POLYGON pos='180.00000,134.00000' style='17' fill='0'>
 			<POINT pos='4.00000,0.00000' arc='0'/>
 			<POINT pos='10.00000,3.00000' arc='1'/>
 			<POINT pos='5.00000,6.00000' arc='2'/>
@@ -4879,48 +4953,32 @@ download the executable.-->
 			<POINT pos='5.00000,9.00000' arc='2'/>
 			<POINT pos='1.00000,9.00000' arc='2'/>
 		</POLYGON>
-		<WIRE style='14' a='168.00000,109.00000' b='184.00000,109.00000'/>
-		<ELLIPSE a='42.00000,56.00000' b='55.00000,69.00000' style='17' fill='0'/>
-		<WIRE style='15' a='49.00000,40.00000' b='49.00000,56.00000'/>
-		<WIRE style='15' a='14.00000,40.00000' b='49.00000,40.00000'/>
-		<TEXT pos='26.00000,55.00000' direction='3' font='3' color='000000'>Expansion vessel</TEXT>
-		<RECTANGLE a='151.00000,16.00000' b='160.00000,26.00000' style='17' fill='0'/>
-		<TEXT pos='153.00000,16.00000' direction='3' font='3' color='000000'>AAV</TEXT>
-		<POLYGON pos='73.00000,38.00000' style='17' fill='1'>
-			<POINT pos='3.00000,4.00000' arc='0'/>
-			<POINT pos='0.00000,2.00000' arc='0'/>
-			<POINT pos='3.00000,0.00000' arc='0'/>
-			<POINT pos='3.00000,4.00000' arc='0'/>
-		</POLYGON>
-		<POLYGON pos='73.00000,38.00000' style='19' fill='0'>
-			<POINT pos='0.00000,0.00000' arc='0'/>
-			<POINT pos='0.00000,4.00000' arc='0'/>
-		</POLYGON>
-		<TEXT pos='67.00000,48.00000' direction='3' font='3' color='000000'>Check Valve</TEXT>
-		<TEXT pos='93.00000,50.00000' direction='3' font='3' color='000000'>Pressure Relief Valve</TEXT>
+		<WIRE style='28' a='168.00000,134.00000' b='184.00000,134.00000'/>
+		<ELLIPSE a='42.00000,56.00000' b='55.00000,69.00000' style='32' fill='3'/>
+		<WIRE style='17' a='49.00000,40.00000' b='49.00000,56.00000'/>
+		<WIRE style='17' a='36.00000,40.00000' b='49.00000,40.00000'/>
+		<TEXT pos='26.00000,55.00000' direction='3' font='4' color='000000'>Expansion vessel</TEXT>
+		<RECTANGLE a='153.00000,19.00000' b='157.00000,25.00000' style='16' fill='0'/>
+		<TEXT pos='159.00000,23.00000' direction='3' font='4' color='000000'>AAV</TEXT>
+		<TEXT pos='93.00000,50.00000' direction='3' font='4' color='000000'>Pressure Relief Valve</TEXT>
 		<JUNCTION pos='89.00000,40.00000'/>
-		<WIRE style='5' a='89.00000,40.00000' b='89.00000,46.00000'/>
-		<WIRE style='5' a='49.00000,40.00000' b='89.00000,40.00000'/>
-		<RECTANGLE a='87.00000,46.00000' b='91.00000,51.00000' style='17' fill='0'/>
-		<RECTANGLE a='130.00000,116.00000' b='136.00000,122.00000' style='17' fill='0'/>
-		<POLYGON pos='128.00000,118.00000' style='20' fill='0'>
-			<POINT pos='5.00000,0.00000' arc='0'/>
-			<POINT pos='0.00000,5.00000' arc='0'/>
-		</POLYGON>
-		<TEXT pos='120.00000,127.00000' direction='3' font='3' color='000000'>Drain valve</TEXT>
-		<TEXT pos='179.00000,46.00000' direction='3' font='3' color='000000'>Thermal Store</TEXT>
-		<TEXT pos='193.00000,115.00000' direction='3' font='3' color='000000'>Solar Coil</TEXT>
-		<WIRE style='4' a='159.00000,118.00000' b='141.00000,118.00000'/>
-		<RECTANGLE a='117.00000,106.00000' b='133.00000,113.00000' style='17' fill='0'/>
-		<RECTANGLE a='127.00000,101.00000' b='131.00000,106.00000' style='17' fill='0'/>
-		<TEXT pos='123.00000,111.00000' direction='3' font='3' color='000000'>Pump</TEXT>
-		<RECTANGLE a='127.00000,90.00000' b='131.00000,97.00000' style='17' fill='0'/>
+		<WIRE style='17' a='89.00000,40.00000' b='89.00000,46.00000'/>
+		<WIRE style='17' a='49.00000,40.00000' b='89.00000,40.00000'/>
+		<RECTANGLE a='87.00000,46.00000' b='91.00000,51.00000' style='16' fill='0'/>
+		<TEXT pos='137.00000,97.00000' direction='3' font='4' color='000000'>Drain valve</TEXT>
+		<TEXT pos='179.00000,46.00000' direction='3' font='4' color='000000'>Thermal Store</TEXT>
+		<TEXT pos='193.00000,140.00000' direction='3' font='4' color='000000'>Solar Coil</TEXT>
+		<WIRE style='4' a='159.00000,143.00000' b='137.00000,143.00000'/>
+		<RECTANGLE a='122.00000,106.00000' b='133.00000,113.00000' style='16' fill='0'/>
+		<RECTANGLE a='127.00000,101.00000' b='131.00000,106.00000' style='16' fill='0'/>
+		<TEXT pos='112.00000,117.00000' direction='3' font='4' color='000000'>Circulation Pump</TEXT>
+		<RECTANGLE a='127.00000,90.00000' b='131.00000,97.00000' style='16' fill='0'/>
 		<WIRE style='5' a='129.00000,101.00000' b='129.00000,97.00000'/>
-		<WIRE style='5' a='89.00000,40.00000' b='129.00000,40.00000'/>
-		<WIRE style='5' a='129.00000,77.00000' b='129.00000,90.00000'/>
-		<TEXT pos='113.00000,90.00000' direction='3' font='3' color='000000'>Flow Sensor</TEXT>
-		<RECTANGLE a='66.00000,99.00000' b='102.00000,141.00000' style='17' fill='0'/>
-		<POLYGON pos='95.00000,20.00000' style='21' fill='0'>
+		<WIRE style='17' a='89.00000,40.00000' b='129.00000,40.00000'/>
+		<WIRE style='17' a='129.00000,77.00000' b='129.00000,90.00000'/>
+		<TEXT pos='113.00000,90.00000' direction='3' font='4' color='000000'>Flow Sensor</TEXT>
+		<RECTANGLE a='66.00000,99.00000' b='102.00000,141.00000' style='16' fill='0'/>
+		<POLYGON pos='95.00000,20.00000' style='20' fill='0'>
 			<POINT pos='0.00000,0.00000' arc='0'/>
 			<POINT pos='6.00000,0.00000' arc='0'/>
 		</POLYGON>
@@ -4928,72 +4986,160 @@ download the executable.-->
 		<WIRE style='0' a='93.00000,72.00000' b='105.00000,72.00000'/>
 		<WIRE style='0' a='105.00000,72.00000' b='105.00000,20.00000'/>
 		<WIRE style='0' a='105.00000,20.00000' b='101.00000,20.00000'/>
-		<TEXT pos='75.00000,107.00000' direction='3' font='3' color='000000'>Solar Controller</TEXT>
-		<TEXT pos='88.00000,18.00000' direction='3' font='3' color='000000'>Panel Temperature Sensor</TEXT>
-		<TEXT pos='49.00000,17.00000' direction='3' font='4' color='000000'>Solar Panels</TEXT>
-		<RECTANGLE a='109.00000,75.00000' b='121.00000,79.00000' style='17' fill='0'/>
+		<TEXT pos='75.00000,107.00000' direction='3' font='4' color='000000'>Solar Controller</TEXT>
+		<TEXT pos='88.00000,18.00000' direction='3' font='4' color='000000'>Panel Temperature Sensor</TEXT>
+		<TEXT pos='49.00000,17.00000' direction='3' font='5' color='000000'>Solar Panels</TEXT>
+		<RECTANGLE a='109.00000,75.00000' b='121.00000,79.00000' style='16' fill='0'/>
 		<WIRE style='0' a='109.00000,77.00000' b='97.00000,77.00000'/>
 		<WIRE style='0' a='97.00000,77.00000' b='97.00000,99.00000'/>
-		<WIRE style='5' a='129.00000,77.00000' b='121.00000,77.00000'/>
+		<WIRE style='17' a='129.00000,77.00000' b='121.00000,77.00000'/>
 		<JUNCTION pos='129.00000,77.00000'/>
-		<WIRE style='5' a='129.00000,53.00000' b='129.00000,77.00000'/>
-		<TEXT pos='106.00000,74.00000' direction='3' font='5' color='000000'>Pressure Sensor</TEXT>
-		<WIRE style='0' a='117.00000,110.00000' b='102.00000,110.00000'/>
-		<ELLIPSE a='156.00000,115.00000' b='162.00000,121.00000' style='22' fill='0'/>
-		<WIRE style='0' a='102.00000,135.00000' b='168.00000,135.00000'/>
-		<WIRE style='0' a='168.00000,135.00000' b='168.00000,109.00000'/>
-		<WIRE style='3' a='155.00000,109.00000' b='168.00000,109.00000'/>
-		<ELLIPSE a='165.00000,106.00000' b='171.00000,112.00000' style='22' fill='0'/>
-		<WIRE style='0' a='102.00000,129.00000' b='159.00000,129.00000'/>
-		<WIRE style='0' a='159.00000,129.00000' b='159.00000,118.00000'/>
-		<WIRE style='4' a='181.00000,118.00000' b='159.00000,118.00000'/>
-		<TEXT pos='178.00000,130.00000' direction='3' font='3' color='000000'>Solar Coil Inlet &amp; Outlet Temperature Sensors</TEXT>
-		<POLYGON pos='129.00000,63.00000' style='20' fill='0'>
+		<WIRE style='17' a='129.00000,53.00000' b='129.00000,77.00000'/>
+		<TEXT pos='106.00000,74.00000' direction='3' font='6' color='000000'>Pressure Sensor</TEXT>
+		<WIRE style='0' a='122.00000,110.00000' b='102.00000,110.00000'/>
+		<ELLIPSE a='156.00000,140.00000' b='162.00000,146.00000' style='21' fill='0'/>
+		<WIRE style='0' a='102.00000,136.00000' b='168.00000,136.00000'/>
+		<WIRE style='0' a='168.00000,136.00000' b='168.00000,134.00000'/>
+		<WIRE style='28' a='155.00000,134.00000' b='168.00000,134.00000'/>
+		<ELLIPSE a='165.00000,131.00000' b='171.00000,137.00000' style='21' fill='0'/>
+		<WIRE style='0' a='102.00000,139.00000' b='159.00000,139.00000'/>
+		<WIRE style='0' a='159.00000,139.00000' b='159.00000,143.00000'/>
+		<WIRE style='4' a='181.00000,143.00000' b='159.00000,143.00000'/>
+		<TEXT pos='162.00000,130.00000' direction='3' font='4' color='000000'>Solar Coil Inlet &amp; Outlet Temperature Sensors</TEXT>
+		<POLYGON pos='129.00000,63.00000' style='19' fill='0'>
 			<POINT pos='0.00000,0.00000' arc='0'/>
 			<POINT pos='4.00000,0.00000' arc='0'/>
 			<POINT pos='7.00000,3.00000' arc='0'/>
 			<POINT pos='5.00000,1.00000' arc='0'/>
 		</POLYGON>
-		<POLYGON pos='131.00000,60.00000' style='19' fill='0'>
+		<POLYGON pos='131.00000,60.00000' style='18' fill='0'>
 			<POINT pos='0.00000,0.00000' arc='0'/>
 			<POINT pos='4.00000,0.00000' arc='0'/>
 			<POINT pos='2.00000,0.00000' arc='0'/>
 			<POINT pos='2.00000,3.00000' arc='0'/>
 			<POINT pos='2.00000,0.00000' arc='0'/>
 		</POLYGON>
-		<TEXT pos='139.00000,64.00000' direction='3' font='3' color='000000'>Tap</TEXT>
+		<TEXT pos='139.00000,64.00000' direction='3' font='4' color='000000'>Tap</TEXT>
 		<WIRE style='0' a='102.00000,102.00000' b='109.00000,102.00000'/>
 		<WIRE style='0' a='109.00000,102.00000' b='109.00000,93.00000'/>
 		<WIRE style='0' a='109.00000,93.00000' b='127.00000,93.00000'/>
-		<JUNCTION pos='159.00000,118.00000'/>
-		<JUNCTION pos='168.00000,109.00000'/>
-		<WIRE style='4' a='141.00000,118.00000' b='141.00000,110.00000'/>
-		<WIRE style='4' a='141.00000,110.00000' b='133.00000,110.00000'/>
-		<JUNCTION pos='141.00000,118.00000'/>
-		<WIRE style='4' a='141.00000,118.00000' b='133.00000,118.00000'/>
-		<WIRE style='13' a='155.00000,53.00000' b='155.00000,22.00000'/>
+		<WIRE style='4' a='137.00000,143.00000' b='137.00000,110.00000'/>
+		<WIRE style='4' a='137.00000,110.00000' b='133.00000,110.00000'/>
+		<WIRE style='28' a='155.00000,99.00000' b='155.00000,22.00000'/>
 		<JUNCTION pos='49.00000,40.00000'/>
-		<TEXT pos='44.00000,38.00000' direction='3' font='3' color='000000'>10mm T</TEXT>
-		<TEXT pos='116.00000,65.00000' direction='3' font='3' color='000000'>15mm T</TEXT>
-		<TEXT pos='134.00000,78.00000' direction='3' font='3' color='000000'>15mm T</TEXT>
-		<TEXT pos='84.00000,38.00000' direction='3' font='3' color='000000'>15mm T</TEXT>
-		<TEXT pos='137.00000,123.00000' direction='3' font='3' color='000000'>22x15x15mm T</TEXT>
-		<TEXT pos='112.00000,84.00000' direction='3' font='3' color='000000'>1/2&quot;x15mm</TEXT>
-		<TEXT pos='93.00000,45.00000' direction='3' font='3' color='000000'>1/2&quot;x15mm</TEXT>
-		<TEXT pos='53.00000,53.00000' direction='3' font='3' color='000000'>3/4&quot;x15mm</TEXT>
-		<TEXT pos='135.00000,89.00000' direction='3' font='3' color='000000'>1/2&quot;x15mm</TEXT>
-		<RECTANGLE a='79.00000,58.00000' b='97.00000,68.00000' style='17' fill='0'/>
-		<WIRE style='5' a='89.00000,51.00000' b='89.00000,58.00000'/>
-		<TEXT pos='82.00000,63.00000' direction='3' font='3' color='000000'>Overflow</TEXT>
-		<TEXT pos='82.00000,66.00000' direction='3' font='3' color='000000'>Container</TEXT>
+		<TEXT pos='44.00000,38.00000' direction='3' font='4' color='000000'>10mm T</TEXT>
+		<TEXT pos='117.00000,64.00000' direction='3' font='4' color='000000'>15mm T</TEXT>
+		<TEXT pos='130.00000,82.00000' direction='3' font='4' color='000000'>15mm T</TEXT>
+		<TEXT pos='84.00000,38.00000' direction='3' font='4' color='000000'>15mm T</TEXT>
+		<TEXT pos='137.00000,148.00000' direction='3' font='4' color='000000'>22x15x15mm T</TEXT>
+		<TEXT pos='113.00000,85.00000' direction='3' font='4' color='000000'>1/2&quot;x15mm</TEXT>
+		<TEXT pos='93.00000,45.00000' direction='3' font='4' color='000000'>1/2&quot;x15mm</TEXT>
+		<TEXT pos='53.00000,53.00000' direction='3' font='4' color='000000'>3/4&quot;x15mm</TEXT>
+		<TEXT pos='130.00000,89.00000' direction='3' font='4' color='000000'>1/2&quot;x15mm</TEXT>
+		<RECTANGLE a='79.00000,58.00000' b='97.00000,68.00000' style='16' fill='0'/>
+		<WIRE style='25' a='89.00000,51.00000' b='89.00000,58.00000'/>
+		<TEXT pos='82.00000,63.00000' direction='3' font='4' color='000000'>Overflow</TEXT>
+		<TEXT pos='82.00000,66.00000' direction='3' font='4' color='000000'>Container</TEXT>
 		<JUNCTION pos='129.00000,53.00000'/>
-		<WIRE style='5' a='129.00000,53.00000' b='138.00000,53.00000'/>
-		<WIRE style='5' a='129.00000,40.00000' b='129.00000,53.00000'/>
-		<JUNCTION pos='155.00000,53.00000'/>
-		<WIRE style='13' a='155.00000,53.00000' b='146.00000,53.00000'/>
-		<WIRE style='13' a='155.00000,109.00000' b='155.00000,53.00000'/>
-		<NOCONNECT pos='134.00000,53.00000'/>
-		<NOCONNECT pos='149.00000,53.00000'/>
-		<TEXT pos='135.00000,50.00000' direction='3' font='0' color='000000'>Filling Loop</TEXT>
+		<WIRE style='17' a='129.00000,53.00000' b='160.00000,53.00000'/>
+		<WIRE style='17' a='129.00000,40.00000' b='129.00000,53.00000'/>
+		<TEXT pos='135.00000,50.00000' direction='3' font='3' color='000000'>Filling Loop</TEXT>
+		<RECTANGLE a='70.00000,37.00000' b='76.00000,43.00000' style='16' fill='0'/>
+		<POLYGON pos='71.00000,38.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='4.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='71.00000,38.00000' style='18' fill='0'>
+			<POINT pos='4.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<WIRE style='16' a='73.00000,99.00000' b='73.00000,43.00000'/>
+		<TEXT pos='65.00000,37.00000' direction='3' font='4' color='000000'>Electric Valve</TEXT>
+		<ELLIPSE a='168.00000,49.00000' b='160.00000,57.00000' style='24' fill='0'/>
+		<POLYGON pos='143.00000,51.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='143.00000,51.00000' style='18' fill='2'>
+			<POINT pos='2.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,2.00000' arc='0'/>
+			<POINT pos='2.00000,4.00000' arc='0'/>
+			<POINT pos='2.00000,0.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='132.00000,51.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='3.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='132.00000,51.00000' style='18' fill='0'>
+			<POINT pos='3.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='162.00000,51.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='4.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='162.00000,51.00000' style='18' fill='0'>
+			<POINT pos='4.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<ELLIPSE a='163.00000,52.00000' b='165.00000,54.00000' style='24' fill='2'/>
+		<WIRE style='30' a='164.00000,57.00000' b='164.00000,65.00000'/>
+		<JUNCTION pos='168.00000,134.00000'/>
+		<JUNCTION pos='159.00000,143.00000'/>
+		<JUNCTION pos='155.00000,99.00000'/>
+		<WIRE style='28' a='155.00000,99.00000' b='143.00000,99.00000'/>
+		<WIRE style='28' a='155.00000,134.00000' b='155.00000,99.00000'/>
+		<WIRE style='31' a='143.00000,99.00000' b='143.00000,109.00000'/>
+		<POLYGON pos='147.00000,97.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='3.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='147.00000,97.00000' style='18' fill='0'>
+			<POINT pos='3.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='135.00000,123.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='4.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='135.00000,123.00000' style='18' fill='0'>
+			<POINT pos='4.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<TEXT pos='113.00000,126.00000' direction='3' font='4' color='000000'>Loop Close valve</TEXT>
+		<ELLIPSE a='87.00000,47.00000' b='91.00000,51.00000' style='32' fill='3'/>
+		<TEXT pos='156.00000,48.00000' direction='3' font='4' color='000000'>Filling Pump</TEXT>
+		<TEXT pos='15.00000,156.00000' direction='3' font='7' color='000000'>Key</TEXT>
+		<TEXT pos='14.00000,163.00000' direction='3' font='8' color='000000'>Manual valve/tap</TEXT>
+		<TEXT pos='14.00000,169.00000' direction='3' font='8' color='000000'>Check Valve</TEXT>
+		<TEXT pos='14.00000,175.00000' direction='3' font='8' color='000000'>Temperature Sensor</TEXT>
+		<POLYGON pos='42.00000,159.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='3.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='42.00000,159.00000' style='18' fill='0'>
+			<POINT pos='3.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='42.00000,165.00000' style='18' fill='0'>
+			<POINT pos='0.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,4.00000' arc='0'/>
+		</POLYGON>
+		<POLYGON pos='42.00000,165.00000' style='18' fill='1'>
+			<POINT pos='2.00000,0.00000' arc='0'/>
+			<POINT pos='0.00000,2.00000' arc='0'/>
+			<POINT pos='2.00000,4.00000' arc='0'/>
+			<POINT pos='2.00000,0.00000' arc='0'/>
+		</POLYGON>
+		<ELLIPSE a='46.00000,170.00000' b='52.00000,176.00000' style='21' fill='0'/>
+		<TEXT pos='14.00000,181.00000' direction='3' font='8' color='000000'>Flexible Pipe</TEXT>
+		<WIRE style='31' a='42.00000,179.00000' b='51.00000,179.00000'/>
+		<WIRE style='30' a='136.00000,66.00000' b='136.00000,72.00000'/>
+		<ELLIPSE a='133.00000,72.00000' b='138.00000,77.00000' style='33' fill='0'/>
+		<POLYGON pos='135.00000,73.00000' style='18' fill='0'>
+			<POINT pos='0.00000,2.00000' arc='0'/>
+			<POINT pos='2.00000,0.00000' arc='0'/>
+		</POLYGON>
+		<TEXT pos='134.00000,71.00000' direction='3' font='6' color='000000'>Pressure Gauge</TEXT>
 	</TinyCAD>
 </TinyCADSheets>

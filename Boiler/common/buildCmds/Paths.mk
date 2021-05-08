@@ -9,9 +9,10 @@ OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
 OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	:= c:/Espressif/ESP8266_SDK_151
+SDK_BASE	:= c:/Espressif/ESP8266_SDK_210
 SDK_TOOLS	:= c:/Espressif/utils
 ESPTOOL		:= $(SDK_TOOLS)/esptool.py
+#ESPTOOL		:= "C:/Program Files/esptool/esptool.py"
 
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib

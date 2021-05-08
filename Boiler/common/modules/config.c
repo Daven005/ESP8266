@@ -32,6 +32,7 @@
 #include <c_types.h>
 #include <osapi.h>
 #include <spi_flash.h>
+#include <osapi.h>
 #include <user_interface.h>
 #include "debug.h"
 #include "config.h"
@@ -41,6 +42,7 @@ SAVE_FLAG saveFlag;
 static uint32 dirtyCount = 0;
 static uint32 lastSetDirty;
 static uint32 lastSaved = 0;
+static os_timer_t delay_timer;
 
 static uint32 ICACHE_FLASH_ATTR doSum(void) {
 	uint32 sum = 0;
@@ -79,18 +81,19 @@ static void ICACHE_FLASH_ATTR CFG_Save(void) {
 		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	}
+	TESTP("With saveFlag: %d\n", saveFlag.flag);
 	lastSaved = system_get_time();
 }
 
-void ICACHE_FLASH_ATTR CFG_Load() {
-	os_printf("\nload (%x/%x)...\n", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
+static void ICACHE_FLASH_ATTR CFG_Load() {
+	os_printf("\nload (%x/%x)...", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 				   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	if (saveFlag.flag == 0) {
-		spi_flash_read((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
+		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	} else {
-		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
+		spi_flash_read((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	}
 	if(sysCfg.cfg_holder != CFG_HOLDER || !checkSum()){
@@ -106,29 +109,51 @@ void ICACHE_FLASH_ATTR CFG_dirty(void) {
 	lastSetDirty = system_get_time();
 }
 
-void ICACHE_FLASH_ATTR CFG_checkLazyWrite(void){
-	if (dirtyCount == 0) return;
-	if ((system_get_time() - lastSetDirty) > 2000000) {
-		if (!checkSum()) { // data has changed
-			saveSum();
-			CFG_Save();
-			TESTP("sysCfg updated\n")
-		}
-		lastSetDirty = system_get_time();
+static void ICACHE_FLASH_ATTR checkLazyWrite(void) {
+	if (dirtyCount == 0)
+		return;
+	if (!checkSum()) { // data has changed
+		saveSum();
+		CFG_Save();
+		TESTP("sysCfg updated\n");
+		CFG_print();
+	} else {
+		TESTP("sysCfg data not changed?\n");
 	}
+	dirtyCount = 0;
 }
 
 uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {
+#ifdef USE_WIFI
 	if (sysCfg.updates) return sysCfg.updates;
 	return UPDATES;
+#else
+	return 0;
+#endif
 }
 
 void ICACHE_FLASH_ATTR CFG_print(void) {
-	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+#if SETTINGS_SIZE > 0
+	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\nSettings: ", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+	for (int idx=0; idx < SETTINGS_SIZE; idx++) {
+		os_printf("%3d ", sysCfg.settings[idx]);
+	}
+	os_printf("\nInputs: %d, Outputs: %d, Updates: %d\n", sysCfg.inputs, sysCfg.outputs, sysCfg.updates );
+#endif
+#ifdef USE_WIFI
 	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
 	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
+	os_printf("MQTT host %s port %d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
+#endif
 }
 
 uint32 ICACHE_FLASH_ATTR CFG_lastSaved(void) {
 	return lastSaved;
+}
+
+void ICACHE_FLASH_ATTR CFG_init(uint32 delay) {
+	os_timer_disarm(&delay_timer);
+	os_timer_setfn(&delay_timer, (os_timer_func_t *) checkLazyWrite, (void *) 0);
+	os_timer_arm(&delay_timer, delay, true);
+	CFG_Load();
 }
