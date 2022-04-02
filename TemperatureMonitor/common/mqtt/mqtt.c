@@ -419,7 +419,7 @@ mqtt_tcpclient_recv(void *arg, char *pdata, unsigned short len) {
 			break;
 		}
 	} else {
-		ERRORP("ERROR: Recvd message too long: %d\n", len);
+		ERRORP("ERROR: Recvd message too long: %d (%20s)\n", len, client->mqtt_state.in_buffer+2);
 	}
 INFOP("<<");
 	system_os_post(MQTT_TASK_PRIO, 0, (os_param_t) client);

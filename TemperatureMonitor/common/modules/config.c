@@ -81,18 +81,19 @@ static void ICACHE_FLASH_ATTR CFG_Save(void) {
 		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	}
+	TESTP("With saveFlag: %d\n", saveFlag.flag);
 	lastSaved = system_get_time();
 }
 
 static void ICACHE_FLASH_ATTR CFG_Load() {
-	os_printf("\nload (%x/%x)...\n", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
+	os_printf("\nload (%x/%x)...", sizeof(sysCfg), SPI_FLASH_SEC_SIZE);
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
 				   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
 	if (saveFlag.flag == 0) {
-		spi_flash_read((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
+		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	} else {
-		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
+		spi_flash_read((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
 					   (uint32 *)&sysCfg, sizeof(SYSCFG));
 	}
 	if(sysCfg.cfg_holder != CFG_HOLDER || !checkSum()){
@@ -115,18 +116,35 @@ static void ICACHE_FLASH_ATTR checkLazyWrite(void) {
 		saveSum();
 		CFG_Save();
 		TESTP("sysCfg updated\n");
+		CFG_print();
+	} else {
+		TESTP("sysCfg data not changed?\n");
 	}
+	dirtyCount = 0;
 }
 
 uint16 ICACHE_FLASH_ATTR sysCfgUpdates(void) {
+#ifdef USE_WIFI
 	if (sysCfg.updates) return sysCfg.updates;
 	return UPDATES;
+#else
+	return 0;
+#endif
 }
 
 void ICACHE_FLASH_ATTR CFG_print(void) {
-	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\n", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+#if SETTINGS_SIZE > 0
+	os_printf("saveFlag %d CFG_LOCATION %x cfg_holder %lx\nSettings: ", saveFlag.flag, CFG_LOCATION, sysCfg.cfg_holder);
+	for (int idx=0; idx < SETTINGS_SIZE; idx++) {
+		os_printf("%3d ", sysCfg.settings[idx]);
+	}
+	os_printf("\nInputs: %d, Outputs: %d, Updates: %d\n", sysCfg.inputs, sysCfg.outputs, sysCfg.updates );
+#endif
+#ifdef USE_WIFI
 	os_printf("sta_ssid %s sta_type %d\n", sysCfg.sta_ssid, sysCfg.sta_type);
 	os_printf("deviceName %s deviceLocation %s\n", sysCfg.deviceName, sysCfg.deviceLocation);
+	os_printf("MQTT host %s port %d\n", sysCfg.mqtt_host, sysCfg.mqtt_port);
+#endif
 }
 
 uint32 ICACHE_FLASH_ATTR CFG_lastSaved(void) {

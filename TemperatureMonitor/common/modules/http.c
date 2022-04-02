@@ -154,11 +154,13 @@ static void ICACHE_FLASH_ATTR replyOK(struct espconn *conn) {
 	l = os_sprintf(bfr, "HTTP/1.0 %d OK\r\nServer: esp8266-http/0.4\r\nConnection: close\r\n\r\n", 200);
 	l += os_sprintf(&bfr[l], "<html><body>");
 	l += os_sprintf(&bfr[l], "<h3>MQTT Setup</h3><form action=\"/setup\">");
+#ifdef USE_WIFI
 	l += os_sprintf(&bfr[l], "<p>MQTT host: <input type=\"text\" name=\"MQTThost\" value=\"%s\"></p>", sysCfg.mqtt_host);
 	l += os_sprintf(&bfr[l], "<p>MQTT Port: <input type=\"text\" name=\"MQTTport\" value=\"%d\" size=\"4\"></p>", sysCfg.mqtt_port);
 	l += os_sprintf(&bfr[l], "<p>MQTT UserID: <input type=\"text\" name=\"MQTTuser\" value=\"%s\"></p>", sysCfg.mqtt_user);
 	l += os_sprintf(&bfr[l], "<p>MQTT Pwd: <input type=\"text\" name=\"MQTTpass\" value=\"%s\"></p>", sysCfg.mqtt_pass);
 	l += os_sprintf(&bfr[l], "<p>Device ID prefix: <input type=\"text\" name=\"DevPrefix\" value=\"%s\"></p>", sysCfg.deviceID_prefix);
+#endif
 	l += os_sprintf(&bfr[l], "Reboot: <input type=\"checkbox\" name=\"reboot\" value=\"yes\" %s> ", reboot ? "checked" : "");
 	l += os_sprintf(&bfr[l], "<input type=\"submit\" name=\"Action\" value=\"Update\" style=\"border-radius: 8px; background-color: #CAD0E6\">");
 	l += os_sprintf(&bfr[l], "</form></body></html>");
@@ -178,34 +180,44 @@ static void ICACHE_FLASH_ATTR tcp_receive_cb(void *arg, char *pData, unsigned sh
 			if (os_strncmp(bfr, "Update", 6) == 0) {
 				if (httpdFindArg(c.getArgs, "MQTThost", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTThost=%s\n", bfr);
+#ifdef USE_WIFI
 					if (7 < os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.mqtt_host)) {
 						os_strcpy(sysCfg.mqtt_host, bfr);
 					}
-				}
+#endif
+					}
 				if (httpdFindArg(c.getArgs, "MQTTport", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTTport=%s\n", bfr);
+#ifdef USE_WIFI
 					if (1 <= os_strlen(bfr) && os_strlen(bfr) <= 4) {
 						sysCfg.mqtt_port = atoi(bfr);
 					}
-				}
+#endif
+					}
 				if (httpdFindArg(c.getArgs, "MQTTuser", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTTuser=%s\n", bfr);
+#ifdef USE_WIFI
 					if (0 <= os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.mqtt_user)) {
 						os_strcpy(sysCfg.mqtt_user, bfr);
 					}
-				}
+#endif
+					}
 				if (httpdFindArg(c.getArgs, "MQTTpass", bfr, sizeof(bfr)) >= 0) {
 					TESTP("MQTTpass=%s\n", bfr);
+#ifdef USE_WIFI
 					if (0 <= os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.mqtt_pass)) {
 						os_strcpy(sysCfg.mqtt_pass, bfr);
 					}
-				}
+#endif
+					}
 				if (httpdFindArg(c.getArgs, "DevPrefix", bfr, sizeof(bfr)) >= 0) {
 					TESTP("DevPrefix=%s\n", bfr);
+#ifdef USE_WIFI
 					if (2 <= os_strlen(bfr) && os_strlen(bfr) < sizeof(sysCfg.deviceID_prefix)) {
 						os_strcpy(sysCfg.deviceID_prefix, bfr);
 						os_sprintf(sysCfg.device_id, "%s%lx", sysCfg.deviceID_prefix, system_get_chip_id());
 					}
+#endif
 				}
 				if (httpdFindArg(c.getArgs, "reboot", bfr, sizeof(bfr)) >= 0) {
 					TESTP("reboot=%s\n", bfr);

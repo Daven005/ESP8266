@@ -23,5 +23,6 @@ void publishMapping(void);
 void publishOutput(uint8 idx, uint8 val);
 void publishInput(uint8 idx, uint8 val);
 void initPublish(MQTT_Client* client);
+void publishOverride(void);
 
 #endif /* USER_PUBLISH_H_ */

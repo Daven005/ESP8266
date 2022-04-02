@@ -38,6 +38,7 @@
 
 os_timer_t transmit_timer;
 os_timer_t date_timer;
+os_timer_t delayInit_timer;
 
 typedef struct {
 	MQTT_Client *mqttClient;
@@ -52,7 +53,8 @@ enum backgroundEvent_t {
 	EVENT_PROCESS_TIMER,
 	EVENT_TRANSMIT,
 	EVENT_PUBLISH_TEMPERATURE,
-	EVENT_PUBLISH_DATA
+	EVENT_PUBLISH_DATA,
+	EVENT_RECEIVE_CHAR
 };
 
 #define str(p) #p
@@ -76,13 +78,13 @@ enum backgroundEvent_t {
 #ifdef USE_I2C
 #define CONFIG CONFIG1 "Outputs (I2C I) Pin:" xstr(DS18B20_PIN)
 #else
-#define CONFIG CONFIG1 "Outputs (I) Pin:" xstr(DS18B20_PIN)
+#define CONFIG CONFIG1 "Outputs " xstr(OUTPUTS) " Pin:" xstr(DS18B20_PIN)
 #endif
 #else
 #ifdef USE_I2C
 #define CONFIG CONFIG1 "Outputs (I2C) Pin:" xstr(DS18B20_PIN)
 #else
-#define CONFIG CONFIG1 "Outputs Pin:" xstr(DS18B20_PIN)
+#define CONFIG CONFIG1 "Outputs " xstr(OUTPUTS) " Pin:" xstr(DS18B20_PIN)
 #endif
 #endif
 #else
@@ -123,15 +125,20 @@ enum lastAction_t savedLastAction;
 
 MQTT_Client mqttClient;
 
-void user_rf_pre_init(void);
+void user_pre_init(void);
 uint32 user_rf_cal_sector_set(void);
 
-static void checkCanSleep(void);
 #ifndef SLEEP_MODE
 static void transmitTimerCb(void);
+void receiveCharCb(char c);
+static void switchAction(int action);
+#else
+static void checkCanSleep(void);
 #endif
 
-void user_rf_pre_init(void) {
+static void delayInit(void);
+
+void user_pre_init(void) {
 }
 
 uint32 ICACHE_FLASH_ATTR user_rf_cal_sector_set(void) {
@@ -230,7 +237,9 @@ void ICACHE_FLASH_ATTR resetTransmitTimer(void) {
 #ifdef SLEEP_MODE
 static void ICACHE_FLASH_ATTR processTemperatureFunc(void) {
 	MQTT_OnPublished(&mqttClient, mqttPublishedCb);
+#ifdef READ_TEMPERATURES
 	publishAllTemperatures();
+#endif
 }
 #endif
 
@@ -249,6 +258,23 @@ static void ICACHE_FLASH_ATTR transmitTimerFunc(void) {
 #endif
 	lastAction = PROCESS_FUNC;
 	checkTime("processTimerFunc", t);
+}
+#endif
+
+#ifndef SLEEP_MODE
+void ICACHE_FLASH_ATTR receiveCharCb(char c) { // Depends on Updates
+	if (!system_os_post(USER_TASK_PRIO_1, EVENT_RECEIVE_CHAR, (os_param_t) c))
+		ERRORP("Can't post EVENT_RECEIVE_CHAR\n");
+}
+
+static void ICACHE_FLASH_ATTR receiveCharFunc(os_param_t c) {
+	uint32 t = system_get_time();
+	char ch = (char) c;
+	if ('1' <= ch && ch <= '9') {
+		switchAction(ch - '0');
+	}
+	lastAction = PROCESS_FUNC;
+	checkTime("receiveCharFunc", t);
 }
 #endif
 
@@ -312,6 +338,7 @@ static void ICACHE_FLASH_ATTR switchAction(int action) {
 	switch (action) {
 	case 1:
 		printAll();
+		CFG_print();
 		os_printf("minHeap: %d\n", checkMinHeap());
 		break;
 	case 2:
@@ -345,7 +372,9 @@ void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 		INFOP("Pub %d\n", pass);
 		switch (pass) { // Split into multiple passes to minimise hogging
 		case 0:
+#ifdef READ_TEMPERATURES
 			publishAllTemperatures();
+#endif
 			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 1))
 				ERRORP("Can't post EVENT_PUBLISH_DATA 1\n")
 			;
@@ -364,8 +393,17 @@ void ICACHE_FLASH_ATTR publishData(uint32 pass) {
 				ERRORP("Can't post EVENT_PUBLISH_DATA 3\n")
 			;
 			break;
-		default: {// 3 ==> 3+OUTPUTS
+		case 3:
+#ifdef USE_INPUTS
+			publishInput(0, getInput(0));
+#endif
+			if (!system_os_post(USER_TASK_PRIO_1, EVENT_PUBLISH_DATA, 4))
+				ERRORP("Can't post EVENT_PUBLISH_DATA 3\n")
+			;
+			break;
+		default:
 #ifdef OUTPUTS
+			{// 3 ==> 3+OUTPUTS
 			int opIdx = pass-3;
 			publishOutput(opIdx, getOutput(opIdx));
 			if (++opIdx < OUTPUTS) {
@@ -408,7 +446,9 @@ static void ICACHE_FLASH_ATTR mqttConnectedFunction(MQTT_Client *client) {
 		mqttConnected = true; // To enable messages to be published
 		publishDeviceReset(version, savedLastAction);
 		_publishDeviceInfo();
+#ifdef READ_TEMPERATURES
 		publishMapping();
+#endif
 	}
 	// This subscription used to get settings when starting up in SLEEP and non-SLEEP modes
 	char *topic = (char*) os_zalloc(100);
@@ -541,16 +581,12 @@ static void ICACHE_FLASH_ATTR backgroundTask(os_event_t *e) {
 		publishData(e->par);
 		break;
 	default:
-		ERRORP("Bad background task event %d\n", e->sig)
-		;
+		ERRORP("Bad background task event %d\n", e->sig);
 		break;
 	}
 }
 
 static void ICACHE_FLASH_ATTR startUp() {
-	initTemperature();
-	ds18b20SearchDevices();
-
 	INFOP("wifi_get_phy_mode = %d\n", wifi_get_phy_mode());
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
@@ -576,7 +612,18 @@ static void ICACHE_FLASH_ATTR startUp() {
 #endif
 	if (!system_os_task(backgroundTask, USER_TASK_PRIO_1, taskQueue, QUEUE_SIZE))
 		ERRORP("Can't set up background task\n");
+#ifdef READ_TEMPERATURES
+	os_timer_disarm(&delayInit_timer);
+	os_timer_setfn(&delayInit_timer, (os_timer_func_t *) delayInit, NULL); //
+	os_timer_arm(&delayInit_timer, 500, false); // Allow time for GPIO2 data to stop
+
+#endif
 	lastAction = INIT_DONE;
+}
+
+static void ICACHE_FLASH_ATTR delayInit(void) {
+	initTemperature();
+	ds18b20SearchDevices();
 }
 
 static void ICACHE_FLASH_ATTR initDone_cb() {
@@ -612,6 +659,10 @@ void ICACHE_FLASH_ATTR user_init(void) {
 #endif
 	easygpio_pinMode(LED, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
 	easygpio_outputEnable(LED, 1);
+	easygpio_pinMode(CRC_ERROR_FLAG, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
+	easygpio_outputEnable(CRC_ERROR_FLAG, 0);
+	easygpio_pinMode(READ_FLAG, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
+	easygpio_outputEnable(READ_FLAG, 0);
 #ifdef READ_ANALOGUE
 	easygpio_pinMode(MOISTURE, EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
 #ifndef SLEEP_MODE

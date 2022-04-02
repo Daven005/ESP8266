@@ -9,10 +9,14 @@
 #endif
 // Default CONFIG is Not Sleep, No Outputs
 
-#undef INPUTS
+#define USE_OUTPUTS
+#define OUTPUTS 2
+#undef USE_INPUTS
+#define INPUTS 1
 #undef USE_TIME
 #undef USE_OUTSIDE_TEMP
 #define USE_DECODE
+#define USE_WIFI
 #include "IOdefs.h"
 
 /*DEFAULT MQTT CONFIGURATIONS*/
@@ -20,7 +24,7 @@
 #define MQTT_HOST			"192.168.1.100" //"broker.mqttdashboard.com"
 #include "password.h"
 #define MQTT_PORT			1883
-#define MQTT_BUF_SIZE		512
+#define MQTT_BUF_SIZE		800
 #define MQTT_KEEPALIVE		20 * 60	 // 20 mins to allow for deep sleep
 
 #define DEVICE_PREFIX		"Hollies"

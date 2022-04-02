@@ -10,6 +10,8 @@
  * 
  */
 
+#define DEBUG_OVERRIDE
+#include "debug.h"
 #include "ets_sys.h"
 #include "os_type.h"
 #include "mem.h"
@@ -19,6 +21,7 @@
 #include "espconn.h"
 #include "user_conf.h"
 #include "IOdefs.h"
+#include "easygpio.h"
 
 #ifdef READ_TEMPERATURES
 #include "ds18b20.h"
@@ -30,20 +33,22 @@ static uint8_t LastFamilyDiscrepancy;
 static uint8_t LastDeviceFlag;
 
 void ICACHE_FLASH_ATTR ds_init(void) {
-	// Set DS18B20_PIN as gpio pin
-	PIN_FUNC_SELECT(DS18B20_MUX,  DS18B20_FUNC);
-	// Disable pull-down
-	// PIN_PULLDWN_DIS(DS18B20_MUX);
-	// Enable pull-up
-	PIN_PULLUP_EN(DS18B20_MUX);
-	// Set DS18B20_PIN pin as an input
-	GPIO_DIS_OUTPUT(DS18B20_PIN);
+
+	PIN_FUNC_SELECT(DS18B20_MUX, DS18B20_FUNC); // Set DS18B20_PIN as gpio pin
+	PIN_PULLUP_EN(DS18B20_MUX); // Enable pull-up
+	GPIO_DIS_OUTPUT(DS18B20_PIN); // Set DS18B20_PIN pin as an input
+
+//	PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, FUNC_GPIO13);
+//	GPIO_OUTPUT_SET(GPIO_ID_PIN(CRC_ERROR_FLAG), 0);
+//	PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, FUNC_GPIO12);
+//	GPIO_OUTPUT_SET(GPIO_ID_PIN(READ_FLAG), 0);
+//	GPIO_OUTPUT_SET(GPIO_ID_PIN(CRC_ERROR_FLAG), 0);
+//	GPIO_OUTPUT_SET(GPIO_ID_PIN(READ_FLAG), 0);
 	reset_search();
 }
 
 /* pass array of 8 bytes in */
-int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr)
-{
+int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr) {
 	uint8_t id_bit_number;
 	uint8_t last_zero, rom_byte_number;
 	uint8_t id_bit, cmp_id_bit;
@@ -52,23 +57,23 @@ int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr)
 
 	unsigned char rom_byte_mask, search_direction;
 
-	// initialize for search
+	// initialise for search
 	id_bit_number = 1;
 	last_zero = 0;
 	rom_byte_number = 0;
 	rom_byte_mask = 1;
-	search_result = 0;
+	search_result = false;
+	newAddr[0] = 0xff; // Flag as not (yet) found
 
 	// if the last call was not the last one
-	if (!LastDeviceFlag)
-	{
+	if (!LastDeviceFlag) {
 		// 1-Wire reset
-		if (!reset())
-		{
+		if (!reset()) {
 			// reset the search
 			LastDiscrepancy = 0;
 			LastDeviceFlag = FALSE;
 			LastFamilyDiscrepancy = 0;
+			ERRORP("No response to 1-Wire reset\n");
 			return FALSE;
 		}
 
@@ -76,22 +81,20 @@ int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr)
 		write(DS1820_SEARCHROM, 0);
 
 		// loop to do the search
-		do
-		{
+		do {
 			// read a bit and its complement
 			id_bit = read_bit();
 			cmp_id_bit = read_bit();
 	 
 			// check for no devices on 1-wire
-			if ((id_bit == 1) && (cmp_id_bit == 1))
+			if ((id_bit == 1) && (cmp_id_bit == 1)) {
+				INFOP("No devices after SearchROM command\n");
 				break;
-			else
-			{
+			} else {
 				// all devices coupled have 0 or 1
 				if (id_bit != cmp_id_bit)
 					search_direction = id_bit;  // bit write value for search
-				else
-				{
+				else {
 					// if this discrepancy if before the Last Discrepancy
 					// on a previous next then pick the same as last time
 					if (id_bit_number < LastDiscrepancy)
@@ -101,8 +104,7 @@ int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr)
 						search_direction = (id_bit_number == LastDiscrepancy);
 
 					// if 0 was picked then record its position in LastZero
-					if (search_direction == 0)
-					{
+					if (search_direction == 0) {
 						last_zero = id_bit_number;
 
 						// check for Last discrepancy in family
@@ -133,12 +135,10 @@ int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr)
 					rom_byte_mask = 1;
 				}
 			}
-		}
-		while(rom_byte_number < 8);  // loop until through all ROM bytes 0-7
+		} while (rom_byte_number < 8);  // loop until through all ROM bytes 0-7
 
 		// if the search was successful then
-		if (!(id_bit_number < 65))
-		{
+		if (!(id_bit_number < 65)) {
 			// search successful so set LastDiscrepancy,LastDeviceFlag,search_result
 			LastDiscrepancy = last_zero;
 
@@ -151,8 +151,7 @@ int ICACHE_FLASH_ATTR ds_search(uint8_t *newAddr)
 	}
 
 	// if no device found then reset counters so next 'search' will be like a first
-	if (!search_result || !address[0])
-	{
+	if (!search_result || !address[0]) {
 		LastDiscrepancy = 0;
 		LastDeviceFlag = FALSE;
 		LastFamilyDiscrepancy = 0;
@@ -268,12 +267,15 @@ uint8_t ICACHE_FLASH_ATTR read(void) {
 //
 int ICACHE_FLASH_ATTR read_bit(void)
 {
-	int r;
+	register bool r;
 	GPIO_OUTPUT_SET(DS18B20_PIN, 0);
-	os_delay_us(3);
+	os_delay_us(2);
 	GPIO_DIS_OUTPUT(DS18B20_PIN);
-	os_delay_us(10);
+	os_delay_us(12);
 	r = GPIO_INPUT_GET(DS18B20_PIN);
+	TEST(
+		GPIO_OUTPUT_SET(GPIO_ID_PIN(READ_FLAG), r);
+	);
 	os_delay_us(53);
 	return r;
 }

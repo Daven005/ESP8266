@@ -17,6 +17,11 @@
 #include "pdf8574.h"
 #include "io.h"
 #include "user_conf.h"
+#include "IOdefs.h"
+
+#ifdef USE_INPUTS
+static const uint8 inputMap[INPUTS] = { SENSOR_1 };
+#endif
 
 #ifdef USE_OUTPUTS
 /***********************************
@@ -25,13 +30,18 @@
  */
 #pragma message "Outputs"
 #ifndef USE_I2C
+#if OUTPUTS == 1
+static const uint8 outputMap[OUTPUTS] = { LED };
+#elif OUTPUTS == 2
+static const uint8 outputMap[OUTPUTS] = { LED, RELAY_1 };
+#else
 static const uint8 outputMap[OUTPUTS] = { LED, RELAY_1, RELAY_2, RELAY_3, RELAY_4 };
+#endif
 #endif
 static bool currentOutputs[OUTPUTS];
 static bool localOutputs[OUTPUTS];
 static bool outputOverrides[OUTPUTS];
 static void updateOutput(int id);
-
 
 uint8 ICACHE_FLASH_ATTR getOutput(uint8 id) {
 	if (0 <= id && id < OUTPUTS) {
@@ -44,7 +54,7 @@ static void ICACHE_FLASH_ATTR updateOutput(int id) {
 #ifdef USE_I2C
 	uint8 op = getExpanderOutput();
 	op &= ~(1 << id);
-	if (currentOutputs[id]) op |= (1 << id);
+	if (currentOutputs[id] == RELAY_ON) op |= (1 << id);
 	setExpanderOutput(op);
 	TESTP("I2C outputs = %u", getExpanderOutput());
 #else
@@ -63,8 +73,8 @@ void ICACHE_FLASH_ATTR overrideClearOutput(int id) {
 
 void ICACHE_FLASH_ATTR setOutput(int id, bool value) { // Usually used for local IO
 	if (0 <= id && id < OUTPUTS) {
-		localOutputs[id] = value;
-		if (!outputOverrides[id]) currentOutputs[id] = value;
+		localOutputs[id] = value ? RELAY_ON : RELAY_OFF;
+		if (!outputOverrides[id]) currentOutputs[id] = value ? RELAY_ON : RELAY_OFF;
 		updateOutput(id);
 	}
 }
@@ -73,11 +83,11 @@ void ICACHE_FLASH_ATTR overrideSetOutput(int id, int value) { // Usually used fo
 	if (0 <= id && id < OUTPUTS) {
 		switch (value) {
 		case 0:
-			currentOutputs[id] = 0;
+			currentOutputs[id] = RELAY_OFF;
 			outputOverrides[id] = true;
 			break;
 		case 1:
-			currentOutputs[id] = 1;
+			currentOutputs[id] = RELAY_ON;
 			outputOverrides[id] = true;
 			break;
 		case -1:
@@ -105,3 +115,19 @@ void ICACHE_FLASH_ATTR initOutput(void) {
 #else
 #pragma message "No Outputs"
 #endif
+#ifdef USE_INPUTS
+void ICACHE_FLASH_ATTR overrideSetInput(uint8 op, uint8 set) {}
+void ICACHE_FLASH_ATTR overrideClearInput(uint8 id) {}
+
+uint8 ICACHE_FLASH_ATTR getInput(uint8 id) {
+	uint8 ip = easygpio_inputGet(inputMap[id]);
+	INFOP("<%d> Input %d is %d\n", id, inputMap[id], ip);
+	return ip;
+}
+
+
+void ICACHE_FLASH_ATTR initInput() {
+	easygpio_pinMode(inputMap[0], EASYGPIO_PULLUP, EASYGPIO_INPUT);
+}
+#endif
+

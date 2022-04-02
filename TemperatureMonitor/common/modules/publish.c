@@ -4,22 +4,22 @@
  *  Created on: 11 Jul 2016
  *      Author: User
  */
-#define DEBUG_OVERRIDE
+//#define DEBUG_OVERRIDE
 #include <c_types.h>
 #include <mem.h>
 #include <os_type.h>
 #include <osapi.h>
 #include <user_interface.h>
+#include "user_conf.h"
+#ifdef USE_WIFI
 #include "wifi.h"
 #include "debug.h"
 #include "check.h"
 #include "flash.h"
-#include "wifi.h"
 #include "mqtt.h"
 #include "temperature.h"
 #include "publish.h"
 
-#include "user_conf.h"
 #include "IOdefs.h"
 #include "sysCfg.h"
 #include "check.h"
@@ -200,7 +200,7 @@ void ICACHE_FLASH_ATTR publishAlarm(uint8 alarm, int info) {
 	static uint8 last_alarm = 0xff;
 	static int last_info = -1;
 	if (alarm == last_alarm && info == last_info) {
-		TESTP("#");
+		INFOP("#");
 		return; // Ignore repeated identical alarms
 	}
 	last_alarm = alarm;
@@ -335,7 +335,7 @@ void ICACHE_FLASH_ATTR publishMapping(void) {
 }
 #endif
 
-#ifdef INPUTS
+#ifdef USE_INPUTS
 void ICACHE_FLASH_ATTR publishInput(uint8 idx, uint8 val) {
 	if (checkClient("publishInput")) {
 		char *topic = (char*) os_zalloc(100), *data = (char*) os_malloc(100);
@@ -380,3 +380,6 @@ void ICACHE_FLASH_ATTR initPublish(MQTT_Client* client) {
 	INFOP("initPublish\n");
 	mqttClient = client;
 }
+#else
+#pragma message "No WiFi"
+#endif

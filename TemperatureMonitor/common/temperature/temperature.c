@@ -5,7 +5,7 @@
  *      Author: User
  */
 
-//#define DEBUG_OVERRIDE
+#define DEBUG_OVERRIDE
 #include "debug.h"
 
 #include <c_types.h>
@@ -19,6 +19,8 @@
 #include "flash.h"
 
 #ifdef READ_TEMPERATURES
+#include "io.h"
+#include "IOdefs.h"
 #include "temperature.h"
 #ifdef USE_FLOAT
 #include "dtoa.h"
@@ -157,6 +159,7 @@ void ICACHE_FLASH_ATTR ds18b20SearchDevices(void) {
 	reset_search();
 	incMissed();
 	do {
+		INFOP("Start search %d\n", idx);
 		if (ds_search(addr)) {
 			if (crc8(addr, 7) != addr[7]) {
 				ERRORP("Address CRC error, crc=%02x, addr[7]=%02x\n", crc8(addr, 7), addr[7]);
@@ -170,9 +173,10 @@ void ICACHE_FLASH_ATTR ds18b20SearchDevices(void) {
 				TEST(if (idx != 0xff) {printTemperature(idx); os_printf("\n");});
 				sensorCount++;
 				break;
+			case 0xff:
+				ERRORP("Nothing found\n"); return;
 			default:
-				ERRORP("Device is unknown family.\n");
-				return;
+				ERRORP("Device is unknown family.\n"); return;
 			}
 		} else {
 			break; // while(true)
@@ -221,6 +225,13 @@ static void ICACHE_FLASH_ATTR ds18b20_next(int idx) {
 			checkSetTemperature(idx, tVal, tFract);
 			INFO(if (idx != 0xff) {printTemperature(idx); os_printf("\n");});
 		} else {
+			TEST(
+				easygpio_outputSet(CRC_ERROR_FLAG, 1);
+				os_delay_us(5);
+				easygpio_outputSet(CRC_ERROR_FLAG, 0);
+//				GPIO_OUTPUT_SET(GPIO_ID_PIN(CRC_ERROR_FLAG), 1);
+//				GPIO_OUTPUT_SET(GPIO_ID_PIN(CRC_ERROR_FLAG), 0);
+			);
 			ERRORP("Data CRC error, crc=%02x, data[8]=%02x\n", crc8(data, 8), data[8]);
 			for (i = 0; i <= 8; i++) {
 				TESTP("%02x ", data[i]);
@@ -241,7 +252,7 @@ static void ICACHE_FLASH_ATTR ds18b20_cb() { // after  750mS
 }
 
 void ICACHE_FLASH_ATTR ds18b20StartScan(TemperatureCallback tempCb) {
-	INFOP("Start Temp\n");
+	INFOP("Start Temp scan on %d\n", DS18B20_PIN);
 	temperatureCb = tempCb;
 	ds_init();
 	reset();

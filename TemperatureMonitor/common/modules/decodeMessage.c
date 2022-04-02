@@ -7,6 +7,9 @@
 #include <c_types.h>
 #include <mem.h>
 #include <os_type.h>
+
+//#define DEBUG_OVERRIDE
+#include "debug.h"
 #include <osapi.h>
 #include <user_interface.h>
 #include "stdout.h"
@@ -15,21 +18,23 @@
 #include "mqtt.h"
 #include "sysCfg.h"
 #include "decodeMessage.h"
-#include "debug.h"
 #include "publish.h"
 #include "time.h"
-#include "io.h"
-
 #include "user_conf.h"
+
+#ifdef USE_OUTPUTS
+#include "io.h"
+#endif
 
 #ifdef USE_DECODE
 #include "user_main.h"
-#include "io.h"
 
 extern os_timer_t date_timer;
 static char *nullStr = "";
 
-extraDecode deviceSettings;
+extraDeviceDecode deviceSettings;
+extraAppDecode appSettings;
+static bool decodeDeviceParams(char *dataBuf);
 
 static int ICACHE_FLASH_ATTR splitString(char *string, char delim, char *tokens[], int tokenCount) {
 	char *endString;
@@ -69,7 +74,7 @@ static void printTokens(char *tokens[], int count) {
 }
 
 #ifdef READ_TEMPERATURES
-static void saveMapName(uint8 sensorID, char *bfr) {
+static void ICACHE_FLASH_ATTR saveMapName(uint8 sensorID, char *bfr) {
 	uint8 mapIdx = 0xff;
 	char *name = NULL;
 	jsmn_parser p;
@@ -107,9 +112,61 @@ static void saveMapName(uint8 sensorID, char *bfr) {
 }
 #endif
 
+static bool ICACHE_FLASH_ATTR decodeDeviceParams(char* bfr) {
+	jsmn_parser p;
+	jsmntok_t root[20];
+	int rootTokenCount, idx;
+
+	INFOP("***decodeDeviceParams: %s\n", bfr);
+	jsmn_init(&p);
+	rootTokenCount = jsmn_parse(&p, bfr, strlen(bfr), root, sizeof(root) / sizeof(root[0]));
+
+	if (rootTokenCount < 0) {
+		ERRORP("decodeDeviceParams: Failed to parse JSON: %d\n", rootTokenCount);
+		return false;
+	}
+	if (root[0].type != JSMN_OBJECT) {/* Assume the top-level element is an object */
+		ERRORP("decodeDeviceParams: Object expected (%d)\n", root[0].type);
+		return false;
+	}
+	INFO(printJSMN("root", 0, root, rootTokenCount-1););
+	for (idx = 1; idx < rootTokenCount; ) { /* Loop over all keys of the root object */
+		if (jsoneq(bfr, &root[idx], "location")) {
+			if (root[idx + 1].type == JSMN_STRING) {
+				char *name;
+				name = bfr + root[idx + 1].start;
+				bfr[root[idx + 1].end] = 0; // Overwrites trailing quote
+				os_strcpy(sysCfg.deviceLocation, name);
+			}
+			idx += 2;
+		} else if (jsoneq(bfr, &root[idx], "name")) {
+			if (root[idx + 1].type == JSMN_STRING) {
+				char *name;
+				name = bfr + root[idx + 1].start;
+				bfr[root[idx + 1].end] = 0; // Overwrites trailing quote
+				os_strcpy(sysCfg.deviceName, name);
+			}
+			idx += 2;
+		} else if (jsoneq(bfr, &root[idx], "updates")) {
+			sysCfg.updates = atoi(bfr + root[idx + 1].start);
+			idx += 2;
+		} else if (jsoneq(bfr, &root[idx], "inputs")) {
+			sysCfg.inputs = atoi(bfr + root[idx + 1].start);
+			idx += 2;
+		} else if (jsoneq(bfr, &root[idx], "outputs")) {
+			sysCfg.outputs = atoi(bfr + root[idx + 1].start);
+			idx += 2;
+		} else {
+			ERRORP("Unknown deviceParam %s\n", bfr + root[idx].start);
+		}
+	}
+	return true;
+}
+
 static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_Client* client) {
 	uint16 temp; bool updated = false;
 
+	INFOP("decodeDeviceSet: %s\n", param);
 	if (os_strcmp("name", param) == 0) {
 		if (os_strcmp(sysCfg.deviceName, dataBuf) != 0) {
 			os_strcpy(sysCfg.deviceName, dataBuf);
@@ -124,6 +181,10 @@ static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_C
 		temp = atoi(dataBuf);
 		if (temp != sysCfg.updates) {
 			sysCfg.updates = temp;
+			updated = true;
+		}
+	} else if (os_strcmp("deviceParams", param) == 0) {
+		if (decodeDeviceParams(dataBuf)) {
 			updated = true;
 		}
 #ifndef SLEEP_MODE
@@ -142,7 +203,7 @@ static void ICACHE_FLASH_ATTR decodeDeviceSet(char* param, char* dataBuf, MQTT_C
 #endif
 #endif
 	} else if (os_strcmp("outputs", param) == 0) {
-#ifdef OUTPUTS
+#ifdef USE_OUTPUTS
 		temp = atoi(dataBuf);
 		if (temp != sysCfg.outputs) {
 			sysCfg.outputs = temp;
@@ -164,11 +225,11 @@ static void ICACHE_FLASH_ATTR decodeSensorClear(char *idPtr, char *param, MQTT_C
 		publishTemperature(idx);
 #endif
 	} else if (os_strcmp("output", param) == 0) {
-#ifdef OUTPUTS
+#ifdef USE_OUTPUTS
 		overrideClearOutput(atoi(idPtr));
 #endif
 	} else if (os_strcmp("input", param) == 0) {
-#ifdef INPUTS
+#ifdef USE_INPUTS
 #if INPUTS > 0
 		overrideClearInput(atoi(idPtr));
 #endif
@@ -221,7 +282,7 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 		sysCfg.mapping[mapIdx] = newMapValue;
 		CFG_dirty();
 #endif
-#ifdef USE_FLOW
+#ifdef USE_FLOWS
 	} else if (strcmp("flow", param) == 0) {
 		overrideSetFlow(atoi(valPtr));
 #endif
@@ -234,14 +295,14 @@ static void ICACHE_FLASH_ATTR decodeSensorSet(char *valPtr, char *idPtr, char *p
 		uint8 idx = setTemperatureOverride(idPtr, valPtr);
 		publishTemperature(idx);
 #endif
-#ifdef OUTPUTS
+#ifdef USE_OUTPUTS
 	} else if (os_strcmp("output", param) == 0) {
 		if (0 <= id && id < OUTPUTS) {
 			overrideSetOutput(id, value);
-			publishOutput(id, getOutput(id));
+			publishOutput(id, value);
 		}
 #endif
-#ifdef INPUTS
+#ifdef USE_INPUTS
 	} else if (os_strcmp("input", param) == 0) {
 		if (0 <= id && id < INPUTS) {
 			overrideSetInput(id, value);
@@ -451,13 +512,14 @@ static void ICACHE_FLASH_ATTR saveTSbottom(char *data) {
 void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* data) {
 #define MAX_TOKENS 10
 	char* tokens[MAX_TOKENS];
-	TESTP("%s=>%s\n", topic, data);
+	INFOP("%s=>%s\n", topic, data);
 	int tokenCount = splitString((char*) topic, '/', tokens, MAX_TOKENS);
 	if (tokenCount > 0) {
 		if (os_strcmp("Raw", tokens[0]) == 0) {
-			if (tokenCount == 4 && os_strcmp(sysCfg.device_id, tokens[1]) == 0
+			if (tokenCount == 4
+					&& os_strcmp(sysCfg.device_id, tokens[1]) == 0
 					&& os_strcmp("set", tokens[2]) == 0) {
-				if (os_strlen(data) < NAME_SIZE - 1) {
+				if (os_strlen(data) < 120) {
 					decodeDeviceSet(tokens[3], data, client);
 				}
 			} else if (tokenCount == 5 && os_strcmp(sysCfg.device_id, tokens[1]) == 0) {
@@ -499,17 +561,21 @@ void ICACHE_FLASH_ATTR decodeMessage(MQTT_Client* client, char* topic, char* dat
 				}
 				checkResetBoilerTemperature(client);
 #endif
-			}
+			} else if (tokenCount >= 5 && strcmp("TS Bottom", tokens[3]) == 0) {
 #ifdef USE_TS_BOTTOM
-			if (tokenCount >= 5 && strcmp("TS Bottom", tokens[3]) == 0) {
 				saveTSbottom(data);
-			}
 #endif
+			} else if (appSettings)
+				appSettings(tokens, data);
 		}
 	}
 }
 
-void ICACHE_FLASH_ATTR setExtraDecode(extraDecode f) {
+void ICACHE_FLASH_ATTR setExtraDeviceSettings(extraDeviceDecode f) {
 	deviceSettings = f;
+}
+
+void ICACHE_FLASH_ATTR setExtraAppSettings(extraAppDecode f) {
+	appSettings = f;
 }
 #endif

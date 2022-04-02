@@ -29,7 +29,7 @@
 #ifdef USE_DHT
 #include "dht22.h"
 
-//#define PULSE 4
+#define PULSE 16
 
 static struct dht_sensor_data reading[2] = { { .success = 0, .count = 0 }, { .success = 0, .count =
 		0 } };
@@ -103,11 +103,13 @@ static int32 ICACHE_FLASH_ATTR waitWhile(uint8 pin, bool state, uint32 min, uint
 }
 
 static void ICACHE_FLASH_ATTR bitTimingError(char *msg, uint32 tDiff, uint8 bit, uint8 byteCount, struct dht_sensor_data *reading) {
+	pulse();
 	TESTP("%s timing error %d bit %d/%d (pin: %d id: %d)\n", msg, -tDiff, bit, byteCount, reading->pin, reading->id);
 }
 
 static void ICACHE_FLASH_ATTR timingError(char *msg, uint32 tDiff, struct dht_sensor_data *reading) {
-	TESTP("%s in %duS (pin: %d id: %d)\n", msg, -tDiff, reading->pin, reading->id);
+	pulse();
+	INFOP("%s in %duS (pin: %d id: %d)\n", msg, -tDiff, reading->pin, reading->id);
 }
 
 static enum errorCode ICACHE_FLASH_ATTR readByte(struct dht_sensor_data *reading, uint8 *byte, uint8 byteCount) {
@@ -214,23 +216,53 @@ static bool ICACHE_FLASH_ATTR dhtInput(struct dht_sensor_data *reading) {
 	return reading->success = true;
 }
 
-static void dhtCb(struct dht_sensor_data *reading) {
-	static uint32 lastGoodReadingTime;
+static void dhtCb(void *param) {
+	struct dht_sensor_data *reading = (struct dht_sensor_data *)param;
 	if (dhtInput(reading)) {
-		lastGoodReadingTime = system_get_time();
+		reading->lastGoodReadingTime = system_get_time();
 		reading->valid = true;
 	} else {
-		if (system_get_time() > (lastGoodReadingTime + 60 * 1000 *1000)) { // 60S
+		if (system_get_time() > (reading->lastGoodReadingTime + 60 * 1000 *1000)) { // 60S
 			reading->valid = false;
+			INFOP("DHT not valid %d\n", reading->id);
 		}
 	}
 }
 
-static void ICACHE_FLASH_ATTR dhtStartCb(struct dht_sensor_data *reading) {
+static void ICACHE_FLASH_ATTR dhtStartCb(void *param) {
+	struct dht_sensor_data *reading = (struct dht_sensor_data *)param;
 	easygpio_outputEnable(reading->pin, 0); // Set as output and Hold low for 18ms
 	os_timer_disarm(&reading->wakeTimer);
-	os_timer_setfn(&reading->wakeTimer, dhtCb, reading);
+	os_timer_setfn(&reading->wakeTimer, dhtCb, (void *)reading);
 	os_timer_arm(&reading->wakeTimer, 18, false);
+}
+
+void ICACHE_FLASH_ATTR setRemoteHumidity(int id, float value) {
+	if (id == 1 || id == 2) {
+		struct dht_sensor_data *r = &reading[id - 1];
+		r->humidity = value;
+		if (r->count == 0) {
+			r->avgHumidity = value;
+			r->count++;
+		} else {
+			r->avgHumidity = (r->avgHumidity * 4 + r->humidity) / 5;
+		}
+		r->success = r->valid = true;
+	}
+}
+
+void ICACHE_FLASH_ATTR setRemoteTemperature(int id, float value) {
+	if (id == 1 || id == 2) {
+		struct dht_sensor_data *r = &reading[id - 1];
+		r->temperature = value;
+		if (r->count == 0) {
+			r->avgTemperature = value;
+			r->count++;
+		} else {
+			r->avgTemperature = (r->avgTemperature * 4 + r->temperature) / 5;
+		}
+		r->success = r->valid = true;
+	}
 }
 
 static void ICACHE_FLASH_ATTR _dhtInit(struct dht_sensor_data *reading, int id,
@@ -240,14 +272,16 @@ static void ICACHE_FLASH_ATTR _dhtInit(struct dht_sensor_data *reading, int id,
 	easygpio_pinMode(PULSE, EASYGPIO_NOPULL, EASYGPIO_OUTPUT);
 	easygpio_outputEnable(PULSE, 0);
 #endif
-	easygpio_pinMode((reading->pin = pin), EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
-	easygpio_outputDisable(pin);
 	reading->id = id;
 	reading->error = E_NONE;
 	reading->success = false;
-	os_timer_disarm(&reading->timer);
-	os_timer_setfn(&reading->timer, dhtStartCb, reading);
-	os_timer_arm(&reading->timer, poll_time, true);
+	if (reading->sensorType != DHTremote) {
+		easygpio_pinMode((reading->pin = pin), EASYGPIO_PULLUP, EASYGPIO_OUTPUT);
+		easygpio_outputDisable(pin);
+		os_timer_disarm(&reading->timer);
+		os_timer_setfn(&reading->timer, dhtStartCb, (void *)reading);
+		os_timer_arm(&reading->timer, poll_time, true);
+	}
 }
 
 void ICACHE_FLASH_ATTR dhtInit(int id, enum DHTType dht_type, uint8 pin, uint32_t poll_time) {

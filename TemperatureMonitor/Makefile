@@ -11,8 +11,8 @@ export PATH := ../buildCmds;$(PATH)
 
 VERBOSE 	?= 0
 
-ESPPORT		?= COM8
-ESPBAUD		?= 115200
+ESPPORT		?= COM3
+ESPBAUD		?= 230400
 DEVICE 		?= ESP-12
 CONFIG_NAME	?= $(DEVICE)
 MAPFILE		?= $(CONFIG_NAME).map
@@ -72,7 +72,7 @@ $(FW_BASE):
 	$(Q) mkdir -p $@
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash --flash_size $(FLASH_SIZE) \
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash --verify --flash_size $(FLASH_SIZE) \
 $(FLASH_ROM_ADDR) $(FIRMWARE_FLASH) \
 $(USER_ROM_ADDR) $(FIRMWARE_USER)
 
